@@ -249,10 +249,12 @@ func (f *Filter) isStatusVisibleUnauthed(
 	ctx context.Context,
 	status *gtsmodel.Status,
 ) (bool, error) {
-	// For remote accounts, only show
-	// Public statuses via the web.
+	// for remote replies, show public
+	// and unlisted statuses via the web.
 	if status.Account.IsRemote() {
-		return status.Visibility == gtsmodel.VisibilityPublic, nil
+		visible := status.Visibility == gtsmodel.VisibilityPublic ||
+			status.Visibility == gtsmodel.VisibilityUnlocked
+		return visible, nil
 	}
 
 	// If status is local only,
@@ -278,14 +280,9 @@ func (f *Filter) isStatusVisibleUnauthed(
 	webVisibility := status.Account.Settings.WebVisibility
 	switch webVisibility {
 
-	// public_only: status must be Public.
-	case gtsmodel.VisibilityPublic:
-		visible := status.Visibility == gtsmodel.VisibilityPublic ||
-			status.Visibility == gtsmodel.VisibilityUnlocked
-		return visible, nil
-
-	// unlisted: status must be Public or Unlocked.
-	case gtsmodel.VisibilityUnlocked:
+	// show public and unlisted
+	// statuses via the web
+	case gtsmodel.VisibilityPublic, gtsmodel.VisibilityUnlocked:
 		visible := status.Visibility == gtsmodel.VisibilityPublic ||
 			status.Visibility == gtsmodel.VisibilityUnlocked
 		return visible, nil
