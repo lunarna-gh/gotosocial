@@ -280,7 +280,9 @@ func (f *Filter) isStatusVisibleUnauthed(
 
 	// public_only: status must be Public.
 	case gtsmodel.VisibilityPublic:
-		return status.Visibility == gtsmodel.VisibilityPublic, nil
+		visible := status.Visibility == gtsmodel.VisibilityPublic ||
+			status.Visibility == gtsmodel.VisibilityUnlocked
+		return visible, nil
 
 	// unlisted: status must be Public or Unlocked.
 	case gtsmodel.VisibilityUnlocked:
