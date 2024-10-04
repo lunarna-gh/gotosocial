@@ -1,20 +1,14 @@
-# codeberg.org/gruf/go-atomics v1.1.0
-## explicit; go 1.16
-codeberg.org/gruf/go-atomics
-# codeberg.org/gruf/go-bitutil v1.1.0
-## explicit; go 1.19
-codeberg.org/gruf/go-bitutil
 # codeberg.org/gruf/go-bytes v1.0.2
 ## explicit; go 1.14
 codeberg.org/gruf/go-bytes
 # codeberg.org/gruf/go-bytesize v1.0.3
 ## explicit; go 1.17
 codeberg.org/gruf/go-bytesize
-# codeberg.org/gruf/go-byteutil v1.2.0
-## explicit; go 1.16
+# codeberg.org/gruf/go-byteutil v1.3.0
+## explicit; go 1.20
 codeberg.org/gruf/go-byteutil
-# codeberg.org/gruf/go-cache/v3 v3.5.7
-## explicit; go 1.19
+# codeberg.org/gruf/go-cache/v3 v3.6.1
+## explicit; go 1.20
 codeberg.org/gruf/go-cache/v3
 codeberg.org/gruf/go-cache/v3/simple
 codeberg.org/gruf/go-cache/v3/ttl
@@ -37,21 +31,18 @@ codeberg.org/gruf/go-ffmpreg/embed/ffprobe
 # codeberg.org/gruf/go-iotools v0.0.0-20240710125620-934ae9c654cf
 ## explicit; go 1.21
 codeberg.org/gruf/go-iotools
-# codeberg.org/gruf/go-kv v1.6.4
-## explicit; go 1.19
+# codeberg.org/gruf/go-kv v1.6.5
+## explicit; go 1.20
 codeberg.org/gruf/go-kv
 codeberg.org/gruf/go-kv/format
 # codeberg.org/gruf/go-list v0.0.0-20240425093752-494db03d641f
 ## explicit; go 1.21.3
 codeberg.org/gruf/go-list
-# codeberg.org/gruf/go-logger/v2 v2.2.1
-## explicit; go 1.19
-codeberg.org/gruf/go-logger/v2/level
 # codeberg.org/gruf/go-mangler v1.4.1
 ## explicit; go 1.19
 codeberg.org/gruf/go-mangler
-# codeberg.org/gruf/go-maps v1.0.3
-## explicit; go 1.19
+# codeberg.org/gruf/go-maps v1.0.4
+## explicit; go 1.20
 codeberg.org/gruf/go-maps
 # codeberg.org/gruf/go-mempool v0.0.0-20240507125005-cef10d64a760
 ## explicit; go 1.22.2
@@ -62,20 +53,20 @@ codeberg.org/gruf/go-mimetypes
 # codeberg.org/gruf/go-mutexes v1.5.1
 ## explicit; go 1.22.2
 codeberg.org/gruf/go-mutexes
-# codeberg.org/gruf/go-runners v1.6.2
+# codeberg.org/gruf/go-runners v1.6.3
 ## explicit; go 1.19
 codeberg.org/gruf/go-runners
-# codeberg.org/gruf/go-sched v1.2.3
+# codeberg.org/gruf/go-sched v1.2.4
 ## explicit; go 1.19
 codeberg.org/gruf/go-sched
-# codeberg.org/gruf/go-storage v0.1.2
+# codeberg.org/gruf/go-storage v0.2.0
 ## explicit; go 1.22
 codeberg.org/gruf/go-storage
 codeberg.org/gruf/go-storage/disk
 codeberg.org/gruf/go-storage/internal
 codeberg.org/gruf/go-storage/memory
 codeberg.org/gruf/go-storage/s3
-# codeberg.org/gruf/go-structr v0.8.9
+# codeberg.org/gruf/go-structr v0.8.11
 ## explicit; go 1.21
 codeberg.org/gruf/go-structr
 # codeberg.org/superseriousbusiness/exif-terminator v0.9.0
@@ -494,7 +485,7 @@ github.com/miekg/dns
 # github.com/minio/md5-simd v1.1.2
 ## explicit; go 1.14
 github.com/minio/md5-simd
-# github.com/minio/minio-go/v7 v7.0.76
+# github.com/minio/minio-go/v7 v7.0.77
 ## explicit; go 1.21
 github.com/minio/minio-go/v7
 github.com/minio/minio-go/v7/pkg/cors
@@ -526,7 +517,7 @@ github.com/modern-go/reflect2
 # github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822
 ## explicit
 github.com/munnerz/goautoneg
-# github.com/ncruces/go-sqlite3 v0.18.3
+# github.com/ncruces/go-sqlite3 v0.18.4
 ## explicit; go 1.21
 github.com/ncruces/go-sqlite3
 github.com/ncruces/go-sqlite3/driver
@@ -564,7 +555,7 @@ github.com/pkg/errors
 # github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2
 ## explicit
 github.com/pmezard/go-difflib/difflib
-# github.com/prometheus/client_golang v1.20.3
+# github.com/prometheus/client_golang v1.20.4
 ## explicit; go 1.20
 github.com/prometheus/client_golang/internal/github.com/golang/gddo/httputil
 github.com/prometheus/client_golang/internal/github.com/golang/gddo/httputil/header
@@ -982,8 +973,8 @@ go.mongodb.org/mongo-driver/bson/bsonrw
 go.mongodb.org/mongo-driver/bson/bsontype
 go.mongodb.org/mongo-driver/bson/primitive
 go.mongodb.org/mongo-driver/x/bsonx/bsoncore
-# go.opentelemetry.io/otel v1.30.0
-## explicit; go 1.22
+# go.opentelemetry.io/otel v1.29.0
+## explicit; go 1.21
 go.opentelemetry.io/otel
 go.opentelemetry.io/otel/attribute
 go.opentelemetry.io/otel/baggage
@@ -1002,50 +993,50 @@ go.opentelemetry.io/otel/semconv/v1.20.0/httpconv
 go.opentelemetry.io/otel/semconv/v1.24.0
 go.opentelemetry.io/otel/semconv/v1.26.0
 go.opentelemetry.io/otel/semconv/v1.7.0
-# go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.30.0
-## explicit; go 1.22
+# go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.29.0
+## explicit; go 1.21
 go.opentelemetry.io/otel/exporters/otlp/otlptrace
 go.opentelemetry.io/otel/exporters/otlp/otlptrace/internal/tracetransform
-# go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.30.0
-## explicit; go 1.22
+# go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.29.0
+## explicit; go 1.21
 go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc
 go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc/internal
 go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc/internal/envconfig
 go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc/internal/otlpconfig
 go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc/internal/retry
-# go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.30.0
-## explicit; go 1.22
+# go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.29.0
+## explicit; go 1.21
 go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp
 go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp/internal
 go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp/internal/envconfig
 go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp/internal/otlpconfig
 go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp/internal/retry
-# go.opentelemetry.io/otel/exporters/prometheus v0.52.0
-## explicit; go 1.22
+# go.opentelemetry.io/otel/exporters/prometheus v0.51.0
+## explicit; go 1.21
 go.opentelemetry.io/otel/exporters/prometheus
-# go.opentelemetry.io/otel/metric v1.30.0
-## explicit; go 1.22
+# go.opentelemetry.io/otel/metric v1.29.0
+## explicit; go 1.21
 go.opentelemetry.io/otel/metric
 go.opentelemetry.io/otel/metric/embedded
 go.opentelemetry.io/otel/metric/noop
-# go.opentelemetry.io/otel/sdk v1.30.0
-## explicit; go 1.22
+# go.opentelemetry.io/otel/sdk v1.29.0
+## explicit; go 1.21
 go.opentelemetry.io/otel/sdk
 go.opentelemetry.io/otel/sdk/instrumentation
 go.opentelemetry.io/otel/sdk/internal/env
 go.opentelemetry.io/otel/sdk/internal/x
 go.opentelemetry.io/otel/sdk/resource
 go.opentelemetry.io/otel/sdk/trace
-# go.opentelemetry.io/otel/sdk/metric v1.30.0
-## explicit; go 1.22
+# go.opentelemetry.io/otel/sdk/metric v1.29.0
+## explicit; go 1.21
 go.opentelemetry.io/otel/sdk/metric
 go.opentelemetry.io/otel/sdk/metric/internal
 go.opentelemetry.io/otel/sdk/metric/internal/aggregate
 go.opentelemetry.io/otel/sdk/metric/internal/exemplar
 go.opentelemetry.io/otel/sdk/metric/internal/x
 go.opentelemetry.io/otel/sdk/metric/metricdata
-# go.opentelemetry.io/otel/trace v1.30.0
-## explicit; go 1.22
+# go.opentelemetry.io/otel/trace v1.29.0
+## explicit; go 1.21
 go.opentelemetry.io/otel/trace
 go.opentelemetry.io/otel/trace/embedded
 go.opentelemetry.io/otel/trace/noop
@@ -1055,8 +1046,8 @@ go.opentelemetry.io/proto/otlp/collector/trace/v1
 go.opentelemetry.io/proto/otlp/common/v1
 go.opentelemetry.io/proto/otlp/resource/v1
 go.opentelemetry.io/proto/otlp/trace/v1
-# go.uber.org/automaxprocs v1.5.3
-## explicit; go 1.18
+# go.uber.org/automaxprocs v1.6.0
+## explicit; go 1.20
 go.uber.org/automaxprocs/internal/cgroups
 go.uber.org/automaxprocs/internal/runtime
 go.uber.org/automaxprocs/maxprocs
@@ -1306,7 +1297,7 @@ gopkg.in/yaml.v3
 # modernc.org/gc/v3 v3.0.0-20240107210532-573471604cb6
 ## explicit; go 1.20
 modernc.org/gc/v3
-# modernc.org/libc v1.49.3
+# modernc.org/libc v1.55.3
 ## explicit; go 1.20
 modernc.org/libc
 modernc.org/libc/errno
@@ -1340,7 +1331,7 @@ modernc.org/mathutil
 # modernc.org/memory v1.8.0
 ## explicit; go 1.18
 modernc.org/memory
-# modernc.org/sqlite v0.0.0-00010101000000-000000000000 => gitlab.com/NyaaaWhatsUpDoc/sqlite v1.29.9-concurrency-workaround
+# modernc.org/sqlite v0.0.0-00010101000000-000000000000 => gitlab.com/NyaaaWhatsUpDoc/sqlite v1.33.1-concurrency-workaround
 ## explicit; go 1.20
 modernc.org/sqlite
 modernc.org/sqlite/lib
@@ -1353,4 +1344,4 @@ modernc.org/token
 # mvdan.cc/xurls/v2 v2.5.0
 ## explicit; go 1.19
 mvdan.cc/xurls/v2
-# modernc.org/sqlite => gitlab.com/NyaaaWhatsUpDoc/sqlite v1.29.9-concurrency-workaround
+# modernc.org/sqlite => gitlab.com/NyaaaWhatsUpDoc/sqlite v1.33.1-concurrency-workaround

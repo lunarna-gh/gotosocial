@@ -104,18 +104,20 @@ func (f *Filter) isStatusVisible(
 		return false, nil
 	}
 
-	if util.PtrOrValue(status.PendingApproval, false) {
+	if util.PtrOrZero(status.PendingApproval) {
 		// Use a different visibility heuristic
 		// for pending approval statuses.
-		return f.isPendingStatusVisible(ctx,
+		return isPendingStatusVisible(
 			requester, status,
-		)
+		), nil
 	}
 
 	if requester == nil {
 		// Use a different visibility
 		// heuristic for unauthed requests.
-		return f.isStatusVisibleUnauthed(ctx, status)
+		return f.isStatusVisibleUnauthed(
+			ctx, status,
+		)
 	}
 
 	/*
@@ -210,39 +212,37 @@ func (f *Filter) isStatusVisible(
 	}
 }
 
-func (f *Filter) isPendingStatusVisible(
-	_ context.Context,
-	requester *gtsmodel.Account,
-	status *gtsmodel.Status,
-) (bool, error) {
+// isPendingStatusVisible returns whether a status pending approval is visible to requester.
+func isPendingStatusVisible(requester *gtsmodel.Account, status *gtsmodel.Status) bool {
 	if requester == nil {
 		// Any old tom, dick, and harry can't
 		// see pending-approval statuses,
 		// no matter what their visibility.
-		return false, nil
+		return false
 	}
 
 	if status.AccountID == requester.ID {
 		// This is requester's status,
 		// so they can always see it.
-		return true, nil
+		return true
 	}
 
 	if status.InReplyToAccountID == requester.ID {
 		// This status replies to requester,
 		// so they can always see it (else
 		// they can't approve it).
-		return true, nil
+		return true
 	}
 
 	if status.BoostOfAccountID == requester.ID {
 		// This status boosts requester,
 		// so they can always see it.
-		return true, nil
+		return true
 	}
 
-	// Nobody else can see this.
-	return false, nil
+	// Nobody else
+	// can see this.
+	return false
 }
 
 func (f *Filter) isStatusVisibleUnauthed(
@@ -277,8 +277,7 @@ func (f *Filter) isStatusVisibleUnauthed(
 		}
 	}
 
-	webVisibility := status.Account.Settings.WebVisibility
-	switch webVisibility {
+	switch webvis := status.Account.Settings.WebVisibility; webvis {
 
 	// show public and unlisted
 	// statuses via the web
@@ -295,7 +294,7 @@ func (f *Filter) isStatusVisibleUnauthed(
 	default:
 		return false, gtserror.Newf(
 			"unrecognized web visibility for account %s: %s",
-			status.Account.ID, webVisibility,
+			status.Account.ID, webvis,
 		)
 	}
 }
