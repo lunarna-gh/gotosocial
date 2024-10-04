@@ -35,6 +35,7 @@
 .profile .profile-header {
 	background: $profile-bg;
 	border-radius: $br;
+	border: $boxshadow-border;
 	overflow: hidden;
 	margin-bottom: 1rem;
 
@@ -274,14 +275,14 @@
 	flex: 65 25rem; 
 	display: flex;
 	flex-direction: column;
-	gap: 0.4rem;
+	gap: .4rem;
 	min-width: 0%;
 }
 
 .profile .statuses {
 	display: flex;
 	flex-direction: column;
-	gap: 0.4rem;
+	gap: 2px;
 
 	.rss-icon {
 		display: block;
@@ -296,7 +297,7 @@
 				Can't size a single-color background, so we use
 				a linear-gradient that's effectively white.
 			*/
-			background: linear-gradient(to right, $white1 100%, transparent 0) no-repeat center center;
+			background: linear-gradient(to right, $gray1 100%, transparent 0) no-repeat center center;
 			background-size: 1.2rem 1.4rem;
 		}
 	}
@@ -318,14 +319,19 @@
 
 	.col-header {
 		margin-bottom: -0.25rem;
+		border-top: $boxshadow-border;
+		border-left: $boxshadow-border;
+		border-right: $boxshadow-border;
 	}
-
+	
 	dt {
 		font-weight: bold;
 	}
 
 	.fields {
 		background: $profile-bg;
+		border-left: $boxshadow-border;
+		border-right: $boxshadow-border;
 		display: flex;
 		flex-direction: column;
 		padding: 0 0.5rem;
@@ -351,14 +357,33 @@
 		background: $profile-bg;
 		padding: 1rem 0.75rem;
 		padding-bottom: 1.25rem;
+		border-left: $boxshadow-border;
+		border-right: $boxshadow-border;
 	}
 
 	.accountstats {
 		background: $bg-accent;
+		border-left: $boxshadow-border;
+		border-right: $boxshadow-border;
+		border-bottom: $boxshadow-border;
+		border-radius: 0 0 $br $br;
 		padding: 0.75rem;
 		
 		display: grid;
 		grid-template-columns: auto 1fr;
 		gap: 0.25rem 1rem;
+	}
+}
+
+.song {
+	padding: 0 .75rem;
+	border-left: $boxshadow-border;
+	border-right: $boxshadow-border;
+	background: $bg-accent;
+	p {
+		margin: 0;
+	}
+	audio {
+		width: 100%;
 	}
 }

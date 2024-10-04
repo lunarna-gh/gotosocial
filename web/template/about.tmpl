@@ -35,7 +35,7 @@
 
 {{- define "languages" -}}
 {{- if .languages }}
-<p>This instance prefers the following languages:</p>
+<p>among others i speak:</p>
 <ol>
     {{- range .languages }}
     <li>{{- . -}}</li>
@@ -60,23 +60,23 @@
 {{- end -}}
 
 {{- define "customCSSLimits" -}}
-<a href="https://docs.gotosocial.org/en/latest/user_guide/settings/#custom-css" target="_blank" rel="noopener noreferrer">Custom CSS</a> is&nbsp;
+<a href="https://docs.gotosocial.org/en/latest/user_guide/settings/#custom-css" target="_blank" rel="noopener noreferrer">custom stylesheets</a> are&nbsp;
 {{- if .instance.Configuration.Accounts.AllowCustomCSS -}}
 <b>enabled</b>
 {{- else -}}
 </b>disabled</b>
 {{- end -}}
-&nbsp;on account profiles.
+&nbsp;on account profiles. since it's single user i style it globally! the css is in the repo
 {{- end -}}
 
 {{- define "statusLimits" -}}
-Statuses can contain up to
+statuses can contain up to
 <b>{{- .instance.Configuration.Statuses.MaxCharacters }} characters</b>, and
 <b>{{- .instance.Configuration.Statuses.MaxMediaAttachments }} media attachments</b>.
 {{- end -}}
 
 {{- define "pollLimits" -}}
-Polls can have up to
+polls can have up to
 <b>{{- .instance.Configuration.Polls.MaxOptions }} options</b>, with
 <b>{{- .instance.Configuration.Polls.MaxCharactersPerOption }} characters per option</b>.
 {{- end -}}
@@ -84,22 +84,22 @@ Polls can have up to
 {{- with . }}
 <main class="about">
     <nav class="about-section" aria-labelledby="toc">
-        <h3 id="toc">Table of Contents</h3>
+        <h3 id="toc">table of contents</h3>
         <div class="about-section-contents">
             <ol>
-                <li><a href="#about">About {{ .instance.Title -}}</a></li>
-                <li><a href="#contact">Contact</a></li>
-                <li><a href="#features">Features</a></li>
-                <li><a href="#languages">Languages</a></li>
-                <li><a href="#signup">Register an Account on {{ .instance.Title -}}</li>
-                <li><a href="#rules">Rules</a></li>
-                <li><a href="#terms">Terms and Conditions</a></li>
-                <li><a href="#moderated-servers">Moderated Servers</a></li>
+                <li><a href="#about">about {{ .instance.Title -}}</a></li>
+                <li><a href="#contact">contact</a></li>
+                <li><a href="#features">features</a></li>
+                <li><a href="#languages">languages</a></li>
+                <li><a href="#signup">register an Account on {{ .instance.Title -}}</li>
+                <li><a href="#rules">rules</a></li>
+                <li><a href="#terms">terms and conditions</a></li>
+                <li><a href="#moderated-servers">moderated servers</a></li>
             </ol>
         </div>
     </nav>
     <section class="about-section" role="region" aria-labelledby="about">
-        <h3 id="about">About {{ .instance.Title -}}</h3>
+        <h3 id="about">about {{ .instance.Title -}}</h3>
         <div class="about-section-contents">
             {{- with . }}
             {{- include "description" . | indent 3 }}
@@ -107,7 +107,7 @@ Polls can have up to
         </div>
     </section>
     <section class="about-section" role="region" aria-labelledby="contact">
-        <h3 id="contact">Admin Contact</h3>
+        <h3 id="contact">admin contact</h3>
         <div class="about-section-contents">
             {{- if .instance.ContactAccount }}
             <a href="{{- .instance.ContactAccount.URL -}}" class="account-card">
@@ -127,14 +127,15 @@ Polls can have up to
             {{- if .instance.Email }}
             <p>Email: <a href="mailto:{{- .instance.Email -}}">{{- .instance.Email -}}</a></p>
             {{- else }}
-            <p>This instance has not yet set a contact email address.</p>
+            <p>my email and other contact methods are on my website, linked on my profile</p>
             {{- end }}
         </div>
     </section>
     <section class="about-section" role="region" aria-labelledby="features">
-        <h3 id="features">Instance Features</h3>
+        <h3 id="features">instance features</h3>
         <div class="about-section-contents">
             <ul>
+	    	<li>i modified gotosocial to make unlisted posts linkable but invisible on profile pages. repository is at the bottom of the page</li>
                 <li>{{- template "statusLimits" . -}}</li>
                 <li>{{- template "pollLimits" . -}}</li>
                 <li>{{- template "customCSSLimits" . -}}</li>
@@ -142,7 +143,7 @@ Polls can have up to
         </div>
     </section>
     <section class="about-section" role="region" aria-labelledby="languages">
-        <h3 id="languages">Languages</h3>
+        <h3 id="languages">languages</h3>
         <div class="about-section-contents">
             {{- with . }}
             {{- include "languages" . | indent 3 }}
@@ -151,7 +152,7 @@ Polls can have up to
     </section>
     {{- include "index_register.tmpl" . | indent 1 }}
     <section class="about-section" role="region" aria-labelledby="rules">
-        <h3 id="rules">Instance Rules</h3>
+        <h3 id="rules">instance rules</h3>
         <div class="about-section-contents">
             {{- with . }}
             {{- include "rules" . | indent 3 }}
@@ -159,7 +160,7 @@ Polls can have up to
         </div>
     </section>
     <section class="about-section" role="region" aria-labelledby="terms">
-        <h3 id="terms">Terms and Conditions</h3>
+        <h3 id="terms">terms and conditions</h3>
         <div class="about-section-contents">
             {{- with . }}
             {{- include "termsAndConditions" . | indent 3 }}
@@ -167,7 +168,7 @@ Polls can have up to
         </div>
     </section>
     <section class="about-section" role="region" aria-labelledby="moderated-servers">
-        <h3 id="moderated-servers">Moderated servers</h3>
+        <h3 id="moderated-servers">moderated servers</h3>
         <div class="about-section-contents">
             <p>
                 ActivityPub instances federate with other instances by exchanging data with them over the network.

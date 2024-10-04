@@ -28,9 +28,8 @@ main {
 
 .status {
 	background: $status-bg;
-	box-shadow: $boxshadow;
-	border: $boxshadow-border;
 	border-radius: $br;
+	border: $boxshadow-border;
 	position: relative;
 	padding-top: 0.75rem;
 

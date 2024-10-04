@@ -185,7 +185,7 @@
     <div class="column-split">
         <section class="about-user" role="region" aria-labelledby="about-header">
             <div class="col-header">
-                <h3 id="about-header">About<span class="sr-only">&nbsp;{{- .account.Username -}}</span></h3>
+                <h3 id="about-header">about<span class="sr-only">&nbsp;{{- .account.Username -}}</span></h3>
             </div>
             {{- if .account.Fields }}
             {{- include "profile_fields.tmpl" . | indent 3 }}
@@ -198,15 +198,20 @@
                 <p>This GoToSocial user hasn't written a bio yet!</p>
                 {{- end }}
             </div>
+	    <h4 class="sr-only">Song</h4>
+	    <div class="song">
+                <p>jane remover - magic i want u</p>
+		<audio controls src="/music.opus" preload="none">
+	    </div>
             <h4 class="sr-only">Stats</h4>
             <dl class="accountstats">
-                <dt>Joined</dt>
+                <dt>joined</dt>
                 <dd><time datetime="{{- .account.CreatedAt -}}">{{- .account.CreatedAt | timestampVague -}}</time></dd>
-                <dt>Posts</dt>
+                <dt>posts</dt>
                 <dd>{{- .account.StatusesCount -}}</dd>
-                <dt>Followed by</dt>
+                <dt>followed by</dt>
                 <dd>{{- if .account.HideCollections -}}<i>hidden</i>{{- else -}}{{- .account.FollowersCount -}}{{- end -}}</dd>
-                <dt>Following</dt>
+                <dt>following</dt>
                 <dd>{{- if .account.HideCollections -}}<i>hidden</i>{{- else -}}{{- .account.FollowingCount -}}{{- end -}}</dd>
             </dl>
         </section>
@@ -214,7 +219,7 @@
             {{- if .pinned_statuses }}
             <section class="pinned statuses" aria-labelledby="pinned">
                 <div class="col-header">
-                    <h3 id="pinned">Pinned posts</h3>
+                    <h3 id="pinned">pinned meows</h3>
                     <a href="#recent">jump to recent</a>
                 </div>
                 <div class="thread">
@@ -231,7 +236,7 @@
             {{- end }}
             <section class="recent statuses" aria-labelledby="recent">
                 <div class="col-header">
-                    <h3 id="recent" tabindex="-1">Recent posts</h3>
+                    <h3 id="recent" tabindex="-1">recent meows</h3>
                     {{- if .rssFeed }}
                     <a href="{{- .rssFeed -}}" class="rss-icon" aria-label="RSS feed">
                         <i class="fa fa-rss-square" aria-hidden="true"></i>
@@ -254,10 +259,10 @@
                 </div>
                 <nav class="backnextlinks">
                     {{- if .show_back_to_top }}
-                    <a href="/@{{- .account.Username -}}">Back to top</a>
+                    <a href="/@{{- .account.Username -}}">back to top</a>
                     {{- end }}
                     {{- if .statuses_next }}
-                    <a href="{{- .statuses_next -}}" class="next">Show older</a>
+                    <a href="{{- .statuses_next -}}" class="next">show older</a>
                     {{- end }}
                 </nav>
             </section>

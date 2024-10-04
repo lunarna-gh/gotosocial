@@ -43,17 +43,17 @@
 {{- define "threadSummary" -}}
     {{- if .context.ThreadHidden -}}
         {{- if eq .context.ThreadShown 1 -}}
-            Single visible post
+            single visible meow
         {{- else if gt .context.ThreadShown 1 -}}
-            Thread of {{ .context.ThreadShown }} visible posts
+            thread of {{ .context.ThreadShown }} visible meows
         {{- end -}}
             ; {{ .context.ThreadHidden }} more {{ if eq .context.ThreadHidden 1 }}post{{ else }}posts{{ end }} hidden or not public
     {{- else -}}
         {{- /* No hidden posts */ -}}
         {{- if eq .context.ThreadLength 1 -}}
-            Single post
+            single meow
         {{- else if gt .context.ThreadLength 1 -}}
-            Thread of {{ .context.ThreadLength }} posts
+            thread of {{ .context.ThreadLength }} meows
         {{- end -}}
     {{- end -}}
 {{- end -}}

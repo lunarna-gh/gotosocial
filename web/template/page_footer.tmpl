@@ -25,18 +25,18 @@
                 href="/about"
                 class="nounderline"
             >
-                About {{ .instance.Title }}
+                about {{ .instance.Title }}
             </a>
         </li>
         <li id="version">
             <a
-                href="https://github.com/superseriousbusiness/gotosocial"
+                href="https://github.com/lunarna-gh/gotosocial"
                 class="nounderline"
                 rel="nofollow noreferrer noopener"
                 target="_blank"
             >
                 <span aria-hidden="true">🦥</span>
-                Source - GoToSocial {{ .instance.Version }}
+                source - gotosocial {{ .instance.Version }}
                 <span aria-hidden="true">🦥</span>
             </a>
         </li>
@@ -46,7 +46,7 @@
                 href="/@{{- .instance.ContactAccount.Username -}}"
                 class="nounderline"
             >
-                Contact account - {{ .instance.ContactAccount.Username }}
+                contact account - {{ .instance.ContactAccount.Username }}
             </a>
         </li>
         {{- end }}

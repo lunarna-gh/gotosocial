@@ -28,7 +28,7 @@ Instance Logo
 {{- define "strapUsers" -}}
 {{- with deref .instance.Stats.user_count -}}
     {{- if eq . 1 -}}
-        <span class="count">{{- . -}}</span> user
+        <span class="count">{{- . -}}</span> luna
     {{- else -}}
         <span class="count">{{- . -}}</span> users
     {{- end -}}
