@@ -259,7 +259,7 @@ func (c *Converter) accountToAPIAccountPublic(ctx context.Context, a *gtsmodel.A
 			if a.Stats.LastStatusAt.IsZero() {
 				return nil
 			}
-			return util.Ptr(util.FormatISO8601(a.Stats.LastStatusAt))
+			return util.Ptr(util.FormatISO8601Date(a.Stats.LastStatusAt))
 		}()
 	)
 
@@ -270,21 +270,25 @@ func (c *Converter) accountToAPIAccountPublic(ctx context.Context, a *gtsmodel.A
 	//   - Emojis
 
 	var (
+		aviID           string
 		aviURL          string
 		aviURLStatic    string
 		aviDesc         string
+		headerID        string
 		headerURL       string
 		headerURLStatic string
 		headerDesc      string
 	)
 
 	if a.AvatarMediaAttachment != nil {
+		aviID = a.AvatarMediaAttachmentID
 		aviURL = a.AvatarMediaAttachment.URL
 		aviURLStatic = a.AvatarMediaAttachment.Thumbnail.URL
 		aviDesc = a.AvatarMediaAttachment.Description
 	}
 
 	if a.HeaderMediaAttachment != nil {
+		headerID = a.HeaderMediaAttachmentID
 		headerURL = a.HeaderMediaAttachment.URL
 		headerURLStatic = a.HeaderMediaAttachment.Thumbnail.URL
 		headerDesc = a.HeaderMediaAttachment.Description
@@ -367,9 +371,11 @@ func (c *Converter) accountToAPIAccountPublic(ctx context.Context, a *gtsmodel.A
 		Avatar:            aviURL,
 		AvatarStatic:      aviURLStatic,
 		AvatarDescription: aviDesc,
+		AvatarMediaID:     aviID,
 		Header:            headerURL,
 		HeaderStatic:      headerURLStatic,
 		HeaderDescription: headerDesc,
+		HeaderMediaID:     headerID,
 		FollowersCount:    followersCount,
 		FollowingCount:    followingCount,
 		StatusesCount:     statusesCount,
@@ -647,7 +653,7 @@ func (c *Converter) AttachmentToAPIAttachment(ctx context.Context, media *gtsmod
 			Size:      toAPISize(media.FileMeta.Original.Width, media.FileMeta.Original.Height),
 			FrameRate: toAPIFrameRate(media.FileMeta.Original.Framerate),
 			Duration:  util.PtrOrZero(media.FileMeta.Original.Duration),
-			Bitrate:   int(util.PtrOrZero(media.FileMeta.Original.Bitrate)),
+			Bitrate:   util.PtrOrZero(media.FileMeta.Original.Bitrate),
 		}
 
 		// Copy over local file URL.
@@ -1517,9 +1523,15 @@ func (c *Converter) InstanceRuleToAdminAPIRule(r *gtsmodel.Rule) *apimodel.Admin
 
 // InstanceToAPIV1Instance converts a gts instance into its api equivalent for serving at /api/v1/instance
 func (c *Converter) InstanceToAPIV1Instance(ctx context.Context, i *gtsmodel.Instance) (*apimodel.InstanceV1, error) {
+	domain := i.Domain
+	accDomain := config.GetAccountDomain()
+	if accDomain != "" {
+		domain = accDomain
+	}
+
 	instance := &apimodel.InstanceV1{
-		URI:                  i.URI,
-		AccountDomain:        config.GetAccountDomain(),
+		URI:                  domain,
+		AccountDomain:        accDomain,
 		Title:                i.Title,
 		Description:          i.Description,
 		DescriptionText:      i.DescriptionText,
@@ -1529,9 +1541,9 @@ func (c *Converter) InstanceToAPIV1Instance(ctx context.Context, i *gtsmodel.Ins
 		Version:              config.GetSoftwareVersion(),
 		Languages:            config.GetInstanceLanguages().TagStrs(),
 		Registrations:        config.GetAccountsRegistrationOpen(),
-		ApprovalRequired:     true,  // approval always required
-		InvitesEnabled:       false, // todo: not supported yet
-		MaxTootChars:         uint(config.GetStatusesMaxChars()),
+		ApprovalRequired:     true,                               // approval always required
+		InvitesEnabled:       false,                              // todo: not supported yet
+		MaxTootChars:         uint(config.GetStatusesMaxChars()), // #nosec G115 -- Already validated.
 		Rules:                c.InstanceRulesToAPIRules(i.Rules),
 		Terms:                i.Terms,
 		TermsRaw:             i.TermsText,
@@ -1551,9 +1563,9 @@ func (c *Converter) InstanceToAPIV1Instance(ctx context.Context, i *gtsmodel.Ins
 	instance.Configuration.Statuses.CharactersReservedPerURL = instanceStatusesCharactersReservedPerURL
 	instance.Configuration.Statuses.SupportedMimeTypes = instanceStatusesSupportedMimeTypes
 	instance.Configuration.MediaAttachments.SupportedMimeTypes = media.SupportedMIMETypes
-	instance.Configuration.MediaAttachments.ImageSizeLimit = int(config.GetMediaRemoteMaxSize())
+	instance.Configuration.MediaAttachments.ImageSizeLimit = int(config.GetMediaRemoteMaxSize()) // #nosec G115 -- Already validated.
 	instance.Configuration.MediaAttachments.ImageMatrixLimit = instanceMediaAttachmentsImageMatrixLimit
-	instance.Configuration.MediaAttachments.VideoSizeLimit = int(config.GetMediaRemoteMaxSize())
+	instance.Configuration.MediaAttachments.VideoSizeLimit = int(config.GetMediaRemoteMaxSize()) // #nosec G115 -- Already validated.
 	instance.Configuration.MediaAttachments.VideoFrameRateLimit = instanceMediaAttachmentsVideoFrameRateLimit
 	instance.Configuration.MediaAttachments.VideoMatrixLimit = instanceMediaAttachmentsVideoMatrixLimit
 	instance.Configuration.Polls.MaxOptions = config.GetStatusesPollMaxOptions()
@@ -1563,7 +1575,7 @@ func (c *Converter) InstanceToAPIV1Instance(ctx context.Context, i *gtsmodel.Ins
 	instance.Configuration.Accounts.AllowCustomCSS = config.GetAccountsAllowCustomCSS()
 	instance.Configuration.Accounts.MaxFeaturedTags = instanceAccountsMaxFeaturedTags
 	instance.Configuration.Accounts.MaxProfileFields = instanceAccountsMaxProfileFields
-	instance.Configuration.Emojis.EmojiSizeLimit = int(config.GetMediaEmojiLocalMaxSize())
+	instance.Configuration.Emojis.EmojiSizeLimit = int(config.GetMediaEmojiLocalMaxSize()) // #nosec G115 -- Already validated.
 	instance.Configuration.OIDCEnabled = config.GetOIDCEnabled()
 
 	// URLs
@@ -1636,9 +1648,15 @@ func (c *Converter) InstanceToAPIV1Instance(ctx context.Context, i *gtsmodel.Ins
 
 // InstanceToAPIV2Instance converts a gts instance into its api equivalent for serving at /api/v2/instance
 func (c *Converter) InstanceToAPIV2Instance(ctx context.Context, i *gtsmodel.Instance) (*apimodel.InstanceV2, error) {
+	domain := i.Domain
+	accDomain := config.GetAccountDomain()
+	if accDomain != "" {
+		domain = accDomain
+	}
+
 	instance := &apimodel.InstanceV2{
-		Domain:          i.Domain,
-		AccountDomain:   config.GetAccountDomain(),
+		Domain:          domain,
+		AccountDomain:   accDomain,
 		Title:           i.Title,
 		Version:         config.GetSoftwareVersion(),
 		SourceURL:       instanceSourceURL,
@@ -1695,9 +1713,9 @@ func (c *Converter) InstanceToAPIV2Instance(ctx context.Context, i *gtsmodel.Ins
 	instance.Configuration.Statuses.CharactersReservedPerURL = instanceStatusesCharactersReservedPerURL
 	instance.Configuration.Statuses.SupportedMimeTypes = instanceStatusesSupportedMimeTypes
 	instance.Configuration.MediaAttachments.SupportedMimeTypes = media.SupportedMIMETypes
-	instance.Configuration.MediaAttachments.ImageSizeLimit = int(config.GetMediaRemoteMaxSize())
+	instance.Configuration.MediaAttachments.ImageSizeLimit = int(config.GetMediaRemoteMaxSize()) // #nosec G115 -- Already validated.
 	instance.Configuration.MediaAttachments.ImageMatrixLimit = instanceMediaAttachmentsImageMatrixLimit
-	instance.Configuration.MediaAttachments.VideoSizeLimit = int(config.GetMediaRemoteMaxSize())
+	instance.Configuration.MediaAttachments.VideoSizeLimit = int(config.GetMediaRemoteMaxSize()) // #nosec G115 -- Already validated.
 	instance.Configuration.MediaAttachments.VideoFrameRateLimit = instanceMediaAttachmentsVideoFrameRateLimit
 	instance.Configuration.MediaAttachments.VideoMatrixLimit = instanceMediaAttachmentsVideoMatrixLimit
 	instance.Configuration.Polls.MaxOptions = config.GetStatusesPollMaxOptions()
@@ -1707,7 +1725,7 @@ func (c *Converter) InstanceToAPIV2Instance(ctx context.Context, i *gtsmodel.Ins
 	instance.Configuration.Accounts.AllowCustomCSS = config.GetAccountsAllowCustomCSS()
 	instance.Configuration.Accounts.MaxFeaturedTags = instanceAccountsMaxFeaturedTags
 	instance.Configuration.Accounts.MaxProfileFields = instanceAccountsMaxProfileFields
-	instance.Configuration.Emojis.EmojiSizeLimit = int(config.GetMediaEmojiLocalMaxSize())
+	instance.Configuration.Emojis.EmojiSizeLimit = int(config.GetMediaEmojiLocalMaxSize()) // #nosec G115 -- Already validated.
 	instance.Configuration.OIDCEnabled = config.GetOIDCEnabled()
 
 	// registrations
@@ -1832,46 +1850,23 @@ func (c *Converter) NotificationToAPINotification(
 func (c *Converter) ConversationToAPIConversation(
 	ctx context.Context,
 	conversation *gtsmodel.Conversation,
-	requestingAccount *gtsmodel.Account,
+	requester *gtsmodel.Account,
 	filters []*gtsmodel.Filter,
 	mutes *usermute.CompiledUserMuteList,
 ) (*apimodel.Conversation, error) {
 	apiConversation := &apimodel.Conversation{
-		ID:       conversation.ID,
-		Unread:   !*conversation.Read,
-		Accounts: []apimodel.Account{},
+		ID:     conversation.ID,
+		Unread: !*conversation.Read,
 	}
-	for _, account := range conversation.OtherAccounts {
-		var apiAccount *apimodel.Account
-		blocked, err := c.state.DB.IsEitherBlocked(ctx, requestingAccount.ID, account.ID)
-		if err != nil {
-			return nil, gtserror.Newf(
-				"DB error checking blocks between accounts %s and %s: %w",
-				requestingAccount.ID,
-				account.ID,
-				err,
-			)
-		}
-		if blocked || account.IsSuspended() {
-			apiAccount, err = c.AccountToAPIAccountBlocked(ctx, account)
-		} else {
-			apiAccount, err = c.AccountToAPIAccountPublic(ctx, account)
-		}
-		if err != nil {
-			return nil, gtserror.Newf(
-				"error converting account %s to API representation: %w",
-				account.ID,
-				err,
-			)
-		}
-		apiConversation.Accounts = append(apiConversation.Accounts, *apiAccount)
-	}
+
+	// Populate most recent status in convo;
+	// can be nil if this status is filtered.
 	if conversation.LastStatus != nil {
 		var err error
 		apiConversation.LastStatus, err = c.StatusToAPIStatus(
 			ctx,
 			conversation.LastStatus,
-			requestingAccount,
+			requester,
 			statusfilter.FilterContextNotifications,
 			filters,
 			mutes,
@@ -1883,6 +1878,60 @@ func (c *Converter) ConversationToAPIConversation(
 				err,
 			)
 		}
+	}
+
+	// If no other accounts are involved in this convo,
+	// just include the requesting account and return.
+	//
+	// See: https://github.com/superseriousbusiness/gotosocial/issues/3385#issuecomment-2394033477
+	otherAcctsLen := len(conversation.OtherAccounts)
+	if otherAcctsLen == 0 {
+		apiAcct, err := c.AccountToAPIAccountPublic(ctx, requester)
+		if err != nil {
+			err := gtserror.Newf(
+				"error converting account %s to API representation: %w",
+				requester.ID, err,
+			)
+			return nil, err
+		}
+
+		apiConversation.Accounts = []apimodel.Account{*apiAcct}
+		return apiConversation, nil
+	}
+
+	// Other accounts are involved in the
+	// convo. Convert each to API model.
+	apiConversation.Accounts = make([]apimodel.Account, otherAcctsLen)
+	for i, account := range conversation.OtherAccounts {
+		blocked, err := c.state.DB.IsEitherBlocked(ctx,
+			requester.ID, account.ID,
+		)
+		if err != nil {
+			err := gtserror.Newf(
+				"db error checking blocks between accounts %s and %s: %w",
+				requester.ID, account.ID, err,
+			)
+			return nil, err
+		}
+
+		// API account model varies depending
+		// on status of conversation participant.
+		var apiAcct *apimodel.Account
+		if blocked || account.IsSuspended() {
+			apiAcct, err = c.AccountToAPIAccountBlocked(ctx, account)
+		} else {
+			apiAcct, err = c.AccountToAPIAccountPublic(ctx, account)
+		}
+
+		if err != nil {
+			err := gtserror.Newf(
+				"error converting account %s to API representation: %w",
+				account.ID, err,
+			)
+			return nil, err
+		}
+
+		apiConversation.Accounts[i] = *apiAcct
 	}
 
 	return apiConversation, nil
@@ -2680,7 +2729,7 @@ func (c *Converter) InteractionReqToAPIInteractionReq(
 	}
 
 	var reply *apimodel.Status
-	if req.InteractionType == gtsmodel.InteractionReply {
+	if req.InteractionType == gtsmodel.InteractionReply && req.Reply != nil {
 		reply, err = c.statusToAPIStatus(
 			ctx,
 			req.Reply,

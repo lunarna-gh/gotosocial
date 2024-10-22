@@ -2003,6 +2003,40 @@ func (c *Converter) InteractionReqToASAccept(
 	// of interaction URI.
 	ap.AppendTo(accept, toIRI)
 
+	// Whether or not we cc this Accept to
+	// followers and public depends on the
+	// type of interaction it Accepts.
+
+	var cc bool
+	switch req.InteractionType {
+
+	case gtsmodel.InteractionLike:
+		// Accept of Like doesn't get cc'd
+		// because it's not that important.
+
+	case gtsmodel.InteractionReply:
+		// Accept of reply gets cc'd.
+		cc = true
+
+	case gtsmodel.InteractionAnnounce:
+		// Accept of announce gets cc'd.
+		cc = true
+	}
+
+	if cc {
+		publicIRI, err := url.Parse(pub.PublicActivityPubIRI)
+		if err != nil {
+			return nil, gtserror.Newf("invalid public uri: %w", err)
+		}
+
+		followersIRI, err := url.Parse(req.TargetAccount.FollowersURI)
+		if err != nil {
+			return nil, gtserror.Newf("invalid followers uri: %w", err)
+		}
+
+		ap.AppendCc(accept, publicIRI, followersIRI)
+	}
+
 	return accept, nil
 }
 
@@ -2048,6 +2082,40 @@ func (c *Converter) InteractionReqToASReject(
 	// Address to the owner
 	// of interaction URI.
 	ap.AppendTo(reject, toIRI)
+
+	// Whether or not we cc this Reject to
+	// followers and public depends on the
+	// type of interaction it Rejects.
+
+	var cc bool
+	switch req.InteractionType {
+
+	case gtsmodel.InteractionLike:
+		// Reject of Like doesn't get cc'd
+		// because it's not that important.
+
+	case gtsmodel.InteractionReply:
+		// Reject of reply gets cc'd.
+		cc = true
+
+	case gtsmodel.InteractionAnnounce:
+		// Reject of announce gets cc'd.
+		cc = true
+	}
+
+	if cc {
+		publicIRI, err := url.Parse(pub.PublicActivityPubIRI)
+		if err != nil {
+			return nil, gtserror.Newf("invalid public uri: %w", err)
+		}
+
+		followersIRI, err := url.Parse(req.TargetAccount.FollowersURI)
+		if err != nil {
+			return nil, gtserror.Newf("invalid followers uri: %w", err)
+		}
+
+		ap.AppendCc(reject, publicIRI, followersIRI)
+	}
 
 	return reject, nil
 }
