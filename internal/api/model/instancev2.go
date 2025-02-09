@@ -53,6 +53,8 @@ type InstanceV2 struct {
 	Description string `json:"description"`
 	// Raw (unparsed) version of description.
 	DescriptionText string `json:"description_text,omitempty"`
+	// Instance Custom Css
+	CustomCSS string `json:"custom_css,omitempty"`
 	// Basic anonymous usage data for this instance.
 	Usage InstanceV2Usage `json:"usage"`
 	// An image used to represent this instance.
@@ -72,6 +74,13 @@ type InstanceV2 struct {
 	Terms string `json:"terms,omitempty"`
 	// Raw (unparsed) version of terms.
 	TermsText string `json:"terms_text,omitempty"`
+
+	// Random stats generated for the instance.
+	// Only used if `instance-stats-randomize` is true.
+	// Not serialized to the frontend.
+	//
+	// swagger:ignore
+	RandomStats `json:"-"`
 }
 
 // Usage data for this instance.
@@ -172,6 +181,8 @@ type InstanceV2Configuration struct {
 	Emojis InstanceConfigurationEmojis `json:"emojis"`
 	// True if instance is running with OIDC as auth/identity backend, else omitted.
 	OIDCEnabled bool `json:"oidc_enabled,omitempty"`
+	// Instance VAPID configuration.
+	VAPID InstanceV2ConfigurationVAPID `json:"vapid"`
 }
 
 // Information about registering for this instance.
@@ -201,4 +212,12 @@ type InstanceV2Contact struct {
 	// An account that can be contacted regarding inquiries or issues.
 	// Key/value not present if no contact account set.
 	Account *Account `json:"account,omitempty"`
+}
+
+// InstanceV2ConfigurationVAPID holds the instance's VAPID configuration.
+//
+// swagger:model instanceV2ConfigurationVAPID
+type InstanceV2ConfigurationVAPID struct {
+	// The instance's VAPID public key, Base64-encoded.
+	PublicKey string `json:"public_key"`
 }

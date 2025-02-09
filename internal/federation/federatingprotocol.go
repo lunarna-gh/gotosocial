@@ -35,7 +35,7 @@ import (
 	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
 	"github.com/superseriousbusiness/gotosocial/internal/log"
 	"github.com/superseriousbusiness/gotosocial/internal/uris"
-	"github.com/superseriousbusiness/gotosocial/internal/util"
+	"github.com/superseriousbusiness/gotosocial/internal/util/xslices"
 )
 
 type errOtherIRIBlocked struct {
@@ -116,33 +116,36 @@ func (f *Federator) PostInboxRequestBodyHook(ctx context.Context, r *http.Reques
 		otherIRIs = append(otherIRIs, ap.ExtractCcURIs(addressable)...)
 	}
 
-	// Now perform the same checks, but for the Object(s) of the Activity.
+	// Now perform the same checks, but
+	// for any Object(s) of the Activity.
 	objectProp := activity.GetActivityStreamsObject()
-	for iter := objectProp.Begin(); iter != objectProp.End(); iter = iter.Next() {
-		if iter.IsIRI() {
-			otherIRIs = append(otherIRIs, iter.GetIRI())
-			continue
-		}
-
-		t := iter.GetType()
-		if t == nil {
-			continue
-		}
-
-		objectID, err := pub.GetId(t)
-		if err == nil {
-			otherIRIs = append(otherIRIs, objectID)
-		}
-
-		if replyToable, ok := t.(ap.ReplyToable); ok {
-			if inReplyToURI := ap.ExtractInReplyToURI(replyToable); inReplyToURI != nil {
-				otherIRIs = append(otherIRIs, inReplyToURI)
+	if objectProp != nil {
+		for iter := objectProp.Begin(); iter != objectProp.End(); iter = iter.Next() {
+			if iter.IsIRI() {
+				otherIRIs = append(otherIRIs, iter.GetIRI())
+				continue
 			}
-		}
 
-		if addressable, ok := t.(ap.Addressable); ok {
-			otherIRIs = append(otherIRIs, ap.ExtractToURIs(addressable)...)
-			otherIRIs = append(otherIRIs, ap.ExtractCcURIs(addressable)...)
+			t := iter.GetType()
+			if t == nil {
+				continue
+			}
+
+			objectID, err := pub.GetId(t)
+			if err == nil {
+				otherIRIs = append(otherIRIs, objectID)
+			}
+
+			if replyToable, ok := t.(ap.ReplyToable); ok {
+				if inReplyToURI := ap.ExtractInReplyToURI(replyToable); inReplyToURI != nil {
+					otherIRIs = append(otherIRIs, inReplyToURI)
+				}
+			}
+
+			if addressable, ok := t.(ap.Addressable); ok {
+				otherIRIs = append(otherIRIs, ap.ExtractToURIs(addressable)...)
+				otherIRIs = append(otherIRIs, ap.ExtractCcURIs(addressable)...)
+			}
 		}
 	}
 
@@ -162,7 +165,7 @@ func (f *Federator) PostInboxRequestBodyHook(ctx context.Context, r *http.Reques
 
 	// OtherIRIs will likely contain some
 	// duplicate entries now, so remove them.
-	otherIRIs = util.DeduplicateFunc(otherIRIs,
+	otherIRIs = xslices.DeduplicateFunc(otherIRIs,
 		(*url.URL).String, // serialized URL is 'key()'
 	)
 
@@ -456,39 +459,8 @@ func (f *Federator) FederatingCallbacks(ctx context.Context) (
 	other []any,
 	err error,
 ) {
-	wrapped = pub.FederatingWrappedCallbacks{
-		// OnFollow determines what action to take for this
-		// particular callback if a Follow Activity is handled.
-		//
-		// For our implementation, we always want to do nothing
-		// because we have internal logic for handling follows.
-		OnFollow: pub.OnFollowDoNothing,
-	}
-
-	// Override some default behaviors to trigger our own side effects.
-	other = []any{
-		func(ctx context.Context, undo vocab.ActivityStreamsUndo) error {
-			return f.FederatingDB().Undo(ctx, undo)
-		},
-		func(ctx context.Context, accept vocab.ActivityStreamsAccept) error {
-			return f.FederatingDB().Accept(ctx, accept)
-		},
-		func(ctx context.Context, reject vocab.ActivityStreamsReject) error {
-			return f.FederatingDB().Reject(ctx, reject)
-		},
-		func(ctx context.Context, announce vocab.ActivityStreamsAnnounce) error {
-			return f.FederatingDB().Announce(ctx, announce)
-		},
-	}
-
-	// Define some of our own behaviors which are not
-	// overrides of the default pub.FederatingWrappedCallbacks.
-	other = append(other, []any{
-		func(ctx context.Context, move vocab.ActivityStreamsMove) error {
-			return f.FederatingDB().Move(ctx, move)
-		},
-	}...)
-
+	wrapped = f.wrapped
+	other = f.callback
 	return
 }
 

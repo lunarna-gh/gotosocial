@@ -36,6 +36,8 @@ const (
 	moreComplexExpected        = "<p>Another test <span class=\"h-card\"><a href=\"http://fossbros-anonymous.io/@foss_satan\" class=\"u-url mention\" rel=\"nofollow noreferrer noopener\" target=\"_blank\">@<span>foss_satan</span></a></span><br><br><a href=\"http://localhost:8080/tags/hashtag\" class=\"mention hashtag\" rel=\"tag nofollow noreferrer noopener\" target=\"_blank\">#<span>Hashtag</span></a><br><br>Text<br><br>:rainbow:</p>"
 	withUTF8Link               = "here's a link with utf-8 characters in it: https://example.org/söme_url"
 	withUTF8LinkExpected       = "<p>here's a link with utf-8 characters in it: <a href=\"https://example.org/s%C3%B6me_url\" rel=\"nofollow noreferrer noopener\" target=\"_blank\">https://example.org/söme_url</a></p>"
+	withFunkyTags              = "#hashtag1 pee #hashtag2\u200Bpee #hashtag3|poo #hashtag4\uFEFFpoo"
+	withFunkyTagsExpected      = "<p><a href=\"http://localhost:8080/tags/hashtag1\" class=\"mention hashtag\" rel=\"tag nofollow noreferrer noopener\" target=\"_blank\">#<span>hashtag1</span></a> pee <a href=\"http://localhost:8080/tags/hashtag2\" class=\"mention hashtag\" rel=\"tag nofollow noreferrer noopener\" target=\"_blank\">#<span>hashtag2</span></a>\u200bpee <a href=\"http://localhost:8080/tags/hashtag3\" class=\"mention hashtag\" rel=\"tag nofollow noreferrer noopener\" target=\"_blank\">#<span>hashtag3</span></a>|poo <a href=\"http://localhost:8080/tags/hashtag4\" class=\"mention hashtag\" rel=\"tag nofollow noreferrer noopener\" target=\"_blank\">#<span>hashtag4</span></a>\ufeffpoo</p>"
 )
 
 type PlainTestSuite struct {
@@ -116,24 +118,35 @@ func (suite *PlainTestSuite) TestDeriveHashtagsOK() {
 `
 
 	tags := suite.FromPlain(statusText).Tags
-	suite.Len(tags, 13)
-	suite.Equal("testing123", tags[0].Name)
-	suite.Equal("also", tags[1].Name)
-	suite.Equal("thisshouldwork", tags[2].Name)
-	suite.Equal("dupe", tags[3].Name)
-	suite.Equal("ThisShouldAlsoWork", tags[4].Name)
-	suite.Equal("this_should_not_be_split", tags[5].Name)
-	suite.Equal("111111", tags[6].Name)
-	suite.Equal("alimentación", tags[7].Name)
-	suite.Equal("saúde", tags[8].Name)
-	suite.Equal("lävistää", tags[9].Name)
-	suite.Equal("ö", tags[10].Name)
-	suite.Equal("네", tags[11].Name)
-	suite.Equal("ThisOneIsThirteyCharactersLong", tags[12].Name)
+	if suite.Len(tags, 12) {
+		suite.Equal("testing123", tags[0].Name)
+		suite.Equal("also", tags[1].Name)
+		suite.Equal("thisshouldwork", tags[2].Name)
+		suite.Equal("dupe", tags[3].Name)
+		suite.Equal("ThisShouldAlsoWork", tags[4].Name)
+		suite.Equal("this_should_not_be_split", tags[5].Name)
+		suite.Equal("alimentación", tags[6].Name)
+		suite.Equal("saúde", tags[7].Name)
+		suite.Equal("lävistää", tags[8].Name)
+		suite.Equal("ö", tags[9].Name)
+		suite.Equal("네", tags[10].Name)
+		suite.Equal("ThisOneIsThirteyCharactersLong", tags[11].Name)
+	}
 
 	statusText = `#올빼미 hej`
 	tags = suite.FromPlain(statusText).Tags
 	suite.Equal("올빼미", tags[0].Name)
+}
+
+func (suite *PlainTestSuite) TestFunkyTags() {
+	formatted := suite.FromPlain(withFunkyTags)
+	suite.Equal(withFunkyTagsExpected, formatted.HTML)
+
+	tags := formatted.Tags
+	suite.Equal("hashtag1", tags[0].Name)
+	suite.Equal("hashtag2", tags[1].Name)
+	suite.Equal("hashtag3", tags[2].Name)
+	suite.Equal("hashtag4", tags[3].Name)
 }
 
 func (suite *PlainTestSuite) TestDeriveMultiple() {
@@ -157,8 +170,17 @@ func (suite *PlainTestSuite) TestDeriveMultiple() {
 func (suite *PlainTestSuite) TestZalgoHashtag() {
 	statusText := `yo who else loves #praying to #z̸͉̅a̸͚͋l̵͈̊g̸̫͌ỏ̷̪?`
 	f := suite.FromPlain(statusText)
-	suite.Len(f.Tags, 1)
-	suite.Equal("praying", f.Tags[0].Name)
+	if suite.Len(f.Tags, 2) {
+		suite.Equal("praying", f.Tags[0].Name)
+		// NFC doesn't do much for Zalgo text, but it's difficult to strip marks without affecting non-Latin text.
+		suite.Equal("z̸͉̅a̸͚͋l̵͈̊g̸̫͌ỏ̷̪", f.Tags[1].Name)
+	}
+}
+
+func (suite *PlainTestSuite) TestNumbersAreNotHashtags() {
+	statusText := `yo who else thinks #19_98 is #1?`
+	f := suite.FromPlain(statusText)
+	suite.Len(f.Tags, 0)
 }
 
 func TestPlainTestSuite(t *testing.T) {

@@ -99,8 +99,8 @@ func (suite *AccountsGetTestSuite) TestAccountsGetFromTop() {
       "header_description": "Flat gray background (default header).",
       "followers_count": 1,
       "following_count": 1,
-      "statuses_count": 8,
-      "last_status_at": "2021-07-28",
+      "statuses_count": 9,
+      "last_status_at": "2024-11-01",
       "emojis": [],
       "fields": [
         {
@@ -114,7 +114,8 @@ func (suite *AccountsGetTestSuite) TestAccountsGetFromTop() {
           "verified_at": null
         }
       ],
-      "hide_collections": true
+      "hide_collections": true,
+      "group": false
     },
     "created_by_application_id": "01F8MGY43H3N2C8EWPR2FPYEXG"
   },
@@ -169,7 +170,8 @@ func (suite *AccountsGetTestSuite) TestAccountsGetFromTop() {
           "name": "admin",
           "color": ""
         }
-      ]
+      ],
+      "group": false
     },
     "created_by_application_id": "01F8MGXQRHYF5QPMTMXP78QC2F"
   },
@@ -216,7 +218,8 @@ func (suite *AccountsGetTestSuite) TestAccountsGetFromTop() {
       "statuses_count": 0,
       "last_status_at": null,
       "emojis": [],
-      "fields": []
+      "fields": [],
+      "group": false
     }
   },
   {
@@ -262,11 +265,12 @@ func (suite *AccountsGetTestSuite) TestAccountsGetFromTop() {
       "header_media_id": "01PFPMWK2FF0D9WMHEJHR07C3Q",
       "followers_count": 2,
       "following_count": 2,
-      "statuses_count": 8,
-      "last_status_at": "2024-01-10",
+      "statuses_count": 9,
+      "last_status_at": "2024-11-01",
       "emojis": [],
       "fields": [],
-      "enable_rss": true
+      "enable_rss": true,
+      "group": false
     },
     "created_by_application_id": "01F8MGY43H3N2C8EWPR2FPYEXG"
   },
@@ -313,7 +317,8 @@ func (suite *AccountsGetTestSuite) TestAccountsGetFromTop() {
       "statuses_count": 0,
       "last_status_at": null,
       "emojis": [],
-      "fields": []
+      "fields": [],
+      "group": false
     },
     "created_by_application_id": "01F8MGY43H3N2C8EWPR2FPYEXG"
   },
@@ -360,7 +365,8 @@ func (suite *AccountsGetTestSuite) TestAccountsGetFromTop() {
       "statuses_count": 1,
       "last_status_at": "2023-11-02",
       "emojis": [],
-      "fields": []
+      "fields": [],
+      "group": false
     }
   },
   {
@@ -403,10 +409,11 @@ func (suite *AccountsGetTestSuite) TestAccountsGetFromTop() {
       "header_description": "Flat gray background (default header).",
       "followers_count": 0,
       "following_count": 0,
-      "statuses_count": 3,
-      "last_status_at": "2021-09-11",
+      "statuses_count": 4,
+      "last_status_at": "2024-11-01",
       "emojis": [],
-      "fields": []
+      "fields": [],
+      "group": false
     }
   },
   {
@@ -453,7 +460,8 @@ func (suite *AccountsGetTestSuite) TestAccountsGetFromTop() {
       "statuses_count": 0,
       "last_status_at": null,
       "emojis": [],
-      "fields": []
+      "fields": [],
+      "group": false
     }
   },
   {
@@ -499,7 +507,8 @@ func (suite *AccountsGetTestSuite) TestAccountsGetFromTop() {
       "statuses_count": 0,
       "last_status_at": null,
       "emojis": [],
-      "fields": []
+      "fields": [],
+      "group": false
     }
   }
 ]`, dst.String())
@@ -584,7 +593,8 @@ func (suite *AccountsGetTestSuite) TestAccountsMinID() {
       "statuses_count": 0,
       "last_status_at": null,
       "emojis": [],
-      "fields": []
+      "fields": [],
+      "group": false
     }
   }
 ]`, dst.String())

@@ -31,9 +31,11 @@ const (
 	hostMetaRel                     = "lrdd"
 	hostMetaType                    = "application/xrd+xml"
 	hostMetaTemplate                = ".well-known/webfinger?resource={uri}"
-	nodeInfoVersion                 = "2.0"
 	nodeInfoSoftwareName            = "gotosocial"
-	nodeInfoRel                     = "http://nodeinfo.diaspora.software/ns/schema/" + nodeInfoVersion
+	nodeInfo20Rel                   = "http://nodeinfo.diaspora.software/ns/schema/2.0"
+	nodeInfo21Rel                   = "http://nodeinfo.diaspora.software/ns/schema/2.1"
+	nodeInfoRepo                    = "https://github.com/superseriousbusiness/gotosocial"
+	nodeInfoHomepage                = "https://docs.gotosocial.org"
 	webfingerProfilePage            = "http://webfinger.net/rel/profile-page"
 	webFingerProfilePageContentType = "text/html"
 	webfingerSelf                   = "self"
@@ -56,29 +58,59 @@ func (p *Processor) NodeInfoRelGet(ctx context.Context) (*apimodel.WellKnownResp
 	return &apimodel.WellKnownResponse{
 		Links: []apimodel.Link{
 			{
-				Rel:  nodeInfoRel,
-				Href: fmt.Sprintf("%s://%s/nodeinfo/%s", protocol, host, nodeInfoVersion),
+				Rel:  nodeInfo20Rel,
+				Href: fmt.Sprintf("%s://%s/nodeinfo/2.0", protocol, host),
+			},
+			{
+				Rel:  nodeInfo21Rel,
+				Href: fmt.Sprintf("%s://%s/nodeinfo/2.1", protocol, host),
 			},
 		},
 	}, nil
 }
 
-// NodeInfoGet returns a node info struct in response to a node info request.
-func (p *Processor) NodeInfoGet(ctx context.Context) (*apimodel.Nodeinfo, gtserror.WithCode) {
-	host := config.GetHost()
+// NodeInfoGet returns a node info struct in response to a 2.0 or 2.1 node info request.
+func (p *Processor) NodeInfoGet(ctx context.Context, schemaVersion string) (*apimodel.Nodeinfo, gtserror.WithCode) {
+	const ()
 
-	userCount, err := p.state.DB.CountInstanceUsers(ctx, host)
-	if err != nil {
-		return nil, gtserror.NewErrorInternalError(err)
+	var (
+		userCount int
+		postCount int
+		mau       int
+		err       error
+	)
+
+	switch config.GetInstanceStatsMode() {
+
+	case config.InstanceStatsModeBaffle:
+		// Use randomized stats.
+		stats := p.converter.RandomStats()
+		userCount = int(stats.TotalUsers)
+		postCount = int(stats.Statuses)
+		mau = int(stats.MonthlyActiveUsers)
+
+	case config.InstanceStatsModeZero:
+		// Use zeroed stats
+		// (don't count anything).
+
+	default:
+		// Mode is either "serve" or "default".
+		// Count actual stats.
+		host := config.GetHost()
+
+		userCount, err = p.state.DB.CountInstanceUsers(ctx, host)
+		if err != nil {
+			return nil, gtserror.NewErrorInternalError(err)
+		}
+
+		postCount, err = p.state.DB.CountInstanceStatuses(ctx, host)
+		if err != nil {
+			return nil, gtserror.NewErrorInternalError(err)
+		}
 	}
 
-	postCount, err := p.state.DB.CountInstanceStatuses(ctx, host)
-	if err != nil {
-		return nil, gtserror.NewErrorInternalError(err)
-	}
-
-	return &apimodel.Nodeinfo{
-		Version: nodeInfoVersion,
+	nodeInfo := &apimodel.Nodeinfo{
+		Version: schemaVersion,
 		Software: apimodel.NodeInfoSoftware{
 			Name:    nodeInfoSoftwareName,
 			Version: config.GetSoftwareVersion(),
@@ -91,12 +123,20 @@ func (p *Processor) NodeInfoGet(ctx context.Context) (*apimodel.Nodeinfo, gtserr
 		OpenRegistrations: config.GetAccountsRegistrationOpen(),
 		Usage: apimodel.NodeInfoUsage{
 			Users: apimodel.NodeInfoUsers{
-				Total: userCount,
+				Total:       userCount,
+				ActiveMonth: mau,
 			},
 			LocalPosts: postCount,
 		},
 		Metadata: nodeInfoMetadata,
-	}, nil
+	}
+
+	if schemaVersion == "2.1" {
+		nodeInfo.Software.Repository = nodeInfoRepo
+		nodeInfo.Software.Homepage = nodeInfoHomepage
+	}
+
+	return nodeInfo, nil
 }
 
 // HostMetaGet returns a host-meta struct in response to a host-meta request.

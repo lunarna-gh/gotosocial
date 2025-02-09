@@ -21,6 +21,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
@@ -67,11 +68,12 @@ func (suite *InternalToFrontendTestSuite) TestAccountToFrontend() {
   "header_media_id": "01PFPMWK2FF0D9WMHEJHR07C3Q",
   "followers_count": 2,
   "following_count": 2,
-  "statuses_count": 8,
-  "last_status_at": "2024-01-10",
+  "statuses_count": 9,
+  "last_status_at": "2024-11-01",
   "emojis": [],
   "fields": [],
-  "enable_rss": true
+  "enable_rss": true,
+  "group": false
 }`, string(b))
 }
 
@@ -119,8 +121,8 @@ func (suite *InternalToFrontendTestSuite) TestAccountToFrontendAliasedAndMoved()
   "header_media_id": "01PFPMWK2FF0D9WMHEJHR07C3Q",
   "followers_count": 2,
   "following_count": 2,
-  "statuses_count": 8,
-  "last_status_at": "2024-01-10",
+  "statuses_count": 9,
+  "last_status_at": "2024-11-01",
   "emojis": [],
   "fields": [],
   "source": {
@@ -162,8 +164,8 @@ func (suite *InternalToFrontendTestSuite) TestAccountToFrontendAliasedAndMoved()
     "header_description": "Flat gray background (default header).",
     "followers_count": 1,
     "following_count": 1,
-    "statuses_count": 8,
-    "last_status_at": "2021-07-28",
+    "statuses_count": 9,
+    "last_status_at": "2024-11-01",
     "emojis": [],
     "fields": [
       {
@@ -177,8 +179,10 @@ func (suite *InternalToFrontendTestSuite) TestAccountToFrontendAliasedAndMoved()
         "verified_at": null
       }
     ],
-    "hide_collections": true
-  }
+    "hide_collections": true,
+    "group": false
+  },
+  "group": false
 }`, string(b))
 }
 
@@ -217,8 +221,8 @@ func (suite *InternalToFrontendTestSuite) TestAccountToFrontendWithEmojiStruct()
   "header_media_id": "01PFPMWK2FF0D9WMHEJHR07C3Q",
   "followers_count": 2,
   "following_count": 2,
-  "statuses_count": 8,
-  "last_status_at": "2024-01-10",
+  "statuses_count": 9,
+  "last_status_at": "2024-11-01",
   "emojis": [
     {
       "shortcode": "rainbow",
@@ -229,7 +233,8 @@ func (suite *InternalToFrontendTestSuite) TestAccountToFrontendWithEmojiStruct()
     }
   ],
   "fields": [],
-  "enable_rss": true
+  "enable_rss": true,
+  "group": false
 }`, string(b))
 }
 
@@ -266,8 +271,8 @@ func (suite *InternalToFrontendTestSuite) TestAccountToFrontendWithEmojiIDs() {
   "header_media_id": "01PFPMWK2FF0D9WMHEJHR07C3Q",
   "followers_count": 2,
   "following_count": 2,
-  "statuses_count": 8,
-  "last_status_at": "2024-01-10",
+  "statuses_count": 9,
+  "last_status_at": "2024-11-01",
   "emojis": [
     {
       "shortcode": "rainbow",
@@ -278,7 +283,8 @@ func (suite *InternalToFrontendTestSuite) TestAccountToFrontendWithEmojiIDs() {
     }
   ],
   "fields": [],
-  "enable_rss": true
+  "enable_rss": true,
+  "group": false
 }`, string(b))
 }
 
@@ -311,8 +317,8 @@ func (suite *InternalToFrontendTestSuite) TestAccountToFrontendSensitive() {
   "header_media_id": "01PFPMWK2FF0D9WMHEJHR07C3Q",
   "followers_count": 2,
   "following_count": 2,
-  "statuses_count": 8,
-  "last_status_at": "2024-01-10",
+  "statuses_count": 9,
+  "last_status_at": "2024-11-01",
   "emojis": [],
   "fields": [],
   "source": {
@@ -332,7 +338,8 @@ func (suite *InternalToFrontendTestSuite) TestAccountToFrontendSensitive() {
     "color": "",
     "permissions": "0",
     "highlighted": false
-  }
+  },
+  "group": false
 }`, string(b))
 }
 
@@ -369,7 +376,8 @@ func (suite *InternalToFrontendTestSuite) TestAccountToFrontendPublicPunycode() 
   "statuses_count": 0,
   "last_status_at": null,
   "emojis": [],
-  "fields": []
+  "fields": [],
+  "group": false
 }`, string(b))
 }
 
@@ -408,7 +416,8 @@ func (suite *InternalToFrontendTestSuite) TestLocalInstanceAccountToFrontendPubl
   "statuses_count": 0,
   "last_status_at": null,
   "emojis": [],
-  "fields": []
+  "fields": [],
+  "group": false
 }`, string(b))
 }
 
@@ -447,7 +456,8 @@ func (suite *InternalToFrontendTestSuite) TestLocalInstanceAccountToFrontendBloc
   "statuses_count": 0,
   "last_status_at": null,
   "emojis": [],
-  "fields": []
+  "fields": [],
+  "group": false
 }`, string(b))
 }
 
@@ -463,6 +473,7 @@ func (suite *InternalToFrontendTestSuite) TestStatusToFrontend() {
 	suite.Equal(`{
   "id": "01F8MH75CBF9JFX4ZAD54N0W0R",
   "created_at": "2021-10-20T11:36:45.000Z",
+  "edited_at": null,
   "in_reply_to_id": null,
   "in_reply_to_account_id": null,
   "sensitive": false,
@@ -514,7 +525,8 @@ func (suite *InternalToFrontendTestSuite) TestStatusToFrontend() {
         "name": "admin",
         "color": ""
       }
-    ]
+    ],
+    "group": false
   },
   "media_attachments": [
     {
@@ -641,6 +653,7 @@ func (suite *InternalToFrontendTestSuite) TestWarnFilteredStatusToFrontend() {
 	suite.Equal(`{
   "id": "01F8MH75CBF9JFX4ZAD54N0W0R",
   "created_at": "2021-10-20T11:36:45.000Z",
+  "edited_at": null,
   "in_reply_to_id": null,
   "in_reply_to_account_id": null,
   "sensitive": false,
@@ -692,7 +705,8 @@ func (suite *InternalToFrontendTestSuite) TestWarnFilteredStatusToFrontend() {
         "name": "admin",
         "color": ""
       }
-    ]
+    ],
+    "group": false
   },
   "media_attachments": [
     {
@@ -807,6 +821,7 @@ func (suite *InternalToFrontendTestSuite) TestWarnFilteredBoostToFrontend() {
 	suite.Equal(`{
   "id": "01G36SF3V6Y6V5BF9P4R7PQG7G",
   "created_at": "2021-10-20T10:41:37.000Z",
+  "edited_at": null,
   "in_reply_to_id": null,
   "in_reply_to_account_id": null,
   "sensitive": false,
@@ -827,6 +842,7 @@ func (suite *InternalToFrontendTestSuite) TestWarnFilteredBoostToFrontend() {
   "reblog": {
     "id": "01F8MH75CBF9JFX4ZAD54N0W0R",
     "created_at": "2021-10-20T11:36:45.000Z",
+    "edited_at": null,
     "in_reply_to_id": null,
     "in_reply_to_account_id": null,
     "sensitive": false,
@@ -870,11 +886,12 @@ func (suite *InternalToFrontendTestSuite) TestWarnFilteredBoostToFrontend() {
       "header_media_id": "01PFPMWK2FF0D9WMHEJHR07C3Q",
       "followers_count": 2,
       "following_count": 2,
-      "statuses_count": 8,
-      "last_status_at": "2024-01-10",
+      "statuses_count": 9,
+      "last_status_at": "2024-11-01",
       "emojis": [],
       "fields": [],
-      "enable_rss": true
+      "enable_rss": true,
+      "group": false
     },
     "media_attachments": [
       {
@@ -1009,7 +1026,8 @@ func (suite *InternalToFrontendTestSuite) TestWarnFilteredBoostToFrontend() {
         "name": "admin",
         "color": ""
       }
-    ]
+    ],
+    "group": false
   },
   "media_attachments": [],
   "mentions": [],
@@ -1156,6 +1174,7 @@ func (suite *InternalToFrontendTestSuite) TestHashtagAnywhereFilteredBoostToFron
 func (suite *InternalToFrontendTestSuite) TestMutedStatusToFrontend() {
 	testStatus := suite.testStatuses["admin_account_status_1"]
 	requestingAccount := suite.testAccounts["local_account_1"]
+
 	mutes := usermute.NewCompiledUserMuteList([]*gtsmodel.UserMute{
 		{
 			AccountID:       requestingAccount.ID,
@@ -1163,6 +1182,7 @@ func (suite *InternalToFrontendTestSuite) TestMutedStatusToFrontend() {
 			Notifications:   util.Ptr(false),
 		},
 	})
+
 	_, err := suite.typeconverter.StatusToAPIStatus(
 		context.Background(),
 		testStatus,
@@ -1181,6 +1201,7 @@ func (suite *InternalToFrontendTestSuite) TestMutedReplyStatusToFrontend() {
 	testStatus.InReplyToID = suite.testStatuses["local_account_2_status_1"].ID
 	testStatus.InReplyToAccountID = mutedAccount.ID
 	requestingAccount := suite.testAccounts["local_account_1"]
+
 	mutes := usermute.NewCompiledUserMuteList([]*gtsmodel.UserMute{
 		{
 			AccountID:       requestingAccount.ID,
@@ -1188,11 +1209,46 @@ func (suite *InternalToFrontendTestSuite) TestMutedReplyStatusToFrontend() {
 			Notifications:   util.Ptr(false),
 		},
 	})
+
 	// Populate status so the converter has the account objects it needs for muting.
 	err := suite.db.PopulateStatus(context.Background(), testStatus)
 	if err != nil {
 		suite.FailNow(err.Error())
 	}
+
+	// Convert the status to API format, which should fail.
+	_, err = suite.typeconverter.StatusToAPIStatus(
+		context.Background(),
+		testStatus,
+		requestingAccount,
+		statusfilter.FilterContextHome,
+		nil,
+		mutes,
+	)
+	suite.ErrorIs(err, statusfilter.ErrHideStatus)
+}
+
+func (suite *InternalToFrontendTestSuite) TestMutedBoostStatusToFrontend() {
+	mutedAccount := suite.testAccounts["local_account_2"]
+	testStatus := suite.testStatuses["admin_account_status_1"]
+	testStatus.BoostOfID = suite.testStatuses["local_account_2_status_1"].ID
+	testStatus.BoostOfAccountID = mutedAccount.ID
+	requestingAccount := suite.testAccounts["local_account_1"]
+
+	mutes := usermute.NewCompiledUserMuteList([]*gtsmodel.UserMute{
+		{
+			AccountID:       requestingAccount.ID,
+			TargetAccountID: mutedAccount.ID,
+			Notifications:   util.Ptr(false),
+		},
+	})
+
+	// Populate status so the converter has the account objects it needs for muting.
+	err := suite.db.PopulateStatus(context.Background(), testStatus)
+	if err != nil {
+		suite.FailNow(err.Error())
+	}
+
 	// Convert the status to API format, which should fail.
 	_, err = suite.typeconverter.StatusToAPIStatus(
 		context.Background(),
@@ -1218,6 +1274,7 @@ func (suite *InternalToFrontendTestSuite) TestStatusToFrontendUnknownAttachments
 	suite.Equal(`{
   "id": "01HE7XJ1CG84TBKH5V9XKBVGF5",
   "created_at": "2023-11-02T10:44:25.000Z",
+  "edited_at": null,
   "in_reply_to_id": "01F8MH75CBF9JFX4ZAD54N0W0R",
   "in_reply_to_account_id": "01F8MH17FWEB39HZJ76B6VXSKF",
   "sensitive": true,
@@ -1234,7 +1291,7 @@ func (suite *InternalToFrontendTestSuite) TestStatusToFrontendUnknownAttachments
   "muted": false,
   "bookmarked": false,
   "pinned": false,
-  "content": "\u003cp\u003ehi \u003cspan class=\"h-card\"\u003e\u003ca href=\"http://localhost:8080/@admin\" class=\"u-url mention\" rel=\"nofollow noreferrer noopener\" target=\"_blank\"\u003e@\u003cspan\u003eadmin\u003c/span\u003e\u003c/a\u003e\u003c/span\u003e here's some media for ya\u003c/p\u003e\u003chr\u003e\u003cp\u003e\u003ci lang=\"en\"\u003eℹ️ Note from localhost:8080: 2 attachments in this status were not downloaded. Treat the following external links with care:\u003c/i\u003e\u003c/p\u003e\u003cul\u003e\u003cli\u003e\u003ca href=\"http://example.org/fileserver/01HE7Y659ZWZ02JM4AWYJZ176Q/attachment/original/01HE7ZGJYTSYMXF927GF9353KR.svg\" rel=\"nofollow noreferrer noopener\" target=\"_blank\"\u003e01HE7ZGJYTSYMXF927GF9353KR.svg\u003c/a\u003e [SVG line art of a sloth, public domain]\u003c/li\u003e\u003cli\u003e\u003ca href=\"http://example.org/fileserver/01HE7Y659ZWZ02JM4AWYJZ176Q/attachment/original/01HE892Y8ZS68TQCNPX7J888P3.mp3\" rel=\"nofollow noreferrer noopener\" target=\"_blank\"\u003e01HE892Y8ZS68TQCNPX7J888P3.mp3\u003c/a\u003e [Jolly salsa song, public domain.]\u003c/li\u003e\u003c/ul\u003e",
+  "content": "\u003cp\u003ehi \u003cspan class=\"h-card\"\u003e\u003ca href=\"http://localhost:8080/@admin\" class=\"u-url mention\" rel=\"nofollow noreferrer noopener\" target=\"_blank\"\u003e@\u003cspan\u003eadmin\u003c/span\u003e\u003c/a\u003e\u003c/span\u003e here's some media for ya\u003c/p\u003e\u003cdiv class=\"gts-system-message gts-placeholder-attachments\"\u003e\u003chr\u003e\u003cp\u003e\u003ci lang=\"en\"\u003eℹ️ Note from localhost:8080: 2 attachments in this status were not downloaded. Treat the following external links with care:\u003c/i\u003e\u003c/p\u003e\u003cul\u003e\u003cli\u003e\u003ca href=\"http://example.org/fileserver/01HE7Y659ZWZ02JM4AWYJZ176Q/attachment/original/01HE7ZGJYTSYMXF927GF9353KR.svg\" rel=\"nofollow noreferrer noopener\" target=\"_blank\"\u003e01HE7ZGJYTSYMXF927GF9353KR.svg\u003c/a\u003e [SVG line art of a sloth, public domain]\u003c/li\u003e\u003cli\u003e\u003ca href=\"http://example.org/fileserver/01HE7Y659ZWZ02JM4AWYJZ176Q/attachment/original/01HE892Y8ZS68TQCNPX7J888P3.mp3\" rel=\"nofollow noreferrer noopener\" target=\"_blank\"\u003e01HE892Y8ZS68TQCNPX7J888P3.mp3\u003c/a\u003e [Jolly salsa song, public domain.]\u003c/li\u003e\u003c/ul\u003e\u003c/div\u003e",
   "reblog": null,
   "account": {
     "id": "01FHMQX3GAABWSM0S2VZEC2SWC",
@@ -1257,7 +1314,8 @@ func (suite *InternalToFrontendTestSuite) TestStatusToFrontendUnknownAttachments
     "statuses_count": 1,
     "last_status_at": "2023-11-02",
     "emojis": [],
-    "fields": []
+    "fields": [],
+    "group": false
   },
   "media_attachments": [
     {
@@ -1350,6 +1408,7 @@ func (suite *InternalToFrontendTestSuite) TestStatusToWebStatus() {
 	suite.Equal(`{
   "id": "01HE7XJ1CG84TBKH5V9XKBVGF5",
   "created_at": "2023-11-02T10:44:25.000Z",
+  "edited_at": null,
   "in_reply_to_id": "01F8MH75CBF9JFX4ZAD54N0W0R",
   "in_reply_to_account_id": "01F8MH17FWEB39HZJ76B6VXSKF",
   "sensitive": true,
@@ -1421,7 +1480,8 @@ func (suite *InternalToFrontendTestSuite) TestStatusToWebStatus() {
     "statuses_count": 1,
     "last_status_at": "2023-11-02",
     "emojis": [],
-    "fields": []
+    "fields": [],
+    "group": false
   },
   "media_attachments": [
     {
@@ -1511,6 +1571,7 @@ func (suite *InternalToFrontendTestSuite) TestStatusToFrontendUnknownLanguage() 
 	suite.Equal(`{
   "id": "01F8MH75CBF9JFX4ZAD54N0W0R",
   "created_at": "2021-10-20T11:36:45.000Z",
+  "edited_at": null,
   "in_reply_to_id": null,
   "in_reply_to_account_id": null,
   "sensitive": false,
@@ -1562,7 +1623,8 @@ func (suite *InternalToFrontendTestSuite) TestStatusToFrontendUnknownLanguage() 
         "name": "admin",
         "color": ""
       }
-    ]
+    ],
+    "group": false
   },
   "media_attachments": [
     {
@@ -1654,6 +1716,7 @@ func (suite *InternalToFrontendTestSuite) TestStatusToFrontendPartialInteraction
 	suite.Equal(`{
   "id": "01F8MHBBN8120SYH7D5S050MGK",
   "created_at": "2021-10-20T10:40:37.000Z",
+  "edited_at": null,
   "in_reply_to_id": null,
   "in_reply_to_account_id": null,
   "sensitive": false,
@@ -1697,11 +1760,12 @@ func (suite *InternalToFrontendTestSuite) TestStatusToFrontendPartialInteraction
     "header_media_id": "01PFPMWK2FF0D9WMHEJHR07C3Q",
     "followers_count": 2,
     "following_count": 2,
-    "statuses_count": 8,
-    "last_status_at": "2024-01-10",
+    "statuses_count": 9,
+    "last_status_at": "2024-11-01",
     "emojis": [],
     "fields": [],
-    "enable_rss": true
+    "enable_rss": true,
+    "group": false
   },
   "media_attachments": [],
   "mentions": [],
@@ -1764,6 +1828,7 @@ func (suite *InternalToFrontendTestSuite) TestStatusToAPIStatusPendingApproval()
 	suite.Equal(`{
   "id": "01J5QVB9VC76NPPRQ207GG4DRZ",
   "created_at": "2024-02-20T10:41:37.000Z",
+  "edited_at": null,
   "in_reply_to_id": "01F8MHC8VWDRBQR0N1BATDDEM5",
   "in_reply_to_account_id": "01F8MH5NBDF2MV7CTC4Q5128HF",
   "sensitive": false,
@@ -1780,7 +1845,7 @@ func (suite *InternalToFrontendTestSuite) TestStatusToAPIStatusPendingApproval()
   "muted": false,
   "bookmarked": false,
   "pinned": false,
-  "content": "<p>Hi <span class=\"h-card\"><a href=\"http://localhost:8080/@1happyturtle\" class=\"u-url mention\" rel=\"nofollow noreferrer noopener\" target=\"_blank\">@<span>1happyturtle</span></a></span>, can I reply?</p><hr><p><i lang=\"en\">ℹ️ Note from localhost:8080: This reply is pending your approval. You can quickly accept it by liking, boosting or replying to it. You can also accept or reject it at the following link: <a href=\"http://localhost:8080/settings/user/interaction_requests/01J5QVXCCEATJYSXM9H6MZT4JR\" rel=\"noreferrer noopener nofollow\" target=\"_blank\">http://localhost:8080/settings/user/interaction_requests/01J5QVXCCEATJYSXM9H6MZT4JR</a>.</i></p>",
+  "content": "<p>Hi <span class=\"h-card\"><a href=\"http://localhost:8080/@1happyturtle\" class=\"u-url mention\" rel=\"nofollow noreferrer noopener\" target=\"_blank\">@<span>1happyturtle</span></a></span>, can I reply?</p><div class=\"gts-system-message gts-pending-reply\"><hr><p><i lang=\"en\">ℹ️ Note from localhost:8080: This reply is pending your approval. You can quickly accept it by liking, boosting or replying to it. You can also accept or reject it at the following link: <a href=\"http://localhost:8080/settings/user/interaction_requests/01J5QVXCCEATJYSXM9H6MZT4JR\" rel=\"noreferrer noopener nofollow\" target=\"_blank\">http://localhost:8080/settings/user/interaction_requests/01J5QVXCCEATJYSXM9H6MZT4JR</a>.</i></p></div>",
   "reblog": null,
   "application": {
     "name": "superseriousbusiness",
@@ -1815,7 +1880,8 @@ func (suite *InternalToFrontendTestSuite) TestStatusToAPIStatusPendingApproval()
         "name": "admin",
         "color": ""
       }
-    ]
+    ],
+    "group": false
   },
   "media_attachments": [],
   "mentions": [
@@ -1951,6 +2017,7 @@ func (suite *InternalToFrontendTestSuite) TestInstanceV1ToFrontend() {
         "image/webp",
         "audio/mp2",
         "audio/mp3",
+        "audio/mpeg",
         "video/x-msvideo",
         "audio/flac",
         "audio/x-flac",
@@ -1958,7 +2025,7 @@ func (suite *InternalToFrontendTestSuite) TestInstanceV1ToFrontend() {
         "image/apng",
         "audio/ogg",
         "video/ogg",
-        "audio/x-m4a",
+        "audio/mp4",
         "video/mp4",
         "video/quicktime",
         "audio/x-ms-wma",
@@ -1968,10 +2035,10 @@ func (suite *InternalToFrontendTestSuite) TestInstanceV1ToFrontend() {
         "video/x-matroska"
       ],
       "image_size_limit": 41943040,
-      "image_matrix_limit": 16777216,
+      "image_matrix_limit": 2147483647,
       "video_size_limit": 41943040,
-      "video_frame_rate_limit": 60,
-      "video_matrix_limit": 16777216
+      "video_frame_rate_limit": 2147483647,
+      "video_matrix_limit": 2147483647
     },
     "polls": {
       "max_options": 6,
@@ -1993,7 +2060,7 @@ func (suite *InternalToFrontendTestSuite) TestInstanceV1ToFrontend() {
   },
   "stats": {
     "domain_count": 2,
-    "status_count": 20,
+    "status_count": 21,
     "user_count": 4
   },
   "thumbnail": "http://localhost:8080/assets/logo.webp",
@@ -2026,7 +2093,8 @@ func (suite *InternalToFrontendTestSuite) TestInstanceV1ToFrontend() {
         "name": "admin",
         "color": ""
       }
-    ]
+    ],
+    "group": false
   },
   "max_toot_chars": 5000,
   "rules": [],
@@ -2050,6 +2118,13 @@ func (suite *InternalToFrontendTestSuite) TestInstanceV2ToFrontend() {
 
 	b, err := json.MarshalIndent(instance, "", "  ")
 	suite.NoError(err)
+
+	// The VAPID public key changes from run to run.
+	vapidKeyPair, err := suite.db.GetVAPIDKeyPair(ctx)
+	if err != nil {
+		suite.FailNow(err.Error())
+	}
+	s := strings.Replace(string(b), vapidKeyPair.Public, "VAPID_PUBLIC_KEY_PLACEHOLDER", 1)
 
 	suite.Equal(`{
   "domain": "localhost:8080",
@@ -2096,6 +2171,7 @@ func (suite *InternalToFrontendTestSuite) TestInstanceV2ToFrontend() {
         "image/webp",
         "audio/mp2",
         "audio/mp3",
+        "audio/mpeg",
         "video/x-msvideo",
         "audio/flac",
         "audio/x-flac",
@@ -2103,7 +2179,7 @@ func (suite *InternalToFrontendTestSuite) TestInstanceV2ToFrontend() {
         "image/apng",
         "audio/ogg",
         "video/ogg",
-        "audio/x-m4a",
+        "audio/mp4",
         "video/mp4",
         "video/quicktime",
         "audio/x-ms-wma",
@@ -2113,10 +2189,10 @@ func (suite *InternalToFrontendTestSuite) TestInstanceV2ToFrontend() {
         "video/x-matroska"
       ],
       "image_size_limit": 41943040,
-      "image_matrix_limit": 16777216,
+      "image_matrix_limit": 2147483647,
       "video_size_limit": 41943040,
-      "video_frame_rate_limit": 60,
-      "video_matrix_limit": 16777216
+      "video_frame_rate_limit": 2147483647,
+      "video_matrix_limit": 2147483647
     },
     "polls": {
       "max_options": 6,
@@ -2129,6 +2205,9 @@ func (suite *InternalToFrontendTestSuite) TestInstanceV2ToFrontend() {
     },
     "emojis": {
       "emoji_size_limit": 51200
+    },
+    "vapid": {
+      "public_key": "VAPID_PUBLIC_KEY_PLACEHOLDER"
     }
   },
   "registrations": {
@@ -2167,13 +2246,14 @@ func (suite *InternalToFrontendTestSuite) TestInstanceV2ToFrontend() {
           "name": "admin",
           "color": ""
         }
-      ]
+      ],
+      "group": false
     }
   },
   "rules": [],
   "terms": "\u003cp\u003eThis is where a list of terms and conditions might go.\u003c/p\u003e\u003cp\u003eFor example:\u003c/p\u003e\u003cp\u003eIf you want to sign up on this instance, you oughta know that we:\u003c/p\u003e\u003col\u003e\u003cli\u003eWill sell your data to whoever offers.\u003c/li\u003e\u003cli\u003eSecure the server with password \u003ccode\u003epassword\u003c/code\u003e wherever possible.\u003c/li\u003e\u003c/ol\u003e",
   "terms_text": "This is where a list of terms and conditions might go.\n\nFor example:\n\nIf you want to sign up on this instance, you oughta know that we:\n\n1. Will sell your data to whoever offers.\n2. Secure the server with password `+"`"+`password`+"`"+` wherever possible."
-}`, string(b))
+}`, s)
 }
 
 func (suite *InternalToFrontendTestSuite) TestEmojiToFrontend() {
@@ -2277,10 +2357,11 @@ func (suite *InternalToFrontendTestSuite) TestReportToFrontend1() {
     "header_description": "Flat gray background (default header).",
     "followers_count": 0,
     "following_count": 0,
-    "statuses_count": 3,
-    "last_status_at": "2021-09-11",
+    "statuses_count": 4,
+    "last_status_at": "2024-11-01",
     "emojis": [],
-    "fields": []
+    "fields": [],
+    "group": false
   }
 }`, string(b))
 }
@@ -2321,8 +2402,8 @@ func (suite *InternalToFrontendTestSuite) TestReportToFrontend2() {
     "header_description": "Flat gray background (default header).",
     "followers_count": 1,
     "following_count": 1,
-    "statuses_count": 8,
-    "last_status_at": "2021-07-28",
+    "statuses_count": 9,
+    "last_status_at": "2024-11-01",
     "emojis": [],
     "fields": [
       {
@@ -2336,7 +2417,8 @@ func (suite *InternalToFrontendTestSuite) TestReportToFrontend2() {
         "verified_at": null
       }
     ],
-    "hide_collections": true
+    "hide_collections": true,
+    "group": false
   }
 }`, string(b))
 }
@@ -2398,10 +2480,11 @@ func (suite *InternalToFrontendTestSuite) TestAdminReportToFrontend1() {
       "header_description": "Flat gray background (default header).",
       "followers_count": 0,
       "following_count": 0,
-      "statuses_count": 3,
-      "last_status_at": "2021-09-11",
+      "statuses_count": 4,
+      "last_status_at": "2024-11-01",
       "emojis": [],
-      "fields": []
+      "fields": [],
+      "group": false
     }
   },
   "target_account": {
@@ -2444,8 +2527,8 @@ func (suite *InternalToFrontendTestSuite) TestAdminReportToFrontend1() {
       "header_description": "Flat gray background (default header).",
       "followers_count": 1,
       "following_count": 1,
-      "statuses_count": 8,
-      "last_status_at": "2021-07-28",
+      "statuses_count": 9,
+      "last_status_at": "2024-11-01",
       "emojis": [],
       "fields": [
         {
@@ -2459,7 +2542,8 @@ func (suite *InternalToFrontendTestSuite) TestAdminReportToFrontend1() {
           "verified_at": null
         }
       ],
-      "hide_collections": true
+      "hide_collections": true,
+      "group": false
     },
     "created_by_application_id": "01F8MGY43H3N2C8EWPR2FPYEXG"
   },
@@ -2514,7 +2598,8 @@ func (suite *InternalToFrontendTestSuite) TestAdminReportToFrontend1() {
           "name": "admin",
           "color": ""
         }
-      ]
+      ],
+      "group": false
     },
     "created_by_application_id": "01F8MGXQRHYF5QPMTMXP78QC2F"
   },
@@ -2569,7 +2654,8 @@ func (suite *InternalToFrontendTestSuite) TestAdminReportToFrontend1() {
           "name": "admin",
           "color": ""
         }
-      ]
+      ],
+      "group": false
     },
     "created_by_application_id": "01F8MGXQRHYF5QPMTMXP78QC2F"
   },
@@ -2636,8 +2722,8 @@ func (suite *InternalToFrontendTestSuite) TestAdminReportToFrontend2() {
       "header_description": "Flat gray background (default header).",
       "followers_count": 1,
       "following_count": 1,
-      "statuses_count": 8,
-      "last_status_at": "2021-07-28",
+      "statuses_count": 9,
+      "last_status_at": "2024-11-01",
       "emojis": [],
       "fields": [
         {
@@ -2651,7 +2737,8 @@ func (suite *InternalToFrontendTestSuite) TestAdminReportToFrontend2() {
           "verified_at": null
         }
       ],
-      "hide_collections": true
+      "hide_collections": true,
+      "group": false
     },
     "created_by_application_id": "01F8MGY43H3N2C8EWPR2FPYEXG"
   },
@@ -2695,10 +2782,11 @@ func (suite *InternalToFrontendTestSuite) TestAdminReportToFrontend2() {
       "header_description": "Flat gray background (default header).",
       "followers_count": 0,
       "following_count": 0,
-      "statuses_count": 3,
-      "last_status_at": "2021-09-11",
+      "statuses_count": 4,
+      "last_status_at": "2024-11-01",
       "emojis": [],
-      "fields": []
+      "fields": [],
+      "group": false
     }
   },
   "assigned_account": null,
@@ -2707,6 +2795,7 @@ func (suite *InternalToFrontendTestSuite) TestAdminReportToFrontend2() {
     {
       "id": "01FVW7JHQFSFK166WWKR8CBA6M",
       "created_at": "2021-09-20T10:40:37.000Z",
+      "edited_at": null,
       "in_reply_to_id": null,
       "in_reply_to_account_id": null,
       "sensitive": false,
@@ -2743,10 +2832,11 @@ func (suite *InternalToFrontendTestSuite) TestAdminReportToFrontend2() {
         "header_description": "Flat gray background (default header).",
         "followers_count": 0,
         "following_count": 0,
-        "statuses_count": 3,
-        "last_status_at": "2021-09-11",
+        "statuses_count": 4,
+        "last_status_at": "2024-11-01",
         "emojis": [],
-        "fields": []
+        "fields": [],
+        "group": false
       },
       "media_attachments": [
         {
@@ -2902,10 +2992,11 @@ func (suite *InternalToFrontendTestSuite) TestAdminReportToFrontendSuspendedLoca
       "header_description": "Flat gray background (default header).",
       "followers_count": 0,
       "following_count": 0,
-      "statuses_count": 3,
-      "last_status_at": "2021-09-11",
+      "statuses_count": 4,
+      "last_status_at": "2024-11-01",
       "emojis": [],
-      "fields": []
+      "fields": [],
+      "group": false
     }
   },
   "target_account": {
@@ -2953,7 +3044,8 @@ func (suite *InternalToFrontendTestSuite) TestAdminReportToFrontendSuspendedLoca
       "emojis": [],
       "fields": [],
       "suspended": true,
-      "hide_collections": true
+      "hide_collections": true,
+      "group": false
     }
   },
   "assigned_account": {
@@ -3007,7 +3099,8 @@ func (suite *InternalToFrontendTestSuite) TestAdminReportToFrontendSuspendedLoca
           "name": "admin",
           "color": ""
         }
-      ]
+      ],
+      "group": false
     },
     "created_by_application_id": "01F8MGXQRHYF5QPMTMXP78QC2F"
   },
@@ -3062,7 +3155,8 @@ func (suite *InternalToFrontendTestSuite) TestAdminReportToFrontendSuspendedLoca
           "name": "admin",
           "color": ""
         }
-      ]
+      ],
+      "group": false
     },
     "created_by_application_id": "01F8MGXQRHYF5QPMTMXP78QC2F"
   },
@@ -3209,11 +3303,13 @@ func (suite *InternalToFrontendTestSuite) TestIntReqToAPI() {
         "name": "admin",
         "color": ""
       }
-    ]
+    ],
+    "group": false
   },
   "status": {
     "id": "01F8MHC8VWDRBQR0N1BATDDEM5",
     "created_at": "2021-10-20T10:40:37.000Z",
+    "edited_at": null,
     "in_reply_to_id": null,
     "in_reply_to_account_id": null,
     "sensitive": true,
@@ -3254,8 +3350,8 @@ func (suite *InternalToFrontendTestSuite) TestIntReqToAPI() {
       "header_description": "Flat gray background (default header).",
       "followers_count": 1,
       "following_count": 1,
-      "statuses_count": 8,
-      "last_status_at": "2021-07-28",
+      "statuses_count": 9,
+      "last_status_at": "2024-11-01",
       "emojis": [],
       "fields": [
         {
@@ -3269,7 +3365,8 @@ func (suite *InternalToFrontendTestSuite) TestIntReqToAPI() {
           "verified_at": null
         }
       ],
-      "hide_collections": true
+      "hide_collections": true,
+      "group": false
     },
     "media_attachments": [],
     "mentions": [],
@@ -3307,6 +3404,7 @@ func (suite *InternalToFrontendTestSuite) TestIntReqToAPI() {
   "reply": {
     "id": "01J5QVB9VC76NPPRQ207GG4DRZ",
     "created_at": "2024-02-20T10:41:37.000Z",
+    "edited_at": null,
     "in_reply_to_id": "01F8MHC8VWDRBQR0N1BATDDEM5",
     "in_reply_to_account_id": "01F8MH5NBDF2MV7CTC4Q5128HF",
     "sensitive": false,
@@ -3358,7 +3456,8 @@ func (suite *InternalToFrontendTestSuite) TestIntReqToAPI() {
           "name": "admin",
           "color": ""
         }
-      ]
+      ],
+      "group": false
     },
     "media_attachments": [],
     "mentions": [
@@ -3464,16 +3563,18 @@ func (suite *InternalToFrontendTestSuite) TestConversationToAPISelfConvo() {
       "header_media_id": "01PFPMWK2FF0D9WMHEJHR07C3Q",
       "followers_count": 2,
       "following_count": 2,
-      "statuses_count": 8,
-      "last_status_at": "2024-01-10",
+      "statuses_count": 9,
+      "last_status_at": "2024-11-01",
       "emojis": [],
       "fields": [],
-      "enable_rss": true
+      "enable_rss": true,
+      "group": false
     }
   ],
   "last_status": {
     "id": "01F8MHAMCHF6Y650WCRSCP4WMY",
     "created_at": "2021-10-20T10:40:37.000Z",
+    "edited_at": null,
     "in_reply_to_id": null,
     "in_reply_to_account_id": null,
     "sensitive": true,
@@ -3517,11 +3618,12 @@ func (suite *InternalToFrontendTestSuite) TestConversationToAPISelfConvo() {
       "header_media_id": "01PFPMWK2FF0D9WMHEJHR07C3Q",
       "followers_count": 2,
       "following_count": 2,
-      "statuses_count": 8,
-      "last_status_at": "2024-01-10",
+      "statuses_count": 9,
+      "last_status_at": "2024-11-01",
       "emojis": [],
       "fields": [],
-      "enable_rss": true
+      "enable_rss": true,
+      "group": false
     },
     "media_attachments": [],
     "mentions": [],
@@ -3619,8 +3721,8 @@ func (suite *InternalToFrontendTestSuite) TestConversationToAPI() {
       "header_description": "Flat gray background (default header).",
       "followers_count": 1,
       "following_count": 1,
-      "statuses_count": 8,
-      "last_status_at": "2021-07-28",
+      "statuses_count": 9,
+      "last_status_at": "2024-11-01",
       "emojis": [],
       "fields": [
         {
@@ -3634,12 +3736,14 @@ func (suite *InternalToFrontendTestSuite) TestConversationToAPI() {
           "verified_at": null
         }
       ],
-      "hide_collections": true
+      "hide_collections": true,
+      "group": false
     }
   ],
   "last_status": {
     "id": "01F8MHAMCHF6Y650WCRSCP4WMY",
     "created_at": "2021-10-20T10:40:37.000Z",
+    "edited_at": null,
     "in_reply_to_id": null,
     "in_reply_to_account_id": null,
     "sensitive": true,
@@ -3683,11 +3787,12 @@ func (suite *InternalToFrontendTestSuite) TestConversationToAPI() {
       "header_media_id": "01PFPMWK2FF0D9WMHEJHR07C3Q",
       "followers_count": 2,
       "following_count": 2,
-      "statuses_count": 8,
-      "last_status_at": "2024-01-10",
+      "statuses_count": 9,
+      "last_status_at": "2024-11-01",
       "emojis": [],
       "fields": [],
-      "enable_rss": true
+      "enable_rss": true,
+      "group": false
     },
     "media_attachments": [],
     "mentions": [],
@@ -3721,6 +3826,139 @@ func (suite *InternalToFrontendTestSuite) TestConversationToAPI() {
     }
   }
 }`, string(b))
+}
+
+func (suite *InternalToFrontendTestSuite) TestStatusToAPIEdits() {
+	ctx, cncl := context.WithCancel(context.Background())
+	defer cncl()
+
+	statusID := suite.testStatuses["local_account_1_status_9"].ID
+
+	status, err := suite.state.DB.GetStatusByID(ctx, statusID)
+	suite.NoError(err)
+
+	err = suite.state.DB.PopulateStatusEdits(ctx, status)
+	suite.NoError(err)
+
+	apiEdits, err := suite.typeconverter.StatusToAPIEdits(ctx, status)
+	suite.NoError(err)
+
+	b, err := json.MarshalIndent(apiEdits, "", "    ")
+	suite.NoError(err)
+
+	suite.Equal(`[
+    {
+        "content": "\u003cp\u003ethis is the latest revision of the status, with a content-warning\u003c/p\u003e",
+        "spoiler_text": "edited status",
+        "sensitive": false,
+        "created_at": "2024-11-01T09:02:00.000Z",
+        "account": {
+            "id": "01F8MH1H7YV1Z7D2C8K2730QBF",
+            "username": "the_mighty_zork",
+            "acct": "the_mighty_zork",
+            "display_name": "original zork (he/they)",
+            "locked": false,
+            "discoverable": true,
+            "bot": false,
+            "created_at": "2022-05-20T11:09:18.000Z",
+            "note": "\u003cp\u003ehey yo this is my profile!\u003c/p\u003e",
+            "url": "http://localhost:8080/@the_mighty_zork",
+            "avatar": "http://localhost:8080/fileserver/01F8MH1H7YV1Z7D2C8K2730QBF/avatar/original/01F8MH58A357CV5K7R7TJMSH6S.jpg",
+            "avatar_static": "http://localhost:8080/fileserver/01F8MH1H7YV1Z7D2C8K2730QBF/avatar/small/01F8MH58A357CV5K7R7TJMSH6S.webp",
+            "avatar_description": "a green goblin looking nasty",
+            "avatar_media_id": "01F8MH58A357CV5K7R7TJMSH6S",
+            "header": "http://localhost:8080/fileserver/01F8MH1H7YV1Z7D2C8K2730QBF/header/original/01PFPMWK2FF0D9WMHEJHR07C3Q.jpg",
+            "header_static": "http://localhost:8080/fileserver/01F8MH1H7YV1Z7D2C8K2730QBF/header/small/01PFPMWK2FF0D9WMHEJHR07C3Q.webp",
+            "header_description": "A very old-school screenshot of the original team fortress mod for quake",
+            "header_media_id": "01PFPMWK2FF0D9WMHEJHR07C3Q",
+            "followers_count": 2,
+            "following_count": 2,
+            "statuses_count": 9,
+            "last_status_at": "2024-11-01",
+            "emojis": [],
+            "fields": [],
+            "enable_rss": true,
+            "group": false
+        },
+        "poll": null,
+        "media_attachments": [],
+        "emojis": []
+    },
+    {
+        "content": "\u003cp\u003ethis is the first status edit! now with content-warning\u003c/p\u003e",
+        "spoiler_text": "edited status",
+        "sensitive": false,
+        "created_at": "2024-11-01T09:01:00.000Z",
+        "account": {
+            "id": "01F8MH1H7YV1Z7D2C8K2730QBF",
+            "username": "the_mighty_zork",
+            "acct": "the_mighty_zork",
+            "display_name": "original zork (he/they)",
+            "locked": false,
+            "discoverable": true,
+            "bot": false,
+            "created_at": "2022-05-20T11:09:18.000Z",
+            "note": "\u003cp\u003ehey yo this is my profile!\u003c/p\u003e",
+            "url": "http://localhost:8080/@the_mighty_zork",
+            "avatar": "http://localhost:8080/fileserver/01F8MH1H7YV1Z7D2C8K2730QBF/avatar/original/01F8MH58A357CV5K7R7TJMSH6S.jpg",
+            "avatar_static": "http://localhost:8080/fileserver/01F8MH1H7YV1Z7D2C8K2730QBF/avatar/small/01F8MH58A357CV5K7R7TJMSH6S.webp",
+            "avatar_description": "a green goblin looking nasty",
+            "avatar_media_id": "01F8MH58A357CV5K7R7TJMSH6S",
+            "header": "http://localhost:8080/fileserver/01F8MH1H7YV1Z7D2C8K2730QBF/header/original/01PFPMWK2FF0D9WMHEJHR07C3Q.jpg",
+            "header_static": "http://localhost:8080/fileserver/01F8MH1H7YV1Z7D2C8K2730QBF/header/small/01PFPMWK2FF0D9WMHEJHR07C3Q.webp",
+            "header_description": "A very old-school screenshot of the original team fortress mod for quake",
+            "header_media_id": "01PFPMWK2FF0D9WMHEJHR07C3Q",
+            "followers_count": 2,
+            "following_count": 2,
+            "statuses_count": 9,
+            "last_status_at": "2024-11-01",
+            "emojis": [],
+            "fields": [],
+            "enable_rss": true,
+            "group": false
+        },
+        "poll": null,
+        "media_attachments": [],
+        "emojis": []
+    },
+    {
+        "content": "\u003cp\u003ethis is the original status\u003c/p\u003e",
+        "spoiler_text": "",
+        "sensitive": false,
+        "created_at": "2024-11-01T09:00:00.000Z",
+        "account": {
+            "id": "01F8MH1H7YV1Z7D2C8K2730QBF",
+            "username": "the_mighty_zork",
+            "acct": "the_mighty_zork",
+            "display_name": "original zork (he/they)",
+            "locked": false,
+            "discoverable": true,
+            "bot": false,
+            "created_at": "2022-05-20T11:09:18.000Z",
+            "note": "\u003cp\u003ehey yo this is my profile!\u003c/p\u003e",
+            "url": "http://localhost:8080/@the_mighty_zork",
+            "avatar": "http://localhost:8080/fileserver/01F8MH1H7YV1Z7D2C8K2730QBF/avatar/original/01F8MH58A357CV5K7R7TJMSH6S.jpg",
+            "avatar_static": "http://localhost:8080/fileserver/01F8MH1H7YV1Z7D2C8K2730QBF/avatar/small/01F8MH58A357CV5K7R7TJMSH6S.webp",
+            "avatar_description": "a green goblin looking nasty",
+            "avatar_media_id": "01F8MH58A357CV5K7R7TJMSH6S",
+            "header": "http://localhost:8080/fileserver/01F8MH1H7YV1Z7D2C8K2730QBF/header/original/01PFPMWK2FF0D9WMHEJHR07C3Q.jpg",
+            "header_static": "http://localhost:8080/fileserver/01F8MH1H7YV1Z7D2C8K2730QBF/header/small/01PFPMWK2FF0D9WMHEJHR07C3Q.webp",
+            "header_description": "A very old-school screenshot of the original team fortress mod for quake",
+            "header_media_id": "01PFPMWK2FF0D9WMHEJHR07C3Q",
+            "followers_count": 2,
+            "following_count": 2,
+            "statuses_count": 9,
+            "last_status_at": "2024-11-01",
+            "emojis": [],
+            "fields": [],
+            "enable_rss": true,
+            "group": false
+        },
+        "poll": null,
+        "media_attachments": [],
+        "emojis": []
+    }
+]`, string(b))
 }
 
 func TestInternalToFrontendTestSuite(t *testing.T) {

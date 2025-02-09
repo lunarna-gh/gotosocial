@@ -255,6 +255,7 @@ func (s *Stmt) BindText(param int, value string) error {
 
 // BindRawText binds a []byte to the prepared statement as text.
 // The leftmost SQL parameter has an index of 1.
+// Binding a nil slice is the same as calling [Stmt.BindNull].
 //
 // https://sqlite.org/c3ref/bind_blob.html
 func (s *Stmt) BindRawText(param int, value []byte) error {
@@ -581,7 +582,9 @@ func (s *Stmt) ColumnRawBlob(col int) []byte {
 func (s *Stmt) columnRawBytes(col int, ptr uint32) []byte {
 	if ptr == 0 {
 		r := s.c.call("sqlite3_errcode", uint64(s.c.handle))
-		s.err = s.c.error(r)
+		if r != _ROW && r != _DONE {
+			s.err = s.c.error(r)
+		}
 		return nil
 	}
 
@@ -636,7 +639,7 @@ func (s *Stmt) ColumnValue(col int) Value {
 // [TEXT] as string, and [BLOB] as []byte.
 // Any []byte are owned by SQLite and may be invalidated by
 // subsequent calls to [Stmt] methods.
-func (s *Stmt) Columns(dest []any) error {
+func (s *Stmt) Columns(dest ...any) error {
 	defer s.c.arena.mark()()
 	count := uint64(len(dest))
 	typePtr := s.c.arena.new(count)
@@ -665,6 +668,10 @@ func (s *Stmt) Columns(dest []any) error {
 			dest[i] = nil
 		default:
 			ptr := util.ReadUint32(s.c.mod, dataPtr+0)
+			if ptr == 0 {
+				dest[i] = []byte{}
+				continue
+			}
 			len := util.ReadUint32(s.c.mod, dataPtr+4)
 			buf := util.View(s.c.mod, ptr, uint64(len))
 			if types[i] == byte(TEXT) {

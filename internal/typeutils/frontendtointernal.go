@@ -41,7 +41,7 @@ func APIVisToVis(m apimodel.Visibility) gtsmodel.Visibility {
 	case apimodel.VisibilityNone:
 		return gtsmodel.VisibilityNone
 	}
-	return ""
+	return 0
 }
 
 func APIMarkerNameToMarkerName(m apimodel.MarkerName) gtsmodel.MarkerName {
@@ -230,4 +230,18 @@ func APIInteractionPolicyToInteractionPolicy(
 			WithApproval: canAnnounceWithApproval,
 		},
 	}, nil
+}
+
+func APIWebPushNotificationPolicyToWebPushNotificationPolicy(policy apimodel.WebPushNotificationPolicy) gtsmodel.WebPushNotificationPolicy {
+	switch policy {
+	case apimodel.WebPushNotificationPolicyAll:
+		return gtsmodel.WebPushNotificationPolicyAll
+	case apimodel.WebPushNotificationPolicyFollowed:
+		return gtsmodel.WebPushNotificationPolicyFollowed
+	case apimodel.WebPushNotificationPolicyFollower:
+		return gtsmodel.WebPushNotificationPolicyFollower
+	case apimodel.WebPushNotificationPolicyNone:
+		return gtsmodel.WebPushNotificationPolicyNone
+	}
+	return 0
 }

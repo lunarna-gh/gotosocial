@@ -156,10 +156,11 @@ func (suite *ReportsGetTestSuite) TestGetReports() {
       "header_description": "Flat gray background (default header).",
       "followers_count": 0,
       "following_count": 0,
-      "statuses_count": 3,
-      "last_status_at": "2021-09-11",
+      "statuses_count": 4,
+      "last_status_at": "2024-11-01",
       "emojis": [],
-      "fields": []
+      "fields": [],
+      "group": false
     }
   }
 ]`, string(b))
@@ -247,10 +248,11 @@ func (suite *ReportsGetTestSuite) TestGetReports4() {
       "header_description": "Flat gray background (default header).",
       "followers_count": 0,
       "following_count": 0,
-      "statuses_count": 3,
-      "last_status_at": "2021-09-11",
+      "statuses_count": 4,
+      "last_status_at": "2024-11-01",
       "emojis": [],
-      "fields": []
+      "fields": [],
+      "group": false
     }
   }
 ]`, string(b))
@@ -322,10 +324,11 @@ func (suite *ReportsGetTestSuite) TestGetReports6() {
       "header_description": "Flat gray background (default header).",
       "followers_count": 0,
       "following_count": 0,
-      "statuses_count": 3,
-      "last_status_at": "2021-09-11",
+      "statuses_count": 4,
+      "last_status_at": "2024-11-01",
       "emojis": [],
-      "fields": []
+      "fields": [],
+      "group": false
     }
   }
 ]`, string(b))
@@ -381,10 +384,11 @@ func (suite *ReportsGetTestSuite) TestGetReports7() {
       "header_description": "Flat gray background (default header).",
       "followers_count": 0,
       "following_count": 0,
-      "statuses_count": 3,
-      "last_status_at": "2021-09-11",
+      "statuses_count": 4,
+      "last_status_at": "2024-11-01",
       "emojis": [],
-      "fields": []
+      "fields": [],
+      "group": false
     }
   }
 ]`, string(b))

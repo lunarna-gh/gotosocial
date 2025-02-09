@@ -15,114 +15,135 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-//go:build !nowasm
+//go:build !nowasmffmpeg && !nowasm
 
 package ffmpeg
 
 import (
 	"context"
 	"os"
+	"runtime"
+	"sync/atomic"
+	"unsafe"
 
-	ffmpeglib "codeberg.org/gruf/go-ffmpreg/embed/ffmpeg"
-	ffprobelib "codeberg.org/gruf/go-ffmpreg/embed/ffprobe"
+	"codeberg.org/gruf/go-ffmpreg/embed"
 	"codeberg.org/gruf/go-ffmpreg/wasm"
 	"github.com/tetratelabs/wazero"
-	"github.com/tetratelabs/wazero/imports/wasi_snapshot_preview1"
+	"golang.org/x/sys/cpu"
 )
 
-// Use all core features required by ffmpeg / ffprobe
-// (these should be the same but we OR just in case).
-const corefeatures = wasm.CoreFeatures
+// ffmpreg is a concurrency-safe pointer
+// to our necessary WebAssembly runtime
+// and compiled ffmpreg module instance.
+var ffmpreg atomic.Pointer[struct {
+	run wazero.Runtime
+	mod wazero.CompiledModule
+}]
 
-var (
-	// shared WASM runtime instance.
-	runtime wazero.Runtime
-
-	// ffmpeg / ffprobe compiled WASM.
-	ffmpeg  wazero.CompiledModule
-	ffprobe wazero.CompiledModule
-)
-
-// compileFfmpeg ensures the ffmpeg WebAssembly has been
-// pre-compiled into memory. If already compiled is a no-op.
-func compileFfmpeg(ctx context.Context) error {
-	if ffmpeg != nil {
+// initWASM safely prepares new WebAssembly runtime
+// and compiles ffmpreg module instance, if the global
+// pointer has not been already. else, is a no-op.
+func initWASM(ctx context.Context) error {
+	if ffmpreg.Load() != nil {
 		return nil
 	}
 
-	// Ensure runtime already initialized.
-	if err := initRuntime(ctx); err != nil {
-		return err
+	var cfg wazero.RuntimeConfig
+
+	// Create new runtime config, taking bug into account:
+	// taking https://github.com/tetratelabs/wazero/pull/2365
+	//
+	// Thanks @ncruces (of go-sqlite3) for the fix!
+	if compilerSupported() {
+		cfg = wazero.NewRuntimeConfigCompiler()
+	} else {
+		cfg = wazero.NewRuntimeConfigInterpreter()
 	}
-
-	// Compile the ffmpeg WebAssembly module into memory.
-	cmod, err := runtime.CompileModule(ctx, ffmpeglib.B)
-	if err != nil {
-		return err
-	}
-
-	// Set module.
-	ffmpeg = cmod
-	return nil
-}
-
-// compileFfprobe ensures the ffprobe WebAssembly has been
-// pre-compiled into memory. If already compiled is a no-op.
-func compileFfprobe(ctx context.Context) error {
-	if ffprobe != nil {
-		return nil
-	}
-
-	// Ensure runtime already initialized.
-	if err := initRuntime(ctx); err != nil {
-		return err
-	}
-
-	// Compile the ffprobe WebAssembly module into memory.
-	cmod, err := runtime.CompileModule(ctx, ffprobelib.B)
-	if err != nil {
-		return err
-	}
-
-	// Set module.
-	ffprobe = cmod
-	return nil
-}
-
-// initRuntime initializes the global wazero.Runtime,
-// if already initialized this function is a no-op.
-func initRuntime(ctx context.Context) error {
-	if runtime != nil {
-		return nil
-	}
-
-	var cache wazero.CompilationCache
 
 	if dir := os.Getenv("GTS_WAZERO_COMPILATION_CACHE"); dir != "" {
-		var err error
-
 		// Use on-filesystem compilation cache given by env.
-		cache, err = wazero.NewCompilationCacheWithDir(dir)
+		cache, err := wazero.NewCompilationCacheWithDir(dir)
 		if err != nil {
 			return err
 		}
+
+		// Update runtime config with cache.
+		cfg = cfg.WithCompilationCache(cache)
 	}
 
-	// Prepare config with cache.
-	cfg := wazero.NewRuntimeConfig()
-	cfg = cfg.WithCoreFeatures(corefeatures)
-	cfg = cfg.WithCompilationCache(cache)
+	var (
+		run wazero.Runtime
+		mod wazero.CompiledModule
+		err error
+		set bool
+	)
 
-	// Instantiate runtime with prepared config.
-	rt := wazero.NewRuntimeWithConfig(ctx, cfg)
+	defer func() {
+		if err == nil && set {
+			// Drop binary.
+			embed.B = nil
+			return
+		}
 
-	// Instantiate wasi snapshot preview features into runtime.
-	_, err := wasi_snapshot_preview1.Instantiate(ctx, rt)
+		// Close module.
+		if !isNil(mod) {
+			mod.Close(ctx)
+		}
+
+		// Close runtime.
+		if !isNil(run) {
+			run.Close(ctx)
+		}
+	}()
+
+	// Initialize new runtime from config.
+	run, err = wasm.NewRuntime(ctx, cfg)
 	if err != nil {
 		return err
 	}
 
-	// Set runtime.
-	runtime = rt
+	// Compile ffmpreg WebAssembly into memory.
+	mod, err = run.CompileModule(ctx, embed.B)
+	if err != nil {
+		return err
+	}
+
+	// Try set global WASM runtime and module,
+	// or if beaten to it defer will handle close.
+	set = ffmpreg.CompareAndSwap(nil, &struct {
+		run wazero.Runtime
+		mod wazero.CompiledModule
+	}{
+		run: run,
+		mod: mod,
+	})
+
 	return nil
+}
+
+func compilerSupported() bool {
+	switch runtime.GOOS {
+	case "linux", "android",
+		"windows", "darwin",
+		"freebsd", "netbsd", "dragonfly",
+		"solaris", "illumos":
+		break
+	default:
+		return false
+	}
+	switch runtime.GOARCH {
+	case "amd64":
+		return cpu.X86.HasSSE41
+	case "arm64":
+		return true
+	default:
+		return false
+	}
+}
+
+// isNil will safely check if 'v' is nil without
+// dealing with weird Go interface nil bullshit.
+func isNil(i interface{}) bool {
+	type eface struct{ Type, Data unsafe.Pointer }
+	return (*eface)(unsafe.Pointer(&i)).Data == nil
 }

@@ -22,6 +22,7 @@ import (
 	"context"
 	"errors"
 	"net/url"
+	"time"
 
 	"github.com/miekg/dns"
 	"github.com/superseriousbusiness/gotosocial/internal/ap"
@@ -111,6 +112,13 @@ func (c *Converter) ASRepresentationToAccount(
 		acct.UpdatedAt = pub
 	}
 
+	// Extract updated time if possible, i.e. last edited.
+	if upd := ap.GetUpdated(accountable); !upd.IsZero() {
+		acct.UpdatedAt = upd
+	} else {
+		acct.UpdatedAt = acct.CreatedAt
+	}
+
 	// Extract a preferred name (display name), fallback to username.
 	if displayName := ap.ExtractName(accountable); displayName != "" {
 		acct.DisplayName = displayName
@@ -141,7 +149,7 @@ func (c *Converter) ASRepresentationToAccount(
 	}
 
 	// account emojis (used in bio, display name, fields)
-	acct.Emojis, err = ap.ExtractEmojis(accountable)
+	acct.Emojis, err = ap.ExtractEmojis(accountable, acct.Domain)
 	if err != nil {
 		log.Warnf(ctx, "error(s) extracting account emojis for %s: %v", uri, err)
 	}
@@ -317,7 +325,7 @@ func (c *Converter) ASStatusToStatus(ctx context.Context, statusable ap.Statusab
 	// status.Emojis
 	//
 	// Custom emojis for later dereferencing.
-	if emojis, err := ap.ExtractEmojis(statusable); err != nil {
+	if emojis, err := ap.ExtractEmojis(statusable, uriObj.Host); err != nil {
 		log.Warnf(ctx, "error extracting emojis for %s: %v", uri, err)
 	} else {
 		status.Emojis = emojis
@@ -348,18 +356,29 @@ func (c *Converter) ASStatusToStatus(ctx context.Context, statusable ap.Statusab
 	// zero-time will fall back to db defaults.
 	if pub := ap.GetPublished(statusable); !pub.IsZero() {
 		status.CreatedAt = pub
-		status.UpdatedAt = pub
 	} else {
 		log.Warnf(ctx, "unusable published property on %s", uri)
+		status.CreatedAt = time.Now()
+	}
+
+	// status.Edited
+	//
+	// Extract and validate update time for status. Defaults to none.
+	if upd := ap.GetUpdated(statusable); !upd.Before(status.CreatedAt) {
+		status.EditedAt = upd
+	} else if !upd.IsZero() {
+
+		// This is a malformed status that will likely break our systems.
+		err := gtserror.Newf("status %s 'updated' predates 'published'", uri)
+		return nil, gtserror.SetMalformed(err)
 	}
 
 	// status.AccountURI
 	// status.AccountID
 	// status.Account
 	//
-	// Account that created the status. Assume we have
-	// this in the db by the time this function is called,
-	// error if we don't.
+	// Account that created the status. Assume we have this
+	// in the db by the time this function is called, else error.
 	status.Account, err = c.getASAttributedToAccount(ctx,
 		status.URI,
 		statusable,
@@ -628,9 +647,9 @@ func (c *Converter) ASAnnounceToStatus(
 	// zero-time will fall back to db defaults.
 	if pub := ap.GetPublished(announceable); !pub.IsZero() {
 		boost.CreatedAt = pub
-		boost.UpdatedAt = pub
 	} else {
 		log.Warnf(ctx, "unusable published property on %s", uri)
+		boost.CreatedAt = time.Now()
 	}
 
 	// Extract and load the boost actor account,

@@ -38,6 +38,8 @@ type InstanceV1 struct {
 	//
 	// This should be displayed on the 'about' page for an instance.
 	Description string `json:"description"`
+	// Custom CSS for the instance.
+	CustomCSS string `json:"custom_css,omitempty"`
 	// Raw (unparsed) version of description.
 	DescriptionText string `json:"description_text,omitempty"`
 	// A shorter description of the instance.
@@ -108,6 +110,13 @@ type InstanceV1 struct {
 	Terms string `json:"terms,omitempty"`
 	// Raw (unparsed) version of terms.
 	TermsRaw string `json:"terms_text,omitempty"`
+
+	// Random stats generated for the instance.
+	// Only used if `instance-stats-randomize` is true.
+	// Not serialized to the frontend.
+	//
+	// swagger:ignore
+	RandomStats `json:"-"`
 }
 
 // InstanceV1URLs models instance-relevant URLs for client application consumption.

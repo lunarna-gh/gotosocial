@@ -47,7 +47,7 @@ image/webp
         <meta charset="UTF-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <meta name="robots" content="{{- if .robotsMeta -}}{{- .robotsMeta -}}{{- else -}}noindex, nofollow{{- end -}}">
+        <meta name="robots" content="{{- if .robotsMeta -}}{{- .robotsMeta -}}{{- else -}}noindex, nofollow, noai, noimageai{{- end -}}">
         {{- if .ogMeta }}
         {{- include "page_ogmeta.tmpl" . | indent 2 }}
         {{- else }}
@@ -71,7 +71,9 @@ image/webp
         {{- end }}
         <title>{{- template "instanceTitle" . -}}</title>
     </head>
-    <body class="page">
+    <body>
+        {{- include "login_button.tmpl" . | indent 3 }}
+        <div class="page">
         <header class="page-header">
             {{- include "page_header.tmpl" . | indent 3 }}
         </header>
@@ -81,5 +83,6 @@ image/webp
         <footer class="page-footer">
             {{- include "page_footer.tmpl" . | indent 3 }}
         </footer>
+        </div>
     </body>
 </html>

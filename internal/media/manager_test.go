@@ -109,7 +109,6 @@ func (suite *ManagerTestSuite) TestEmojiProcessRefresh() {
 		emojiToUpdate,
 		data,
 		media.AdditionalEmojiInfo{
-			CreatedAt:      &emojiToUpdate.CreatedAt,
 			Domain:         &emojiToUpdate.Domain,
 			ImageRemoteURL: &newImageRemoteURL,
 		},
@@ -664,7 +663,7 @@ func (suite *ManagerTestSuite) TestOpusProcess() {
 		Duration: util.Ptr(float32(122.10006)),
 		Bitrate:  util.Ptr(uint64(116426)),
 	}, attachment.FileMeta.Original)
-	suite.Equal("audio/ogg", attachment.File.ContentType)
+	suite.Equal("audio/opus", attachment.File.ContentType)
 	suite.Equal(1776956, attachment.File.FileSize)
 	suite.Empty(attachment.Blurhash)
 

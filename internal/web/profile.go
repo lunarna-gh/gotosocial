@@ -103,7 +103,7 @@ func (m *Module) profileGETHandler(c *gin.Context) {
 	// index if account is discoverable.
 	var robotsMeta string
 	if targetAccount.Discoverable {
-		robotsMeta = robotsMetaAllowSome
+		robotsMeta = apiutil.RobotsDirectivesAllowSome
 	}
 
 	// We need to change our response slightly if the
@@ -132,7 +132,7 @@ func (m *Module) profileGETHandler(c *gin.Context) {
 	}
 
 	// Prepare stylesheets for profile.
-	stylesheets := make([]string, 0, 6)
+	stylesheets := make([]string, 0, 7)
 
 	// Basic profile stylesheets.
 	stylesheets = append(

@@ -36,6 +36,7 @@ import (
 	"github.com/superseriousbusiness/gotosocial/internal/paging"
 	"github.com/superseriousbusiness/gotosocial/internal/state"
 	"github.com/superseriousbusiness/gotosocial/internal/util"
+	"github.com/superseriousbusiness/gotosocial/internal/util/xslices"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect"
 )
@@ -86,7 +87,7 @@ func (a *accountDB) GetAccountsByIDs(ctx context.Context, ids []string) ([]*gtsm
 	// Reorder the statuses by their
 	// IDs to ensure in correct order.
 	getID := func(a *gtsmodel.Account) string { return a.ID }
-	util.OrderBy(accounts, ids, getID)
+	xslices.OrderBy(accounts, ids, getID)
 
 	if gtscontext.Barebones(ctx) {
 		// no need to fully populate.
@@ -136,8 +137,9 @@ func (a *accountDB) GetAccountByURL(ctx context.Context, url string) (*gtsmodel.
 
 func (a *accountDB) GetAccountByUsernameDomain(ctx context.Context, username string, domain string) (*gtsmodel.Account, error) {
 	if domain != "" {
-		// Normalize the domain as punycode
 		var err error
+
+		// Normalize the domain as punycode
 		domain, err = util.Punify(domain)
 		if err != nil {
 			return nil, err
@@ -897,15 +899,19 @@ func (a *accountDB) GetAccountStatuses(ctx context.Context, accountID string, li
 
 	if excludeReplies {
 		q = q.WhereGroup(" AND ", func(q *bun.SelectQuery) *bun.SelectQuery {
+			// We're excluding replies so
+			// only include posts if they:
 			return q.
-				// Do include self replies (threads), but
-				// don't include replies to other people.
-				Where("? = ?", bun.Ident("status.in_reply_to_account_id"), accountID).
-				WhereOr("? IS NULL", bun.Ident("status.in_reply_to_uri"))
+				// Don't reply to anything OR
+				Where("? IS NULL", bun.Ident("status.in_reply_to_uri")).
+				// reply to self AND don't mention
+				// anyone (ie., self-reply threads).
+				WhereGroup(" OR ", func(q *bun.SelectQuery) *bun.SelectQuery {
+					q = q.Where("? = ?", bun.Ident("status.in_reply_to_account_id"), accountID)
+					q = whereArrayIsNullOrEmpty(q, bun.Ident("status.mentions"))
+					return q
+				})
 		})
-		// Don't include replies that mention other people:
-		// for example, an account's reply to its own reply to someone else.
-		q = whereArrayIsNullOrEmpty(q, bun.Ident("status.mentions"))
 	}
 
 	if excludeReblogs {

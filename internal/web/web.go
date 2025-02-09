@@ -21,14 +21,11 @@ import (
 	"context"
 	"net/http"
 	"net/url"
-	"path/filepath"
 
 	"codeberg.org/gruf/go-cache/v3"
 	"github.com/gin-gonic/gin"
 	apiutil "github.com/superseriousbusiness/gotosocial/internal/api/util"
-	"github.com/superseriousbusiness/gotosocial/internal/config"
 	"github.com/superseriousbusiness/gotosocial/internal/db"
-	"github.com/superseriousbusiness/gotosocial/internal/log"
 	"github.com/superseriousbusiness/gotosocial/internal/middleware"
 	"github.com/superseriousbusiness/gotosocial/internal/processing"
 	"github.com/superseriousbusiness/gotosocial/internal/router"
@@ -36,20 +33,21 @@ import (
 )
 
 const (
-	confirmEmailPath   = "/" + uris.ConfirmEmailPath
-	profileGroupPath   = "/@:username"
-	statusPath         = "/statuses/:" + apiutil.WebStatusIDKey // leave out the '/@:username' prefix as this will be served within the profile group
-	tagsPath           = "/tags/:" + apiutil.TagNameKey
-	customCSSPath      = profileGroupPath + "/custom.css"
-	rssFeedPath        = profileGroupPath + "/feed.rss"
-	assetsPathPrefix   = "/assets"
-	distPathPrefix     = assetsPathPrefix + "/dist"
-	themesPathPrefix   = assetsPathPrefix + "/themes"
-	settingsPathPrefix = "/settings"
-	settingsPanelGlob  = settingsPathPrefix + "/*panel"
-	userPanelPath      = settingsPathPrefix + "/user"
-	adminPanelPath     = settingsPathPrefix + "/admin"
-	signupPath         = "/signup"
+	confirmEmailPath      = "/" + uris.ConfirmEmailPath
+	profileGroupPath      = "/@:username"
+	statusPath            = "/statuses/:" + apiutil.WebStatusIDKey // leave out the '/@:username' prefix as this will be served within the profile group
+	tagsPath              = "/tags/:" + apiutil.TagNameKey
+	customCSSPath         = profileGroupPath + "/custom.css"
+	instanceCustomCSSPath = "/custom.css"
+	rssFeedPath           = profileGroupPath + "/feed.rss"
+	assetsPathPrefix      = "/assets"
+	distPathPrefix        = assetsPathPrefix + "/dist"
+	themesPathPrefix      = assetsPathPrefix + "/themes"
+	settingsPathPrefix    = "/settings"
+	settingsPanelGlob     = settingsPathPrefix + "/*panel"
+	userPanelPath         = settingsPathPrefix + "/user"
+	adminPanelPath        = settingsPathPrefix + "/admin"
+	signupPath            = "/signup"
 
 	cacheControlHeader    = "Cache-Control"     // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control
 	cacheControlNoCache   = "no-cache"          // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control#response_directives
@@ -58,14 +56,15 @@ const (
 	eTagHeader            = "ETag"              // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/ETag
 	lastModifiedHeader    = "Last-Modified"     // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Last-Modified
 
-	cssFA       = assetsPathPrefix + "/Fork-Awesome/css/fork-awesome.min.css"
-	cssAbout    = distPathPrefix + "/about.css"
-	cssIndex    = distPathPrefix + "/index.css"
-	cssStatus   = distPathPrefix + "/status.css"
-	cssThread   = distPathPrefix + "/thread.css"
-	cssProfile  = distPathPrefix + "/profile.css"
-	cssSettings = distPathPrefix + "/settings-style.css"
-	cssTag      = distPathPrefix + "/tag.css"
+	cssFA        = assetsPathPrefix + "/Fork-Awesome/css/fork-awesome.min.css"
+	cssAbout     = distPathPrefix + "/about.css"
+	cssIndex     = distPathPrefix + "/index.css"
+	cssLoginInfo = distPathPrefix + "/login-info.css"
+	cssStatus    = distPathPrefix + "/status.css"
+	cssThread    = distPathPrefix + "/thread.css"
+	cssProfile   = distPathPrefix + "/profile.css"
+	cssSettings  = distPathPrefix + "/settings-style.css"
+	cssTag       = distPathPrefix + "/tag.css"
 
 	jsFrontend = distPathPrefix + "/frontend.js" // Progressive enhancement frontend JS.
 	jsSettings = distPathPrefix + "/settings.js" // Settings panel React application.
@@ -85,22 +84,20 @@ func New(db db.DB, processor *processing.Processor) *Module {
 	}
 }
 
-func (m *Module) Route(r *router.Router, mi ...gin.HandlerFunc) {
-	// Group all static files from assets dir at /assets,
-	// so that they can use the same cache control middleware.
-	webAssetsAbsFilePath, err := filepath.Abs(config.GetWebAssetBaseDir())
-	if err != nil {
-		log.Panicf(nil, "error getting absolute path of assets dir: %s", err)
-	}
-	fs := fileSystem{http.Dir(webAssetsAbsFilePath)}
-	assetsGroup := r.AttachGroup(assetsPathPrefix)
-	assetsGroup.Use(m.assetsCacheControlMiddleware(fs))
-	assetsGroup.Use(mi...)
-	assetsGroup.StaticFS("/", fs)
+// ETagCache implements withETagCache.
+func (m *Module) ETagCache() cache.Cache[string, eTagCacheEntry] {
+	return m.eTagCache
+}
 
-	// handlers that serve profiles and statuses should use the SignatureCheck
-	// middleware, so that requests with content-type application/activity+json
-	// can still be served
+// Route attaches the assets filesystem and profile,
+// status, and other web handlers to the router.
+func (m *Module) Route(r *router.Router, mi ...gin.HandlerFunc) {
+	// Route static assets.
+	routeAssets(m, r, mi...)
+
+	// Handlers that serve profiles and statuses should use
+	// the SignatureCheck middleware, so that requests with
+	// content-type application/activity+json can be served
 	profileGroup := r.AttachGroup(profileGroupPath)
 	profileGroup.Use(mi...)
 	profileGroup.Use(middleware.SignatureCheck(m.isURIBlocked), middleware.CacheControl(middleware.CacheControlConfig{
@@ -109,22 +106,25 @@ func (m *Module) Route(r *router.Router, mi ...gin.HandlerFunc) {
 	profileGroup.Handle(http.MethodGet, "", m.profileGETHandler) // use empty path here since it's the base of the group
 	profileGroup.Handle(http.MethodGet, statusPath, m.threadGETHandler)
 
-	// Attach individual web handlers which require no specific middlewares
-	r.AttachHandler(http.MethodGet, "/", m.indexHandler) // front-page
-	r.AttachHandler(http.MethodGet, settingsPathPrefix, m.SettingsPanelHandler)
-	r.AttachHandler(http.MethodGet, settingsPanelGlob, m.SettingsPanelHandler)
-	r.AttachHandler(http.MethodGet, customCSSPath, m.customCSSGETHandler)
-	r.AttachHandler(http.MethodGet, rssFeedPath, m.rssFeedGETHandler)
-	r.AttachHandler(http.MethodGet, confirmEmailPath, m.confirmEmailGETHandler)
-	r.AttachHandler(http.MethodPost, confirmEmailPath, m.confirmEmailPOSTHandler)
-	r.AttachHandler(http.MethodGet, robotsPath, m.robotsGETHandler)
-	r.AttachHandler(http.MethodGet, aboutPath, m.aboutGETHandler)
-	r.AttachHandler(http.MethodGet, domainBlockListPath, m.domainBlockListGETHandler)
-	r.AttachHandler(http.MethodGet, tagsPath, m.tagGETHandler)
-	r.AttachHandler(http.MethodGet, signupPath, m.signupGETHandler)
-	r.AttachHandler(http.MethodPost, signupPath, m.signupPOSTHandler)
+	// Group for all other web handlers.
+	everythingElseGroup := r.AttachGroup("")
+	everythingElseGroup.Use(mi...)
+	everythingElseGroup.Handle(http.MethodGet, "/", m.indexHandler) // front-page
+	everythingElseGroup.Handle(http.MethodGet, settingsPathPrefix, m.SettingsPanelHandler)
+	everythingElseGroup.Handle(http.MethodGet, settingsPanelGlob, m.SettingsPanelHandler)
+	everythingElseGroup.Handle(http.MethodGet, customCSSPath, m.customCSSGETHandler)
+	everythingElseGroup.Handle(http.MethodGet, instanceCustomCSSPath, m.instanceCustomCSSGETHandler)
+	everythingElseGroup.Handle(http.MethodGet, rssFeedPath, m.rssFeedGETHandler)
+	everythingElseGroup.Handle(http.MethodGet, confirmEmailPath, m.confirmEmailGETHandler)
+	everythingElseGroup.Handle(http.MethodPost, confirmEmailPath, m.confirmEmailPOSTHandler)
+	everythingElseGroup.Handle(http.MethodGet, aboutPath, m.aboutGETHandler)
+	everythingElseGroup.Handle(http.MethodGet, loginPath, m.loginGETHandler)
+	everythingElseGroup.Handle(http.MethodGet, domainBlockListPath, m.domainBlockListGETHandler)
+	everythingElseGroup.Handle(http.MethodGet, tagsPath, m.tagGETHandler)
+	everythingElseGroup.Handle(http.MethodGet, signupPath, m.signupGETHandler)
+	everythingElseGroup.Handle(http.MethodPost, signupPath, m.signupPOSTHandler)
 
-	// Attach redirects from old endpoints to current ones for backwards compatibility
+	// Redirects from old endpoints for back compat.
 	r.AttachHandler(http.MethodGet, "/auth/edit", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, userPanelPath) })
 	r.AttachHandler(http.MethodGet, "/user", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, userPanelPath) })
 	r.AttachHandler(http.MethodGet, "/admin", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, adminPanelPath) })

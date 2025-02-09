@@ -10,27 +10,15 @@ import (
 type RawQuery struct {
 	baseQuery
 
-	query string
-	args  []interface{}
-}
-
-// Deprecated: Use NewRaw instead. When add it to IDB, it conflicts with the sql.Conn#Raw
-func (db *DB) Raw(query string, args ...interface{}) *RawQuery {
-	return &RawQuery{
-		baseQuery: baseQuery{
-			db:   db,
-			conn: db.DB,
-		},
-		query: query,
-		args:  args,
-	}
+	query   string
+	args    []interface{}
+	comment string
 }
 
 func NewRawQuery(db *DB, query string, args ...interface{}) *RawQuery {
 	return &RawQuery{
 		baseQuery: baseQuery{
-			db:   db,
-			conn: db.DB,
+			db: db,
 		},
 		query: query,
 		args:  args,
@@ -54,6 +42,12 @@ func (q *RawQuery) Exec(ctx context.Context, dest ...interface{}) (sql.Result, e
 func (q *RawQuery) Scan(ctx context.Context, dest ...interface{}) error {
 	_, err := q.scanOrExec(ctx, dest, true)
 	return err
+}
+
+// Comment adds a comment to the query, wrapped by /* ... */.
+func (q *RawQuery) Comment(comment string) *RawQuery {
+	q.comment = comment
+	return q
 }
 
 func (q *RawQuery) scanOrExec(
@@ -90,9 +84,20 @@ func (q *RawQuery) scanOrExec(
 }
 
 func (q *RawQuery) AppendQuery(fmter schema.Formatter, b []byte) ([]byte, error) {
+	b = appendComment(b, q.comment)
+
 	return fmter.AppendQuery(b, q.query, q.args...), nil
 }
 
 func (q *RawQuery) Operation() string {
 	return "SELECT"
+}
+
+func (q *RawQuery) String() string {
+	buf, err := q.AppendQuery(q.db.Formatter(), nil)
+	if err != nil {
+		panic(err)
+	}
+
+	return string(buf)
 }

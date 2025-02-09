@@ -21,8 +21,10 @@ import (
 	"context"
 	"net/url"
 
+	"codeberg.org/gruf/go-cache/v3/simple"
 	"github.com/superseriousbusiness/activity/pub"
 	"github.com/superseriousbusiness/activity/streams/vocab"
+	"github.com/superseriousbusiness/gotosocial/internal/ap"
 	"github.com/superseriousbusiness/gotosocial/internal/filter/interaction"
 	"github.com/superseriousbusiness/gotosocial/internal/filter/spam"
 	"github.com/superseriousbusiness/gotosocial/internal/filter/visibility"
@@ -33,18 +35,20 @@ import (
 // DB wraps the pub.Database interface with
 // a couple of custom functions for GoToSocial.
 type DB interface {
-	// Default functionality.
+	// Default
+	// functionality.
 	pub.Database
 
-	/*
-		Overridden functionality for calling from federatingProtocol.
-	*/
-
-	Undo(ctx context.Context, undo vocab.ActivityStreamsUndo) error
-	Accept(ctx context.Context, accept vocab.ActivityStreamsAccept) error
-	Reject(ctx context.Context, reject vocab.ActivityStreamsReject) error
-	Announce(ctx context.Context, announce vocab.ActivityStreamsAnnounce) error
-	Move(ctx context.Context, move vocab.ActivityStreamsMove) error
+	// Federating protocol overridden callback functionality.
+	Like(context.Context, vocab.ActivityStreamsLike) error
+	Block(context.Context, vocab.ActivityStreamsBlock) error
+	Follow(context.Context, vocab.ActivityStreamsFollow) error
+	Undo(context.Context, vocab.ActivityStreamsUndo) error
+	Accept(context.Context, vocab.ActivityStreamsAccept) error
+	Reject(context.Context, vocab.ActivityStreamsReject) error
+	Announce(context.Context, vocab.ActivityStreamsAnnounce) error
+	Move(context.Context, vocab.ActivityStreamsMove) error
+	Flag(context.Context, vocab.ActivityStreamsFlag) error
 
 	/*
 		Extra/convenience functionality.
@@ -61,6 +65,10 @@ type federatingDB struct {
 	visFilter  *visibility.Filter
 	intFilter  *interaction.Filter
 	spamFilter *spam.Filter
+
+	// tracks Activity IDs we have handled creates for,
+	// for use in the Exists() function during forwarding.
+	activityIDs simple.Cache[string, struct{}]
 }
 
 // New returns a DB that satisfies the pub.Database
@@ -79,5 +87,12 @@ func New(
 		intFilter:  intFilter,
 		spamFilter: spamFilter,
 	}
+	fdb.activityIDs.Init(0, 2048)
 	return &fdb
+}
+
+// storeActivityID stores an entry in the .activityIDs cache for this
+// type's JSON-LD ID, for later checks in Exist() to mark it as seen.
+func (f *federatingDB) storeActivityID(asType vocab.Type) {
+	f.activityIDs.Set(ap.GetJSONLDId(asType).String(), struct{}{})
 }

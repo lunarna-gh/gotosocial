@@ -9,11 +9,11 @@ import (
 	"sync"
 	"unsafe"
 
-	"github.com/ncruces/go-sqlite3/internal/util"
-	"github.com/ncruces/go-sqlite3/vfs"
 	"github.com/tetratelabs/wazero"
 	"github.com/tetratelabs/wazero/api"
-	"github.com/tetratelabs/wazero/experimental"
+
+	"github.com/ncruces/go-sqlite3/internal/util"
+	"github.com/ncruces/go-sqlite3/vfs"
 )
 
 // Configure SQLite Wasm.
@@ -48,11 +48,20 @@ func compileSQLite() {
 	ctx := context.Background()
 	cfg := RuntimeConfig
 	if cfg == nil {
-		cfg = wazero.NewRuntimeConfig()
+		if util.CompilerSupported() {
+			cfg = wazero.NewRuntimeConfigCompiler()
+		} else {
+			cfg = wazero.NewRuntimeConfigInterpreter()
+		}
+		if bits.UintSize < 64 {
+			cfg = cfg.WithMemoryLimitPages(512) // 32MB
+		} else {
+			cfg = cfg.WithMemoryLimitPages(4096) // 256MB
+		}
 	}
+	cfg = cfg.WithCoreFeatures(api.CoreFeaturesV2)
 
-	instance.runtime = wazero.NewRuntimeWithConfig(ctx,
-		cfg.WithCoreFeatures(api.CoreFeaturesV2|experimental.CoreFeaturesThreads))
+	instance.runtime = wazero.NewRuntimeWithConfig(ctx, cfg)
 
 	env := instance.runtime.NewHostModuleBuilder("env")
 	env = vfs.ExportHostFunctions(env)
@@ -259,10 +268,11 @@ func (a *arena) mark() (reset func()) {
 	ptrs := len(a.ptrs)
 	next := a.next
 	return func() {
-		for _, ptr := range a.ptrs[ptrs:] {
+		rest := a.ptrs[ptrs:]
+		for _, ptr := range a.ptrs[:ptrs] {
 			a.sqlt.free(ptr)
 		}
-		a.ptrs = a.ptrs[:ptrs]
+		a.ptrs = rest
 		a.next = next
 	}
 }

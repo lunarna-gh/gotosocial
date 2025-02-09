@@ -186,10 +186,11 @@ func (suite *ReportsGetTestSuite) TestReportsGetAll() {
         "header_description": "Flat gray background (default header).",
         "followers_count": 0,
         "following_count": 0,
-        "statuses_count": 3,
-        "last_status_at": "2021-09-11",
+        "statuses_count": 4,
+        "last_status_at": "2024-11-01",
         "emojis": [],
-        "fields": []
+        "fields": [],
+        "group": false
       }
     },
     "target_account": {
@@ -232,8 +233,8 @@ func (suite *ReportsGetTestSuite) TestReportsGetAll() {
         "header_description": "Flat gray background (default header).",
         "followers_count": 1,
         "following_count": 1,
-        "statuses_count": 8,
-        "last_status_at": "2021-07-28",
+        "statuses_count": 9,
+        "last_status_at": "2024-11-01",
         "emojis": [],
         "fields": [
           {
@@ -247,7 +248,8 @@ func (suite *ReportsGetTestSuite) TestReportsGetAll() {
             "verified_at": null
           }
         ],
-        "hide_collections": true
+        "hide_collections": true,
+        "group": false
       },
       "created_by_application_id": "01F8MGY43H3N2C8EWPR2FPYEXG"
     },
@@ -302,7 +304,8 @@ func (suite *ReportsGetTestSuite) TestReportsGetAll() {
             "name": "admin",
             "color": ""
           }
-        ]
+        ],
+        "group": false
       },
       "created_by_application_id": "01F8MGXQRHYF5QPMTMXP78QC2F"
     },
@@ -357,7 +360,8 @@ func (suite *ReportsGetTestSuite) TestReportsGetAll() {
             "name": "admin",
             "color": ""
           }
-        ]
+        ],
+        "group": false
       },
       "created_by_application_id": "01F8MGXQRHYF5QPMTMXP78QC2F"
     },
@@ -414,8 +418,8 @@ func (suite *ReportsGetTestSuite) TestReportsGetAll() {
         "header_description": "Flat gray background (default header).",
         "followers_count": 1,
         "following_count": 1,
-        "statuses_count": 8,
-        "last_status_at": "2021-07-28",
+        "statuses_count": 9,
+        "last_status_at": "2024-11-01",
         "emojis": [],
         "fields": [
           {
@@ -429,7 +433,8 @@ func (suite *ReportsGetTestSuite) TestReportsGetAll() {
             "verified_at": null
           }
         ],
-        "hide_collections": true
+        "hide_collections": true,
+        "group": false
       },
       "created_by_application_id": "01F8MGY43H3N2C8EWPR2FPYEXG"
     },
@@ -473,10 +478,11 @@ func (suite *ReportsGetTestSuite) TestReportsGetAll() {
         "header_description": "Flat gray background (default header).",
         "followers_count": 0,
         "following_count": 0,
-        "statuses_count": 3,
-        "last_status_at": "2021-09-11",
+        "statuses_count": 4,
+        "last_status_at": "2024-11-01",
         "emojis": [],
-        "fields": []
+        "fields": [],
+        "group": false
       }
     },
     "assigned_account": null,
@@ -485,6 +491,7 @@ func (suite *ReportsGetTestSuite) TestReportsGetAll() {
       {
         "id": "01FVW7JHQFSFK166WWKR8CBA6M",
         "created_at": "2021-09-20T10:40:37.000Z",
+        "edited_at": null,
         "in_reply_to_id": null,
         "in_reply_to_account_id": null,
         "sensitive": false,
@@ -521,10 +528,11 @@ func (suite *ReportsGetTestSuite) TestReportsGetAll() {
           "header_description": "Flat gray background (default header).",
           "followers_count": 0,
           "following_count": 0,
-          "statuses_count": 3,
-          "last_status_at": "2021-09-11",
+          "statuses_count": 4,
+          "last_status_at": "2024-11-01",
           "emojis": [],
-          "fields": []
+          "fields": [],
+          "group": false
         },
         "media_attachments": [
           {
@@ -667,8 +675,8 @@ func (suite *ReportsGetTestSuite) TestReportsGetCreatedByAccount() {
         "header_description": "Flat gray background (default header).",
         "followers_count": 1,
         "following_count": 1,
-        "statuses_count": 8,
-        "last_status_at": "2021-07-28",
+        "statuses_count": 9,
+        "last_status_at": "2024-11-01",
         "emojis": [],
         "fields": [
           {
@@ -682,7 +690,8 @@ func (suite *ReportsGetTestSuite) TestReportsGetCreatedByAccount() {
             "verified_at": null
           }
         ],
-        "hide_collections": true
+        "hide_collections": true,
+        "group": false
       },
       "created_by_application_id": "01F8MGY43H3N2C8EWPR2FPYEXG"
     },
@@ -726,10 +735,11 @@ func (suite *ReportsGetTestSuite) TestReportsGetCreatedByAccount() {
         "header_description": "Flat gray background (default header).",
         "followers_count": 0,
         "following_count": 0,
-        "statuses_count": 3,
-        "last_status_at": "2021-09-11",
+        "statuses_count": 4,
+        "last_status_at": "2024-11-01",
         "emojis": [],
-        "fields": []
+        "fields": [],
+        "group": false
       }
     },
     "assigned_account": null,
@@ -738,6 +748,7 @@ func (suite *ReportsGetTestSuite) TestReportsGetCreatedByAccount() {
       {
         "id": "01FVW7JHQFSFK166WWKR8CBA6M",
         "created_at": "2021-09-20T10:40:37.000Z",
+        "edited_at": null,
         "in_reply_to_id": null,
         "in_reply_to_account_id": null,
         "sensitive": false,
@@ -774,10 +785,11 @@ func (suite *ReportsGetTestSuite) TestReportsGetCreatedByAccount() {
           "header_description": "Flat gray background (default header).",
           "followers_count": 0,
           "following_count": 0,
-          "statuses_count": 3,
-          "last_status_at": "2021-09-11",
+          "statuses_count": 4,
+          "last_status_at": "2024-11-01",
           "emojis": [],
-          "fields": []
+          "fields": [],
+          "group": false
         },
         "media_attachments": [
           {
@@ -920,8 +932,8 @@ func (suite *ReportsGetTestSuite) TestReportsGetTargetAccount() {
         "header_description": "Flat gray background (default header).",
         "followers_count": 1,
         "following_count": 1,
-        "statuses_count": 8,
-        "last_status_at": "2021-07-28",
+        "statuses_count": 9,
+        "last_status_at": "2024-11-01",
         "emojis": [],
         "fields": [
           {
@@ -935,7 +947,8 @@ func (suite *ReportsGetTestSuite) TestReportsGetTargetAccount() {
             "verified_at": null
           }
         ],
-        "hide_collections": true
+        "hide_collections": true,
+        "group": false
       },
       "created_by_application_id": "01F8MGY43H3N2C8EWPR2FPYEXG"
     },
@@ -979,10 +992,11 @@ func (suite *ReportsGetTestSuite) TestReportsGetTargetAccount() {
         "header_description": "Flat gray background (default header).",
         "followers_count": 0,
         "following_count": 0,
-        "statuses_count": 3,
-        "last_status_at": "2021-09-11",
+        "statuses_count": 4,
+        "last_status_at": "2024-11-01",
         "emojis": [],
-        "fields": []
+        "fields": [],
+        "group": false
       }
     },
     "assigned_account": null,
@@ -991,6 +1005,7 @@ func (suite *ReportsGetTestSuite) TestReportsGetTargetAccount() {
       {
         "id": "01FVW7JHQFSFK166WWKR8CBA6M",
         "created_at": "2021-09-20T10:40:37.000Z",
+        "edited_at": null,
         "in_reply_to_id": null,
         "in_reply_to_account_id": null,
         "sensitive": false,
@@ -1027,10 +1042,11 @@ func (suite *ReportsGetTestSuite) TestReportsGetTargetAccount() {
           "header_description": "Flat gray background (default header).",
           "followers_count": 0,
           "following_count": 0,
-          "statuses_count": 3,
-          "last_status_at": "2021-09-11",
+          "statuses_count": 4,
+          "last_status_at": "2024-11-01",
           "emojis": [],
-          "fields": []
+          "fields": [],
+          "group": false
         },
         "media_attachments": [
           {

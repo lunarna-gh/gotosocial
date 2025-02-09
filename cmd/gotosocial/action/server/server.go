@@ -32,40 +32,71 @@ import (
 	"github.com/KimMachineGun/automemlimit/memlimit"
 	"github.com/gin-gonic/gin"
 	"github.com/superseriousbusiness/gotosocial/cmd/gotosocial/action"
+	"github.com/superseriousbusiness/gotosocial/internal/admin"
 	"github.com/superseriousbusiness/gotosocial/internal/api"
 	apiutil "github.com/superseriousbusiness/gotosocial/internal/api/util"
 	"github.com/superseriousbusiness/gotosocial/internal/cleaner"
-	"github.com/superseriousbusiness/gotosocial/internal/filter/interaction"
-	"github.com/superseriousbusiness/gotosocial/internal/filter/spam"
-	"github.com/superseriousbusiness/gotosocial/internal/filter/visibility"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/media/ffmpeg"
-	"github.com/superseriousbusiness/gotosocial/internal/messages"
-	"github.com/superseriousbusiness/gotosocial/internal/metrics"
-	"github.com/superseriousbusiness/gotosocial/internal/middleware"
-	tlprocessor "github.com/superseriousbusiness/gotosocial/internal/processing/timeline"
-	"github.com/superseriousbusiness/gotosocial/internal/timeline"
-	"github.com/superseriousbusiness/gotosocial/internal/tracing"
-	"go.uber.org/automaxprocs/maxprocs"
-
 	"github.com/superseriousbusiness/gotosocial/internal/config"
 	"github.com/superseriousbusiness/gotosocial/internal/db/bundb"
 	"github.com/superseriousbusiness/gotosocial/internal/email"
 	"github.com/superseriousbusiness/gotosocial/internal/federation"
 	"github.com/superseriousbusiness/gotosocial/internal/federation/federatingdb"
+	"github.com/superseriousbusiness/gotosocial/internal/filter/interaction"
+	"github.com/superseriousbusiness/gotosocial/internal/filter/spam"
+	"github.com/superseriousbusiness/gotosocial/internal/filter/visibility"
+	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
 	"github.com/superseriousbusiness/gotosocial/internal/httpclient"
 	"github.com/superseriousbusiness/gotosocial/internal/log"
 	"github.com/superseriousbusiness/gotosocial/internal/media"
+	"github.com/superseriousbusiness/gotosocial/internal/media/ffmpeg"
+	"github.com/superseriousbusiness/gotosocial/internal/messages"
+	"github.com/superseriousbusiness/gotosocial/internal/middleware"
 	"github.com/superseriousbusiness/gotosocial/internal/oauth"
+	"github.com/superseriousbusiness/gotosocial/internal/observability"
 	"github.com/superseriousbusiness/gotosocial/internal/oidc"
 	"github.com/superseriousbusiness/gotosocial/internal/processing"
+	tlprocessor "github.com/superseriousbusiness/gotosocial/internal/processing/timeline"
 	"github.com/superseriousbusiness/gotosocial/internal/router"
 	"github.com/superseriousbusiness/gotosocial/internal/state"
 	gtsstorage "github.com/superseriousbusiness/gotosocial/internal/storage"
+	"github.com/superseriousbusiness/gotosocial/internal/subscriptions"
+	"github.com/superseriousbusiness/gotosocial/internal/timeline"
 	"github.com/superseriousbusiness/gotosocial/internal/transport"
 	"github.com/superseriousbusiness/gotosocial/internal/typeutils"
 	"github.com/superseriousbusiness/gotosocial/internal/web"
+	"github.com/superseriousbusiness/gotosocial/internal/webpush"
+	"go.uber.org/automaxprocs/maxprocs"
 )
+
+// Maintenance starts and creates a GoToSocial server
+// in maintenance mode (returns 503 for most requests).
+var Maintenance action.GTSAction = func(ctx context.Context) error {
+	route, err := router.New(ctx)
+	if err != nil {
+		return fmt.Errorf("error creating maintenance router: %w", err)
+	}
+
+	// Route maintenance handlers.
+	maintenance := web.NewMaintenance()
+	maintenance.Route(route)
+
+	// Start the maintenance router.
+	if err := route.Start(); err != nil {
+		return fmt.Errorf("error starting maintenance router: %w", err)
+	}
+
+	// Catch shutdown signals from the OS.
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	sig := <-sigs // block until signal received
+	log.Infof(ctx, "received signal %s, shutting down", sig)
+
+	if err := route.Stop(); err != nil {
+		log.Errorf(ctx, "error stopping router: %v", err)
+	}
+
+	return nil
+}
 
 // Start creates and starts a gotosocial server
 var Start action.GTSAction = func(ctx context.Context) error {
@@ -146,8 +177,25 @@ var Start action.GTSAction = func(ctx context.Context) error {
 		log.Info(ctx, "done! exiting...")
 	}()
 
+	// Create maintenance router.
+	var err error
+	route, err = router.New(ctx)
+	if err != nil {
+		return fmt.Errorf("error creating maintenance router: %w", err)
+	}
+
+	// Route maintenance handlers.
+	maintenance := web.NewMaintenance()
+	maintenance.Route(route)
+
+	// Start the maintenance router to handle reqs
+	// while the instance is starting up / migrating.
+	if err := route.Start(); err != nil {
+		return fmt.Errorf("error starting maintenance router: %w", err)
+	}
+
 	// Initialize tracing (noop if not enabled).
-	if err := tracing.Initialize(); err != nil {
+	if err := observability.InitializeTracing(); err != nil {
 		return fmt.Errorf("error initializing tracing: %w", err)
 	}
 
@@ -163,6 +211,10 @@ var Start action.GTSAction = func(ctx context.Context) error {
 
 	// Set DB on state.
 	state.DB = dbService
+
+	// Set Actions on state, providing workers to
+	// Actions as well for triggering side effects.
+	state.AdminActions = admin.New(dbService, &state.Workers)
 
 	// Ensure necessary database instance prerequisites exist.
 	if err := dbService.CreateInstanceAccount(ctx); err != nil {
@@ -242,6 +294,14 @@ var Start action.GTSAction = func(ctx context.Context) error {
 		}
 	}
 
+	// Get or create a VAPID key pair.
+	if _, err := dbService.GetVAPIDKeyPair(ctx); err != nil {
+		return gtserror.Newf("error getting or creating VAPID key pair: %w", err)
+	}
+
+	// Create a Web Push notification sender.
+	webPushSender := webpush.NewSender(client, state, typeConverter)
+
 	// Initialize both home / list timelines.
 	state.Timelines.Home = timeline.NewManager(
 		tlprocessor.HomeTimelineGrab(state),
@@ -283,24 +343,38 @@ var Start action.GTSAction = func(ctx context.Context) error {
 	// Create background cleaner.
 	cleaner := cleaner.New(state)
 
-	// Now schedule background cleaning tasks.
-	if err := cleaner.ScheduleJobs(); err != nil {
-		return fmt.Errorf("error scheduling cleaner jobs: %w", err)
-	}
+	// Create subscriptions fetcher.
+	subscriptions := subscriptions.New(
+		state,
+		transportController,
+		typeConverter,
+	)
 
 	// Create the processor using all the
 	// other services we've created so far.
 	process = processing.NewProcessor(
 		cleaner,
+		subscriptions,
 		typeConverter,
 		federator,
 		oauthServer,
 		mediaManager,
 		state,
 		emailSender,
+		webPushSender,
 		visFilter,
 		intFilter,
 	)
+
+	// Schedule background cleaning tasks.
+	if err := cleaner.ScheduleJobs(); err != nil {
+		return fmt.Errorf("error scheduling cleaner jobs: %w", err)
+	}
+
+	// Schedule background subscriptions updating.
+	if err := subscriptions.ScheduleJobs(); err != nil {
+		return fmt.Errorf("error scheduling subscriptions jobs: %w", err)
+	}
 
 	// Initialize the specialized workers pools.
 	state.Workers.Client.Init(messages.ClientMsgIndices())
@@ -318,7 +392,7 @@ var Start action.GTSAction = func(ctx context.Context) error {
 	}
 
 	// Initialize metrics.
-	if err := metrics.Initialize(state.DB); err != nil {
+	if err := observability.InitializeMetrics(state.DB); err != nil {
 		return fmt.Errorf("error initializing metrics: %w", err)
 	}
 
@@ -331,12 +405,19 @@ var Start action.GTSAction = func(ctx context.Context) error {
 		HTTP router initialization
 	*/
 
-	route, err = router.New(ctx)
-	if err != nil {
-		return fmt.Errorf("error creating router: %s", err)
+	// Close down the maintenance router.
+	if err := route.Stop(); err != nil {
+		return fmt.Errorf("error stopping maintenance router: %w", err)
 	}
 
-	// Start preparing middleware stack.
+	// Instantiate the main router.
+	route, err = router.New(ctx)
+	if err != nil {
+		return fmt.Errorf("error creating main router: %s", err)
+	}
+
+	// Start preparing global middleware
+	// stack (used for every request).
 	middlewares := make([]gin.HandlerFunc, 1)
 
 	// RequestID middleware must run before tracing!
@@ -344,12 +425,12 @@ var Start action.GTSAction = func(ctx context.Context) error {
 
 	// Add tracing middleware if enabled.
 	if config.GetTracingEnabled() {
-		middlewares = append(middlewares, tracing.InstrumentGin())
+		middlewares = append(middlewares, observability.TracingMiddleware())
 	}
 
 	// Add metrics middleware if enabled.
 	if config.GetMetricsEnabled() {
-		middlewares = append(middlewares, metrics.InstrumentGin())
+		middlewares = append(middlewares, observability.MetricsMiddleware())
 	}
 
 	middlewares = append(middlewares, []gin.HandlerFunc{
@@ -418,29 +499,44 @@ var Start action.GTSAction = func(ctx context.Context) error {
 		metricsModule     = api.NewMetrics()                                                 // Metrics endpoints
 		healthModule      = api.NewHealth(dbService.Ready)                                   // Health check endpoints
 		fileserverModule  = api.NewFileserver(process)                                       // fileserver endpoints
+		robotsModule      = api.NewRobots()                                                  // robots.txt endpoint
 		wellKnownModule   = api.NewWellKnown(process)                                        // .well-known endpoints
 		nodeInfoModule    = api.NewNodeInfo(process)                                         // nodeinfo endpoint
 		activityPubModule = api.NewActivityPub(dbService, process)                           // ActivityPub endpoints
 		webModule         = web.New(dbService, process)                                      // web pages + user profiles + settings panels etc
 	)
 
-	// create required middleware
+	// Create per-route / per-grouping middlewares.
 	// rate limiting
 	rlLimit := config.GetAdvancedRateLimitRequests()
-	rlExceptions := config.GetAdvancedRateLimitExceptions()
-	clLimit := middleware.RateLimit(rlLimit, rlExceptions)        // client api
-	s2sLimit := middleware.RateLimit(rlLimit, rlExceptions)       // server-to-server (AP)
-	fsMainLimit := middleware.RateLimit(rlLimit, rlExceptions)    // fileserver / web templates
-	fsEmojiLimit := middleware.RateLimit(rlLimit*2, rlExceptions) // fileserver (emojis only, use high limit)
+	clLimit := middleware.RateLimit(rlLimit, config.GetAdvancedRateLimitExceptionsParsed())        // client api
+	s2sLimit := middleware.RateLimit(rlLimit, config.GetAdvancedRateLimitExceptionsParsed())       // server-to-server (AP)
+	fsMainLimit := middleware.RateLimit(rlLimit, config.GetAdvancedRateLimitExceptionsParsed())    // fileserver / web templates
+	fsEmojiLimit := middleware.RateLimit(rlLimit*2, config.GetAdvancedRateLimitExceptionsParsed()) // fileserver (emojis only, use high limit)
 
 	// throttling
 	cpuMultiplier := config.GetAdvancedThrottlingMultiplier()
 	retryAfter := config.GetAdvancedThrottlingRetryAfter()
 	clThrottle := middleware.Throttle(cpuMultiplier, retryAfter) // client api
 	s2sThrottle := middleware.Throttle(cpuMultiplier, retryAfter)
+
 	// server-to-server (AP)
 	fsThrottle := middleware.Throttle(cpuMultiplier, retryAfter) // fileserver / web templates / emojis
 	pkThrottle := middleware.Throttle(cpuMultiplier, retryAfter) // throttle public key endpoint separately
+
+	// Robots http headers (x-robots-tag).
+	//
+	// robotsDisallowAll is used for client API + S2S endpoints
+	// that definitely should never be indexed by crawlers.
+	//
+	// robotsDisallowAIOnly is used for utility endpoints,
+	// fileserver, and for web endpoints that set their own
+	// additional robots directives in HTML meta tags.
+	//
+	// Other endpoints like .well-known and nodeinfo handle
+	// robots headers themselves based on configuration.
+	robotsDisallowAll := middleware.RobotsHeaders("")
+	robotsDisallowAIOnly := middleware.RobotsHeaders("aiOnly")
 
 	// Gzip middleware is applied to all endpoints except
 	// fileserver (compression too expensive for those),
@@ -451,17 +547,18 @@ var Start action.GTSAction = func(ctx context.Context) error {
 
 	// these should be routed in order;
 	// apply throttling *after* rate limiting
-	authModule.Route(route, clLimit, clThrottle, gzip)
-	clientModule.Route(route, clLimit, clThrottle, gzip)
-	metricsModule.Route(route, clLimit, clThrottle)
-	healthModule.Route(route, clLimit, clThrottle)
-	fileserverModule.Route(route, fsMainLimit, fsThrottle)
-	fileserverModule.RouteEmojis(route, instanceAccount.ID, fsEmojiLimit, fsThrottle)
+	authModule.Route(route, clLimit, clThrottle, robotsDisallowAll, gzip)
+	clientModule.Route(route, clLimit, clThrottle, robotsDisallowAll, gzip)
+	metricsModule.Route(route, clLimit, clThrottle, robotsDisallowAIOnly)
+	healthModule.Route(route, clLimit, clThrottle, robotsDisallowAIOnly)
+	fileserverModule.Route(route, fsMainLimit, fsThrottle, robotsDisallowAIOnly)
+	fileserverModule.RouteEmojis(route, instanceAccount.ID, fsEmojiLimit, fsThrottle, robotsDisallowAIOnly)
+	robotsModule.Route(route, fsMainLimit, fsThrottle, robotsDisallowAIOnly, gzip)
 	wellKnownModule.Route(route, gzip, s2sLimit, s2sThrottle)
 	nodeInfoModule.Route(route, s2sLimit, s2sThrottle, gzip)
-	activityPubModule.Route(route, s2sLimit, s2sThrottle, gzip)
-	activityPubModule.RoutePublicKey(route, s2sLimit, pkThrottle, gzip)
-	webModule.Route(route, fsMainLimit, fsThrottle, gzip)
+	activityPubModule.Route(route, s2sLimit, s2sThrottle, robotsDisallowAll, gzip)
+	activityPubModule.RoutePublicKey(route, s2sLimit, pkThrottle, robotsDisallowAll, gzip)
+	webModule.Route(route, fsMainLimit, fsThrottle, robotsDisallowAIOnly, gzip)
 
 	// Finally start the main http server!
 	if err := route.Start(); err != nil {

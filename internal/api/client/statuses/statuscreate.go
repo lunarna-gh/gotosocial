@@ -21,18 +21,15 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/form/v4"
 	apimodel "github.com/superseriousbusiness/gotosocial/internal/api/model"
 	apiutil "github.com/superseriousbusiness/gotosocial/internal/api/util"
-	"github.com/superseriousbusiness/gotosocial/internal/config"
 	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
 	"github.com/superseriousbusiness/gotosocial/internal/oauth"
 	"github.com/superseriousbusiness/gotosocial/internal/util"
-	"github.com/superseriousbusiness/gotosocial/internal/validate"
 )
 
 // StatusCreatePOSTHandler swagger:operation POST /api/v1/statuses statusCreate
@@ -78,7 +75,7 @@ import (
 //		type: string
 //		in: formData
 //	-
-//		name: media_ids
+//		name: media_ids[]
 //		x-go-name: MediaIDs
 //		description: |-
 //			Array of Attachment ids to be attached as media.
@@ -90,6 +87,8 @@ import (
 //		items:
 //			type: string
 //		in: formData
+//		collectionFormat: multi
+//		uniqueItems: true
 //	-
 //		name: poll[options][]
 //		x-go-name: PollOptions
@@ -100,6 +99,8 @@ import (
 //		items:
 //			type: string
 //		in: formData
+//		collectionFormat: multi
+//		uniqueItems: true
 //	-
 //		name: poll[expires_in]
 //		x-go-name: PollExpiresIn
@@ -273,9 +274,9 @@ func (m *Module) StatusCreatePOSTHandler(c *gin.Context) {
 		return
 	}
 
-	form, err := parseStatusCreateForm(c)
-	if err != nil {
-		apiutil.ErrorHandler(c, gtserror.NewErrorBadRequest(err, err.Error()), m.processor.InstanceGetV1)
+	form, errWithCode := parseStatusCreateForm(c)
+	if errWithCode != nil {
+		apiutil.ErrorHandler(c, errWithCode, m.processor.InstanceGetV1)
 		return
 	}
 
@@ -288,11 +289,6 @@ func (m *Module) StatusCreatePOSTHandler(c *gin.Context) {
 	// }
 	// form.Status += "\n\nsent from " + user + "'s iphone\n"
 
-	if errWithCode := validateStatusCreateForm(form); errWithCode != nil {
-		apiutil.ErrorHandler(c, errWithCode, m.processor.InstanceGetV1)
-		return
-	}
-
 	apiStatus, errWithCode := m.processor.Status().Create(
 		c.Request.Context(),
 		authed.Account,
@@ -304,7 +300,7 @@ func (m *Module) StatusCreatePOSTHandler(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, apiStatus)
+	apiutil.JSON(c, http.StatusOK, apiStatus)
 }
 
 // intPolicyFormBinding satisfies gin's binding.Binding interface.
@@ -329,108 +325,69 @@ func (intPolicyFormBinding) Bind(req *http.Request, obj any) error {
 	return decoder.Decode(obj, req.Form)
 }
 
-func parseStatusCreateForm(c *gin.Context) (*apimodel.StatusCreateRequest, error) {
+func parseStatusCreateForm(c *gin.Context) (*apimodel.StatusCreateRequest, gtserror.WithCode) {
 	form := new(apimodel.StatusCreateRequest)
 
 	switch ct := c.ContentType(); ct {
 	case binding.MIMEJSON:
 		// Just bind with default json binding.
 		if err := c.ShouldBindWith(form, binding.JSON); err != nil {
-			return nil, err
+			return nil, gtserror.NewErrorBadRequest(
+				err,
+				err.Error(),
+			)
 		}
 
 	case binding.MIMEPOSTForm:
 		// Bind with default form binding first.
 		if err := c.ShouldBindWith(form, binding.FormPost); err != nil {
-			return nil, err
+			return nil, gtserror.NewErrorBadRequest(
+				err,
+				err.Error(),
+			)
 		}
 
 		// Now do custom binding.
 		intReqForm := new(apimodel.StatusInteractionPolicyForm)
 		if err := c.ShouldBindWith(intReqForm, intPolicyFormBinding{}); err != nil {
-			return nil, err
+			return nil, gtserror.NewErrorBadRequest(
+				err,
+				err.Error(),
+			)
 		}
+
 		form.InteractionPolicy = intReqForm.InteractionPolicy
 
 	case binding.MIMEMultipartPOSTForm:
 		// Bind with default form binding first.
 		if err := c.ShouldBindWith(form, binding.FormMultipart); err != nil {
-			return nil, err
+			return nil, gtserror.NewErrorBadRequest(
+				err,
+				err.Error(),
+			)
 		}
 
 		// Now do custom binding.
 		intReqForm := new(apimodel.StatusInteractionPolicyForm)
 		if err := c.ShouldBindWith(intReqForm, intPolicyFormBinding{}); err != nil {
-			return nil, err
+			return nil, gtserror.NewErrorBadRequest(
+				err,
+				err.Error(),
+			)
 		}
+
 		form.InteractionPolicy = intReqForm.InteractionPolicy
 
 	default:
-		err := fmt.Errorf(
-			"content-type %s not supported for this endpoint; supported content-types are %s, %s, %s",
-			ct, binding.MIMEJSON, binding.MIMEPOSTForm, binding.MIMEMultipartPOSTForm,
-		)
-		return nil, err
+		text := fmt.Sprintf("content-type %s not supported for this endpoint; supported content-types are %s, %s, %s",
+			ct, binding.MIMEJSON, binding.MIMEPOSTForm, binding.MIMEMultipartPOSTForm)
+		return nil, gtserror.NewErrorNotAcceptable(errors.New(text), text)
 	}
 
-	return form, nil
-}
-
-// validateStatusCreateForm checks the form for disallowed
-// combinations of attachments, overlength inputs, etc.
-//
-// Side effect: normalizes the post's language tag.
-func validateStatusCreateForm(form *apimodel.StatusCreateRequest) gtserror.WithCode {
-	var (
-		chars         = len([]rune(form.Status)) + len([]rune(form.SpoilerText))
-		maxChars      = config.GetStatusesMaxChars()
-		mediaFiles    = len(form.MediaIDs)
-		maxMediaFiles = config.GetStatusesMediaMaxFiles()
-		hasMedia      = mediaFiles != 0
-		hasPoll       = form.Poll != nil
-	)
-
-	if chars == 0 && !hasMedia && !hasPoll {
-		// Status must contain *some* kind of content.
-		const text = "no status content, content warning, media, or poll provided"
-		return gtserror.NewErrorBadRequest(errors.New(text), text)
-	}
-
-	if chars > maxChars {
-		text := fmt.Sprintf(
-			"status too long, %d characters provided (including content warning) but limit is %d",
-			chars, maxChars,
-		)
-		return gtserror.NewErrorBadRequest(errors.New(text), text)
-	}
-
-	if mediaFiles > maxMediaFiles {
-		text := fmt.Sprintf(
-			"too many media files attached to status, %d attached but limit is %d",
-			mediaFiles, maxMediaFiles,
-		)
-		return gtserror.NewErrorBadRequest(errors.New(text), text)
-	}
-
-	if form.Poll != nil {
-		if errWithCode := validateStatusPoll(form); errWithCode != nil {
-			return errWithCode
-		}
-	}
-
+	// Check not scheduled status.
 	if form.ScheduledAt != "" {
 		const text = "scheduled_at is not yet implemented"
-		return gtserror.NewErrorNotImplemented(errors.New(text), text)
-	}
-
-	// Validate + normalize
-	// language tag if provided.
-	if form.Language != "" {
-		lang, err := validate.Language(form.Language)
-		if err != nil {
-			return gtserror.NewErrorBadRequest(err, err.Error())
-		}
-		form.Language = lang
+		return nil, gtserror.NewErrorNotImplemented(errors.New(text), text)
 	}
 
 	// Check if the deprecated "federated" field was
@@ -439,62 +396,20 @@ func validateStatusCreateForm(form *apimodel.StatusCreateRequest) gtserror.WithC
 		form.LocalOnly = util.Ptr(!*form.Federated) // nolint:staticcheck
 	}
 
-	return nil
-}
+	// Normalize poll expiry time if a poll was given.
+	if form.Poll != nil && form.Poll.ExpiresInI != nil {
 
-func validateStatusPoll(form *apimodel.StatusCreateRequest) gtserror.WithCode {
-	var (
-		maxPollOptions     = config.GetStatusesPollMaxOptions()
-		pollOptions        = len(form.Poll.Options)
-		maxPollOptionChars = config.GetStatusesPollOptionMaxChars()
-	)
-
-	if pollOptions == 0 {
-		const text = "poll with no options"
-		return gtserror.NewErrorBadRequest(errors.New(text), text)
-	}
-
-	if pollOptions > maxPollOptions {
-		text := fmt.Sprintf(
-			"too many poll options provided, %d provided but limit is %d",
-			pollOptions, maxPollOptions,
+		// If we parsed this as JSON, expires_in
+		// may be either a float64 or a string.
+		expiresIn, err := apiutil.ParseDuration(
+			form.Poll.ExpiresInI,
+			"expires_in",
 		)
-		return gtserror.NewErrorBadRequest(errors.New(text), text)
-	}
-
-	for _, option := range form.Poll.Options {
-		optionChars := len([]rune(option))
-		if optionChars > maxPollOptionChars {
-			text := fmt.Sprintf(
-				"poll option too long, %d characters provided but limit is %d",
-				optionChars, maxPollOptionChars,
-			)
-			return gtserror.NewErrorBadRequest(errors.New(text), text)
+		if err != nil {
+			return nil, gtserror.NewErrorBadRequest(err, err.Error())
 		}
+		form.Poll.ExpiresIn = util.PtrOrZero(expiresIn)
 	}
 
-	// Normalize poll expiry if necessary.
-	// If we parsed this as JSON, expires_in
-	// may be either a float64 or a string.
-	if ei := form.Poll.ExpiresInI; ei != nil {
-		switch e := ei.(type) {
-		case float64:
-			form.Poll.ExpiresIn = int(e)
-
-		case string:
-			expiresIn, err := strconv.Atoi(e)
-			if err != nil {
-				text := fmt.Sprintf("could not parse expires_in value %s as integer: %v", e, err)
-				return gtserror.NewErrorBadRequest(errors.New(text), text)
-			}
-
-			form.Poll.ExpiresIn = expiresIn
-
-		default:
-			text := fmt.Sprintf("could not parse expires_in type %T as integer", ei)
-			return gtserror.NewErrorBadRequest(errors.New(text), text)
-		}
-	}
-
-	return nil
+	return form, nil
 }

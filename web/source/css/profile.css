@@ -299,6 +299,11 @@
 			*/
 			background: linear-gradient(to right, $gray1 100%, transparent 0) no-repeat center center;
 			background-size: 1.2rem 1.4rem;
+			/* light mode */
+			@media (prefers-color-scheme: light) {
+				background: linear-gradient(to right, $white 100%, transparent 0) no-repeat center center;
+				background-size: 1.2rem 1.4rem;
+			}
 		}
 	}
 
