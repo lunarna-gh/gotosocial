@@ -23,53 +23,14 @@
     {{- include "profile_header.tmpl" . | indent 1 }}
     {{- end }}
     <div class="column-split">
-<<<<<<< HEAD
-        <section class="about-user" role="region" aria-labelledby="about-header">
-            <div class="col-header">
-                <h3 id="about-header">about<span class="sr-only">&nbsp;{{- .account.Username -}}</span></h3>
-            </div>
-            {{- if .account.Fields }}
-            {{- include "profile_fields.tmpl" . | indent 3 }}
-            {{- end }}
-            <h4 class="sr-only">Bio</h4>
-            <div class="bio">
-                {{- if .account.Note }}
-                {{ emojify .account.Emojis (noescape .account.Note) }}
-                {{- else }}
-                <p>This GoToSocial user hasn't written a bio yet!</p>
-                {{- end }}
-            </div>
-	    <h4 class="sr-only">Song</h4>
-	    <div class="song">
-                <p>jane remover - magic i want u</p>
-		<audio controls src="/music.opus" preload="none">
-	    </div>
-            <h4 class="sr-only">Stats</h4>
-            <dl class="accountstats">
-                <dt>joined</dt>
-                <dd><time datetime="{{- .account.CreatedAt -}}">{{- .account.CreatedAt | timestampVague -}}</time></dd>
-                <dt>posts</dt>
-                <dd>{{- .account.StatusesCount -}}</dd>
-                <dt>followed by</dt>
-                <dd>{{- if .account.HideCollections -}}<i>hidden</i>{{- else -}}{{- .account.FollowersCount -}}{{- end -}}</dd>
-                <dt>following</dt>
-                <dd>{{- if .account.HideCollections -}}<i>hidden</i>{{- else -}}{{- .account.FollowingCount -}}{{- end -}}</dd>
-            </dl>
-        </section>
-=======
         {{- with . }}
         {{- include "profile_about_user.tmpl" . | indent 2 }}
         {{- end }}
->>>>>>> ec4d4d01150ae979896496651bc64e4148d94a06
         <div class="statuses-wrapper" role="region" aria-label="Posts by {{ .account.Username -}}">
             {{- if .pinned_statuses }}
             <section class="pinned statuses h-feed" aria-labelledby="pinned">
                 <div class="col-header">
-<<<<<<< HEAD
-                    <h3 id="pinned">pinned meows</h3>
-=======
-                    <h3 class="p-name" id="pinned">Pinned posts</h3>
->>>>>>> ec4d4d01150ae979896496651bc64e4148d94a06
+                    <h3 class="p-name" id="pinned">pinned meows</h3>
                     <a href="#recent">jump to recent</a>
                 </div>
                 <div class="thread">
@@ -86,11 +47,7 @@
             {{- end }}
             <section class="recent statuses h-feed" aria-labelledby="recent">
                 <div class="col-header">
-<<<<<<< HEAD
-                    <h3 id="recent" tabindex="-1">recent meows</h3>
-=======
-                    <h3 class="p-name" id="recent">Recent posts</h3>
->>>>>>> ec4d4d01150ae979896496651bc64e4148d94a06
+                    <h3 class="p-name" id="recent" tabindex="-1">recent meows</h3>
                     {{- if .rssFeed }}
                     <a href="{{- .rssFeed -}}" class="rss-icon" aria-label="RSS feed">
                         <i class="fa fa-rss-square" aria-hidden="true"></i>
