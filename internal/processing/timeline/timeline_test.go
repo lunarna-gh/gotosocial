@@ -20,6 +20,8 @@ package timeline_test
 import (
 	"code.superseriousbusiness.org/gotosocial/internal/admin"
 	"code.superseriousbusiness.org/gotosocial/internal/db"
+	"code.superseriousbusiness.org/gotosocial/internal/filter/mutes"
+	"code.superseriousbusiness.org/gotosocial/internal/filter/status"
 	"code.superseriousbusiness.org/gotosocial/internal/filter/visibility"
 	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
 	"code.superseriousbusiness.org/gotosocial/internal/processing/timeline"
@@ -62,6 +64,8 @@ func (suite *TimelineStandardTestSuite) SetupTest() {
 		&suite.state,
 		typeutils.NewConverter(&suite.state),
 		visibility.NewFilter(&suite.state),
+		mutes.NewFilter(&suite.state),
+		status.NewFilter(&suite.state),
 	)
 
 	testrig.StandardDBSetup(suite.db, suite.testAccounts)

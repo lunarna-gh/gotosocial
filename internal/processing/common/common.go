@@ -19,6 +19,8 @@ package common
 
 import (
 	"code.superseriousbusiness.org/gotosocial/internal/federation"
+	"code.superseriousbusiness.org/gotosocial/internal/filter/mutes"
+	"code.superseriousbusiness.org/gotosocial/internal/filter/status"
 	"code.superseriousbusiness.org/gotosocial/internal/filter/visibility"
 	"code.superseriousbusiness.org/gotosocial/internal/media"
 	"code.superseriousbusiness.org/gotosocial/internal/state"
@@ -29,11 +31,13 @@ import (
 // common to multiple logical domains of the
 // processing subsection of the codebase.
 type Processor struct {
-	state     *state.State
-	media     *media.Manager
-	converter *typeutils.Converter
-	federator *federation.Federator
-	visFilter *visibility.Filter
+	state        *state.State
+	media        *media.Manager
+	converter    *typeutils.Converter
+	federator    *federation.Federator
+	visFilter    *visibility.Filter
+	muteFilter   *mutes.Filter
+	statusFilter *status.Filter
 }
 
 // New returns a new Processor instance.
@@ -43,12 +47,16 @@ func New(
 	converter *typeutils.Converter,
 	federator *federation.Federator,
 	visFilter *visibility.Filter,
+	muteFilter *mutes.Filter,
+	statusFilter *status.Filter,
 ) Processor {
 	return Processor{
-		state:     state,
-		media:     media,
-		converter: converter,
-		federator: federator,
-		visFilter: visFilter,
+		state:        state,
+		media:        media,
+		converter:    converter,
+		federator:    federator,
+		visFilter:    visFilter,
+		muteFilter:   muteFilter,
+		statusFilter: statusFilter,
 	}
 }

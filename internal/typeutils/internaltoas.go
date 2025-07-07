@@ -348,6 +348,12 @@ func (c *Converter) AccountToAS(
 			avatarURLProperty.AppendIRI(avatarURL)
 			iconImage.SetActivityStreamsUrl(avatarURLProperty)
 
+			if a.AvatarMediaAttachment.Description != "" {
+				nameProp := streams.NewActivityStreamsNameProperty()
+				nameProp.AppendXMLSchemaString(a.AvatarMediaAttachment.Description)
+				iconImage.SetActivityStreamsName(nameProp)
+			}
+
 			iconProperty.AppendActivityStreamsImage(iconImage)
 			accountable.SetActivityStreamsIcon(iconProperty)
 		}
@@ -381,6 +387,12 @@ func (c *Converter) AccountToAS(
 			}
 			headerURLProperty.AppendIRI(headerURL)
 			headerImage.SetActivityStreamsUrl(headerURLProperty)
+
+			if a.HeaderMediaAttachment.Description != "" {
+				nameProp := streams.NewActivityStreamsNameProperty()
+				nameProp.AppendXMLSchemaString(a.HeaderMediaAttachment.Description)
+				headerImage.SetActivityStreamsName(nameProp)
+			}
 
 			headerProperty.AppendActivityStreamsImage(headerImage)
 			accountable.SetActivityStreamsImage(headerProperty)
@@ -1937,6 +1949,19 @@ func (c *Converter) InteractionPolicyToASInteractionPolicy(
 	status *gtsmodel.Status,
 ) (vocab.GoToSocialInteractionPolicy, error) {
 	policy := streams.NewGoToSocialInteractionPolicy()
+
+	/*
+		Implementation note for the below:
+		While it's possible for remote instances to set
+		sub-policies like canLike, canReply, etc to null
+		values, or omit them entirely, GtS always falls
+		back to default non-nil sub-policies when storing
+		policies created for local statuses. Therefore,
+		since we only ever serialize our *own* statuses
+		to AS format using this function, it's safe to
+		assume that the values will always be set, rather
+		than checking for nil ptrs.
+	*/
 
 	/*
 		CAN LIKE

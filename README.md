@@ -36,7 +36,7 @@ Here's a screenshot of the instance landing page! Check out the project's [offic
   - [Rich text formatting](#rich-text-formatting)
   - [Themes and custom CSS](#themes-and-custom-css)
   - [Easy to run](#easy-to-run)
-  - [Safety + security features](#safety--security-features)
+  - [Safety + security features](#safety-security-features)
   - [Various federation modes](#various-federation-modes)
   - [OIDC integration](#oidc-integration)
   - [Backend-first design](#backend-first-design)
@@ -51,7 +51,7 @@ Here's a screenshot of the instance landing page! Check out the project's [offic
   - [Stable Releases](#stable-releases)
   - [Snapshot Releases](#snapshot-releases)
     - [Docker](#docker)
-    - [Binary release .tar.gz](#binary-release-targz)
+    - [Binary release .tar.gz](#binary-release-tar-gz)
   - [From Source](#from-source)
   - [Third-party Packaging](#third-party-packaging)
 - [Contributing](#contributing)
@@ -61,7 +61,7 @@ Here's a screenshot of the instance landing page! Check out the project's [offic
   - [Image Attribution and Licensing](#image-attribution-and-licensing)
   - [Team](#team)
   - [Special Thanks](#special-thanks)
-- [Sponsorship + Funding](#sponsorship--funding)
+- [Sponsorship + Funding](#sponsorship-funding)
   - [Crowdfunding](#crowdfunding)
   - [Corporate Sponsorship](#corporate-sponsorship)
   - [NLnet](#nlnet)
@@ -211,6 +211,26 @@ It's also easy for admins to [add their own custom themes](https://docs.gotosoci
 <figure>
   <img src="https://codeberg.org/superseriousbusiness/gotosocial/raw/branch/main/docs/overrides/public/theme-sunset.png"/>
   <figcaption>Sunset</figcaption>
+</figure>
+<hr/>
+<figure>
+  <img src="https://codeberg.org/superseriousbusiness/gotosocial/raw/branch/main/docs/overrides/public/theme-hacker-dark.png"/>
+  <figcaption>Hacker dark</figcaption>
+</figure>
+<hr/>
+<figure>
+  <img src="https://codeberg.org/superseriousbusiness/gotosocial/raw/branch/main/docs/overrides/public/theme-hacker-light.png"/>
+  <figcaption>Hacker light</figcaption>
+</figure>
+<hr/>
+<figure>
+  <img src="https://codeberg.org/superseriousbusiness/gotosocial/raw/branch/main/docs/overrides/public/theme-programmer-socks-dark.png"/>
+  <figcaption>Programmer socks dark</figcaption>
+</figure>
+<hr/>
+<figure>
+  <img src="https://codeberg.org/superseriousbusiness/gotosocial/raw/branch/main/docs/overrides/public/theme-programmer-socks-light.png"/>
+  <figcaption>Programmer socks light</figcaption>
 </figure>
 <hr/>
 </details>

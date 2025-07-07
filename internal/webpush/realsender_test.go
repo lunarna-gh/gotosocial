@@ -32,6 +32,8 @@ import (
 	"code.superseriousbusiness.org/gotosocial/internal/email"
 	"code.superseriousbusiness.org/gotosocial/internal/federation"
 	"code.superseriousbusiness.org/gotosocial/internal/filter/interaction"
+	"code.superseriousbusiness.org/gotosocial/internal/filter/mutes"
+	"code.superseriousbusiness.org/gotosocial/internal/filter/status"
 	"code.superseriousbusiness.org/gotosocial/internal/filter/visibility"
 	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
 	"code.superseriousbusiness.org/gotosocial/internal/media"
@@ -123,7 +125,9 @@ func (suite *RealSenderStandardTestSuite) SetupTest() {
 		suite.emailSender,
 		suite.webPushSender,
 		visibility.NewFilter(&suite.state),
+		mutes.NewFilter(&suite.state),
 		interaction.NewFilter(&suite.state),
+		status.NewFilter(&suite.state),
 	)
 	testrig.StartWorkers(&suite.state, suite.processor.Workers())
 
@@ -167,7 +171,7 @@ func (suite *RealSenderStandardTestSuite) simulatePushNotification(
 	expectDeletedSubscription bool,
 ) error {
 	// Don't let the test run forever if the push notification was not sent for some reason.
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(suite.T().Context(), 3*time.Second)
 	defer cancel()
 
 	notification, err := suite.state.DB.GetNotificationByID(ctx, notificationID)
@@ -188,8 +192,14 @@ func (suite *RealSenderStandardTestSuite) simulatePushNotification(
 		}, nil
 	}
 
+	apiNotif, err := suite.typeconverter.NotificationToAPINotification(ctx, notification)
+	suite.NoError(err)
+
 	// Send the push notification.
-	sendError := suite.webPushSender.Send(ctx, notification, nil, nil)
+	sendError := suite.webPushSender.Send(ctx,
+		notification,
+		apiNotif,
+	)
 
 	// Wait for it to be sent or for the context to time out.
 	bodyClosed := false
@@ -263,7 +273,7 @@ func (suite *RealSenderStandardTestSuite) TestSendPolicyMismatch() {
 		StatusOrEditID:   "01F8MHAMCHF6Y650WCRSCP4WMY",
 		Read:             util.Ptr(false),
 	}
-	if err := suite.db.PutNotification(context.Background(), notification); !suite.NoError(err) {
+	if err := suite.db.PutNotification(suite.T().Context(), notification); !suite.NoError(err) {
 		suite.FailNow(err.Error())
 		return
 	}

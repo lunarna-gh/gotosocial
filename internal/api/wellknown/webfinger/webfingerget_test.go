@@ -19,7 +19,6 @@ package webfinger_test
 
 import (
 	"bytes"
-	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"encoding/json"
@@ -34,6 +33,8 @@ import (
 	"code.superseriousbusiness.org/gotosocial/internal/cleaner"
 	"code.superseriousbusiness.org/gotosocial/internal/config"
 	"code.superseriousbusiness.org/gotosocial/internal/filter/interaction"
+	"code.superseriousbusiness.org/gotosocial/internal/filter/mutes"
+	"code.superseriousbusiness.org/gotosocial/internal/filter/status"
 	"code.superseriousbusiness.org/gotosocial/internal/filter/visibility"
 	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
 	"code.superseriousbusiness.org/gotosocial/internal/processing"
@@ -99,7 +100,9 @@ func (suite *WebfingerGetTestSuite) funkifyAccountDomain(host string, accountDom
 		suite.emailSender,
 		testrig.NewNoopWebPushSender(),
 		visibility.NewFilter(&suite.state),
+		mutes.NewFilter(&suite.state),
 		interaction.NewFilter(&suite.state),
+		status.NewFilter(&suite.state),
 	)
 
 	suite.webfingerModule = webfinger.New(suite.processor)
@@ -129,11 +132,11 @@ func (suite *WebfingerGetTestSuite) funkifyAccountDomain(host string, accountDom
 		PublicKeyURI:          "http://" + host + "/users/new_account_domain_user/main-key",
 	}
 
-	if err := suite.db.PutAccount(context.Background(), targetAccount); err != nil {
+	if err := suite.db.PutAccount(suite.T().Context(), targetAccount); err != nil {
 		suite.FailNow(err.Error())
 	}
 
-	if err := suite.db.PutAccountSettings(context.Background(), &gtsmodel.AccountSettings{AccountID: targetAccount.ID}); err != nil {
+	if err := suite.db.PutAccountSettings(suite.T().Context(), &gtsmodel.AccountSettings{AccountID: targetAccount.ID}); err != nil {
 		suite.FailNow(err.Error())
 	}
 

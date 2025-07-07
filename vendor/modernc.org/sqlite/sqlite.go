@@ -603,6 +603,10 @@ func (s *stmt) query(ctx context.Context, args []driver.NamedValue) (r driver.Ro
 	var allocs []uintptr
 
 	defer func() {
+		if r == nil && err == nil {
+			r, err = newRows(s.c, pstmt, allocs, true)
+		}
+
 		if pstmt != 0 {
 			// ensure stmt finalized.
 			e := s.c.finalize(pstmt)
@@ -612,10 +616,6 @@ func (s *stmt) query(ctx context.Context, args []driver.NamedValue) (r driver.Ro
 				// returned error.
 				err = e
 			}
-		}
-
-		if r == nil && err == nil {
-			r, err = newRows(s.c, pstmt, allocs, true)
 		}
 	}()
 
@@ -2154,7 +2154,9 @@ func functionArgs(tls *libc.TLS, argc int32, argv uintptr) []driver.Value {
 			size := sqlite3.Xsqlite3_value_bytes(tls, valPtr)
 			blobPtr := sqlite3.Xsqlite3_value_blob(tls, valPtr)
 			v := make([]byte, size)
-			copy(v, (*libc.RawMem)(unsafe.Pointer(blobPtr))[:size:size])
+			if size != 0 {
+				copy(v, (*libc.RawMem)(unsafe.Pointer(blobPtr))[:size:size])
+			}
 			args[i] = v
 		default:
 			panic(fmt.Sprintf("unexpected argument type %q passed by sqlite", valType))
@@ -2467,4 +2469,30 @@ func Limit(c *sql.Conn, id int, newVal int) (r int, err error) {
 	})
 	return r, err
 
+}
+
+// C documentation
+//
+//	int sqlite3_bind_blob(sqlite3_stmt*, int, const void*, int n, void(*)(void*));
+func (c *conn) bindBlob(pstmt uintptr, idx1 int, value []byte) (uintptr, error) {
+	if value == nil {
+		if rc := sqlite3.Xsqlite3_bind_null(c.tls, pstmt, int32(idx1)); rc != sqlite3.SQLITE_OK {
+			return 0, c.errstr(rc)
+		}
+		return 0, nil
+	}
+
+	p, err := c.malloc(len(value))
+	if err != nil {
+		return 0, err
+	}
+	if len(value) != 0 {
+		copy((*libc.RawMem)(unsafe.Pointer(p))[:len(value):len(value)], value)
+	}
+	if rc := sqlite3.Xsqlite3_bind_blob(c.tls, pstmt, int32(idx1), p, int32(len(value)), 0); rc != sqlite3.SQLITE_OK {
+		c.free(p)
+		return 0, c.errstr(rc)
+	}
+
+	return p, nil
 }

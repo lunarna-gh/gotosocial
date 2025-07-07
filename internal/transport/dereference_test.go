@@ -19,7 +19,6 @@ package transport_test
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -37,15 +36,15 @@ type DereferenceTestSuite struct {
 func (suite *DereferenceTestSuite) TestDerefLocalUser() {
 	iri := testrig.URLMustParse(suite.testAccounts["local_account_1"].URI)
 
-	resp, err := suite.transport.Dereference(context.Background(), iri)
+	resp, err := suite.transport.Dereference(suite.T().Context(), iri)
 	if err != nil {
 		suite.FailNow(err.Error())
 	}
 	defer resp.Body.Close()
 
 	suite.Equal(http.StatusOK, resp.StatusCode)
-	suite.EqualValues(1887, resp.ContentLength)
-	suite.Equal("1887", resp.Header.Get("Content-Length"))
+	suite.EqualValues(2007, resp.ContentLength)
+	suite.Equal("2007", resp.Header.Get("Content-Length"))
 	suite.Equal(apiutil.AppActivityLDJSON, resp.Header.Get("Content-Type"))
 
 	b, err := io.ReadAll(resp.Body)
@@ -78,12 +77,14 @@ func (suite *DereferenceTestSuite) TestDerefLocalUser() {
   "following": "http://localhost:8080/users/the_mighty_zork/following",
   "icon": {
     "mediaType": "image/jpeg",
+    "name": "a green goblin looking nasty",
     "type": "Image",
     "url": "http://localhost:8080/fileserver/01F8MH1H7YV1Z7D2C8K2730QBF/avatar/original/01F8MH58A357CV5K7R7TJMSH6S.jpg"
   },
   "id": "http://localhost:8080/users/the_mighty_zork",
   "image": {
     "mediaType": "image/jpeg",
+    "name": "A very old-school screenshot of the original team fortress mod for quake",
     "type": "Image",
     "url": "http://localhost:8080/fileserver/01F8MH1H7YV1Z7D2C8K2730QBF/header/original/01PFPMWK2FF0D9WMHEJHR07C3Q.jpg"
   },
@@ -108,7 +109,7 @@ func (suite *DereferenceTestSuite) TestDerefLocalUser() {
 func (suite *DereferenceTestSuite) TestDerefLocalStatus() {
 	iri := testrig.URLMustParse(suite.testStatuses["local_account_1_status_1"].URI)
 
-	resp, err := suite.transport.Dereference(context.Background(), iri)
+	resp, err := suite.transport.Dereference(suite.T().Context(), iri)
 	if err != nil {
 		suite.FailNow(err.Error())
 	}
@@ -200,7 +201,7 @@ func (suite *DereferenceTestSuite) TestDerefLocalStatus() {
 func (suite *DereferenceTestSuite) TestDerefLocalFollowers() {
 	iri := testrig.URLMustParse(suite.testAccounts["local_account_1"].FollowersURI)
 
-	resp, err := suite.transport.Dereference(context.Background(), iri)
+	resp, err := suite.transport.Dereference(suite.T().Context(), iri)
 	if err != nil {
 		suite.FailNow(err.Error())
 	}
@@ -234,7 +235,7 @@ func (suite *DereferenceTestSuite) TestDerefLocalFollowers() {
 func (suite *DereferenceTestSuite) TestDerefLocalFollowing() {
 	iri := testrig.URLMustParse(suite.testAccounts["local_account_1"].FollowingURI)
 
-	resp, err := suite.transport.Dereference(context.Background(), iri)
+	resp, err := suite.transport.Dereference(suite.T().Context(), iri)
 	if err != nil {
 		suite.FailNow(err.Error())
 	}

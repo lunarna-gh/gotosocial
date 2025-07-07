@@ -1010,10 +1010,17 @@ func (p *fediAPI) UpdateStatus(ctx context.Context, fMsg *messages.FromFediAPI) 
 		}
 	}
 
-	// Notify of the latest edit.
-	if editsLen := len(status.EditIDs); editsLen != 0 {
-		editID := status.EditIDs[editsLen-1]
-		if err := p.surface.notifyStatusEdit(ctx, status, editID); err != nil {
+	if len(status.EditIDs) > 0 {
+		// Ensure edits are fully populated for this status before anything.
+		if err := p.surface.State.DB.PopulateStatusEdits(ctx, status); err != nil {
+			log.Error(ctx, "error populating updated status edits: %v")
+
+			// Then send notifications of a status edit
+			// to any local interactors of the status.
+		} else if err := p.surface.notifyStatusEdit(ctx,
+			status,
+			status.Edits[len(status.Edits)-1], // latest
+		); err != nil {
 			log.Errorf(ctx, "error notifying status edit: %v", err)
 		}
 	}
@@ -1113,7 +1120,7 @@ func (p *fediAPI) DeleteAccount(ctx context.Context, fMsg *messages.FromFediAPI)
 	// Remove any entries authored by account from timelines.
 	p.surface.removeTimelineEntriesByAccount(account.ID)
 
-	// First perform the actual account deletion.
+	// And finally, perform the actual account deletion synchronously.
 	if err := p.account.Delete(ctx, account, account.ID); err != nil {
 		log.Errorf(ctx, "error deleting account: %v", err)
 	}

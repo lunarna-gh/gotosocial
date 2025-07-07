@@ -20,7 +20,7 @@ package migrations
 import (
 	"context"
 
-	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	gtsmodel "code.superseriousbusiness.org/gotosocial/internal/db/bundb/migrations/20241018151036_filter_unique_fix"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect"
 )
@@ -107,7 +107,7 @@ func init() {
 				if _, err := tx.ExecContext(
 					ctx,
 					"ALTER TABLE ? RENAME CONSTRAINT ? TO ?",
-					bun.Ident("public.filters"),
+					bun.Ident("filters"),
 					bun.Safe("new_filters_pkey"),
 					bun.Safe("filters_pkey"),
 				); err != nil {

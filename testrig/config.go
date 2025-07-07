@@ -56,31 +56,32 @@ func InitTestConfig() {
 
 func testDefaults() config.Configuration {
 	return config.Configuration{
-		LogLevel:                 envStr("GTS_LOG_LEVEL", "error"),
-		LogTimestampFormat:       "02/01/2006 15:04:05.000",
-		LogDbQueries:             true,
-		ApplicationName:          "gotosocial",
-		LandingPageUser:          "",
-		ConfigPath:               "",
-		Host:                     "localhost:8080",
-		AccountDomain:            "localhost:8080",
-		Protocol:                 "http",
-		BindAddress:              "127.0.0.1",
-		Port:                     8080,
-		TrustedProxies:           []string{"127.0.0.1/32", "::1"},
-		DbType:                   envStr("GTS_DB_TYPE", "sqlite"),
-		DbAddress:                envStr("GTS_DB_ADDRESS", ":memory:"),
-		DbPort:                   envInt("GTS_DB_PORT", 0),
-		DbUser:                   envStr("GTS_DB_USER", ""),
-		DbPassword:               envStr("GTS_DB_PASSWORD", ""),
-		DbDatabase:               envStr("GTS_DB_DATABASE", ""),
-		DbTLSMode:                envStr("GTS_DB_TLS_MODE", ""),
-		DbTLSCACert:              envStr("GTS_DB_TLS_CA_CERT", ""),
-		DbMaxOpenConnsMultiplier: 8,
-		DbSqliteJournalMode:      "WAL",
-		DbSqliteSynchronous:      "NORMAL",
-		DbSqliteCacheSize:        8 * bytesize.MiB,
-		DbSqliteBusyTimeout:      time.Minute * 5,
+		LogLevel:                   envStr("GTS_LOG_LEVEL", "error"),
+		LogTimestampFormat:         "02/01/2006 15:04:05.000",
+		LogDbQueries:               true,
+		ApplicationName:            "gotosocial",
+		LandingPageUser:            "",
+		ConfigPath:                 "",
+		Host:                       "localhost:8080",
+		AccountDomain:              "localhost:8080",
+		Protocol:                   "http",
+		BindAddress:                "127.0.0.1",
+		Port:                       8080,
+		TrustedProxies:             []string{"127.0.0.1/32", "::1"},
+		DbType:                     envStr("GTS_DB_TYPE", "sqlite"),
+		DbAddress:                  envStr("GTS_DB_ADDRESS", ":memory:"),
+		DbPort:                     envInt("GTS_DB_PORT", 0),
+		DbUser:                     envStr("GTS_DB_USER", ""),
+		DbPassword:                 envStr("GTS_DB_PASSWORD", ""),
+		DbDatabase:                 envStr("GTS_DB_DATABASE", ""),
+		DbTLSMode:                  envStr("GTS_DB_TLS_MODE", ""),
+		DbTLSCACert:                envStr("GTS_DB_TLS_CA_CERT", ""),
+		DbPostgresConnectionString: envStr("GTS_DB_POSTGRES_CONNECTION_STRING", ""),
+		DbMaxOpenConnsMultiplier:   8,
+		DbSqliteJournalMode:        "WAL",
+		DbSqliteSynchronous:        "NORMAL",
+		DbSqliteCacheSize:          8 * bytesize.MiB,
+		DbSqliteBusyTimeout:        time.Minute * 5,
 
 		WebTemplateBaseDir: "./web/template/",
 		WebAssetBaseDir:    "./web/assets/",
@@ -92,6 +93,7 @@ func testDefaults() config.Configuration {
 		InstanceExposeBlocklistWeb:     true,
 		InstanceExposeAllowlist:        true,
 		InstanceExposeAllowlistWeb:     true,
+		InstanceExposeCustomEmojis:     true,
 		InstanceDeliverToSharedInboxes: true,
 		InstanceLanguages: language.Languages{
 			{
@@ -113,15 +115,18 @@ func testDefaults() config.Configuration {
 		AccountsCustomCSSLength:          10000,
 		AccountsMaxProfileFields:         8,
 
-		MediaDescriptionMinChars: 0,
-		MediaDescriptionMaxChars: 500,
-		MediaRemoteCacheDays:     7,
-		MediaLocalMaxSize:        40 * bytesize.MiB,
-		MediaRemoteMaxSize:       40 * bytesize.MiB,
-		MediaEmojiLocalMaxSize:   51200,          // 50KiB
-		MediaEmojiRemoteMaxSize:  102400,         // 100KiB
-		MediaCleanupFrom:         "00:00",        // midnight.
-		MediaCleanupEvery:        24 * time.Hour, // 1/day.
+		Media: config.MediaConfiguration{
+			DescriptionMinChars: 0,
+			DescriptionMaxChars: 500,
+			RemoteCacheDays:     7,
+			LocalMaxSize:        40 * bytesize.MiB,
+			RemoteMaxSize:       40 * bytesize.MiB,
+			EmojiLocalMaxSize:   51200,          // 50KiB
+			EmojiRemoteMaxSize:  102400,         // 100KiB
+			CleanupFrom:         "00:00",        // midnight.
+			CleanupEvery:        24 * time.Hour, // 1/day.
+			ThumbMaxPixels:      512,
+		},
 
 		// the testrig only uses in-memory storage, so we can
 		// safely set this value to 'test' to avoid running storage
@@ -178,7 +183,7 @@ func testDefaults() config.Configuration {
 
 			ScraperDeterrence: config.ScraperDeterrenceConfig{
 				Enabled:    envBool("GTS_ADVANCED_SCRAPER_DETERRENCE_ENABLED", false),
-				Difficulty: uint8(envInt("GTS_ADVANCED_SCRAPER_DETERRENCE_DIFFICULTY", 4)), //nolint
+				Difficulty: uint32(envInt("GTS_ADVANCED_SCRAPER_DETERRENCE_DIFFICULTY", 100000)), //nolint
 			},
 		},
 

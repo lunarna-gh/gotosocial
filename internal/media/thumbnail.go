@@ -33,37 +33,33 @@ import (
 	"golang.org/x/image/webp"
 )
 
-const (
-	maxThumbWidth  = 512
-	maxThumbHeight = 512
-)
-
 // thumbSize returns the dimensions to use for an input
 // image of given width / height, for its outgoing thumbnail.
 // This attempts to maintains the original image aspect ratio.
-func thumbSize(width, height int, aspect float32) (int, int) {
+func thumbSize(max, width, height int, aspect float32) (int, int) {
 
 	switch {
 	// Simplest case, within bounds!
-	case width < maxThumbWidth &&
-		height < maxThumbHeight:
+	case width < max && height < max:
 		return width, height
 
 	// Width is larger side.
 	case width > height:
+
 		// i.e. height = newWidth * (height / width)
-		height = int(float32(maxThumbWidth) / aspect)
-		return maxThumbWidth, height
+		height = int(float32(max) / aspect)
+		return max, height
 
 	// Height is larger side.
 	case height > width:
+
 		// i.e. width = newHeight * (width / height)
-		width = int(float32(maxThumbHeight) * aspect)
-		return width, maxThumbHeight
+		width = int(float32(max) * aspect)
+		return width, max
 
 	// Square.
 	default:
-		return maxThumbWidth, maxThumbHeight
+		return max, max
 	}
 }
 
@@ -352,71 +348,109 @@ func generateWebpBlurhash(filepath string) (string, error) {
 	return blurhash, nil
 }
 
-// List of pixel formats that have an alpha layer.
-// Derived from the following very messy command:
-//
-//	for res in $(ffprobe -show_entries pixel_format=name:flags=alpha | grep -B1 alpha=1 | grep name); do echo $res | sed 's/name=//g' | sed 's/^/"/g' | sed 's/$/",/g'; done
-var alphaPixelFormats = []string{
-	"pal8",
-	"argb",
-	"rgba",
-	"abgr",
-	"bgra",
-	"yuva420p",
-	"ya8",
-	"yuva422p",
-	"yuva444p",
-	"yuva420p9be",
-	"yuva420p9le",
-	"yuva422p9be",
-	"yuva422p9le",
-	"yuva444p9be",
-	"yuva444p9le",
-	"yuva420p10be",
-	"yuva420p10le",
-	"yuva422p10be",
-	"yuva422p10le",
-	"yuva444p10be",
-	"yuva444p10le",
-	"yuva420p16be",
-	"yuva420p16le",
-	"yuva422p16be",
-	"yuva422p16le",
-	"yuva444p16be",
-	"yuva444p16le",
-	"rgba64be",
-	"rgba64le",
-	"bgra64be",
-	"bgra64le",
-	"ya16be",
-	"ya16le",
-	"gbrap",
-	"gbrap16be",
-	"gbrap16le",
-	"ayuv64le",
-	"ayuv64be",
-	"gbrap12be",
-	"gbrap12le",
-	"gbrap10be",
-	"gbrap10le",
-	"gbrapf32be",
-	"gbrapf32le",
-	"yuva422p12be",
-	"yuva422p12le",
-	"yuva444p12be",
-	"yuva444p12le",
-}
-
 // containsAlpha returns whether given pixfmt
 // (i.e. colorspace) contains an alpha channel.
+//
+// generated with: for entry in $(ffprobe.wasm -show_entries pixel_format=name:flags=alpha 2>/dev/null | grep -B1 alpha=1 | sed -n '/name=/{ s|name=||; p }'); do printf '\tcase "%s":\n\t\treturn true\n' "$entry"; done
 func containsAlpha(pixfmt string) bool {
-	if pixfmt == "" {
+	switch pixfmt {
+	case "pal8":
+		return true
+	case "argb":
+		return true
+	case "rgba":
+		return true
+	case "abgr":
+		return true
+	case "bgra":
+		return true
+	case "yuva420p":
+		return true
+	case "ya8":
+		return true
+	case "yuva422p":
+		return true
+	case "yuva444p":
+		return true
+	case "yuva420p9be":
+		return true
+	case "yuva420p9le":
+		return true
+	case "yuva422p9be":
+		return true
+	case "yuva422p9le":
+		return true
+	case "yuva444p9be":
+		return true
+	case "yuva444p9le":
+		return true
+	case "yuva420p10be":
+		return true
+	case "yuva420p10le":
+		return true
+	case "yuva422p10be":
+		return true
+	case "yuva422p10le":
+		return true
+	case "yuva444p10be":
+		return true
+	case "yuva444p10le":
+		return true
+	case "yuva420p16be":
+		return true
+	case "yuva420p16le":
+		return true
+	case "yuva422p16be":
+		return true
+	case "yuva422p16le":
+		return true
+	case "yuva444p16be":
+		return true
+	case "yuva444p16le":
+		return true
+	case "rgba64be":
+		return true
+	case "rgba64le":
+		return true
+	case "bgra64be":
+		return true
+	case "bgra64le":
+		return true
+	case "ya16be":
+		return true
+	case "ya16le":
+		return true
+	case "gbrap":
+		return true
+	case "gbrap16be":
+		return true
+	case "gbrap16le":
+		return true
+	case "ayuv64le":
+		return true
+	case "ayuv64be":
+		return true
+	case "gbrap12be":
+		return true
+	case "gbrap12le":
+		return true
+	case "gbrap10be":
+		return true
+	case "gbrap10le":
+		return true
+	case "gbrapf32be":
+		return true
+	case "gbrapf32le":
+		return true
+	case "yuva422p12be":
+		return true
+	case "yuva422p12le":
+		return true
+	case "yuva444p12be":
+		return true
+	case "yuva444p12le":
+		return true
+	default:
 		return false
 	}
-	for _, checkfmt := range alphaPixelFormats {
-		if pixfmt == checkfmt {
-			return true
-		}
-	}
-	return false
 }

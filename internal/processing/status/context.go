@@ -24,8 +24,6 @@ import (
 	"strings"
 
 	apimodel "code.superseriousbusiness.org/gotosocial/internal/api/model"
-	statusfilter "code.superseriousbusiness.org/gotosocial/internal/filter/status"
-	"code.superseriousbusiness.org/gotosocial/internal/gtscontext"
 	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
 	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
 )
@@ -277,40 +275,8 @@ func (p *Processor) ContextGet(
 	requester *gtsmodel.Account,
 	targetStatusID string,
 ) (*apimodel.ThreadContext, gtserror.WithCode) {
-	// Retrieve filters as they affect
-	// what should be shown to requester.
-	filters, err := p.state.DB.GetFiltersForAccountID(
-		ctx, // Populate filters.
-		requester.ID,
-	)
-	if err != nil {
-		err = gtserror.Newf(
-			"couldn't retrieve filters for account %s: %w",
-			requester.ID, err,
-		)
-		return nil, gtserror.NewErrorInternalError(err)
-	}
-
-	// Retrieve mutes as they affect
-	// what should be shown to requester.
-	mutes, err := p.state.DB.GetAccountMutes(
-		// No need to populate mutes,
-		// IDs are enough here.
-		gtscontext.SetBarebones(ctx),
-		requester.ID,
-		nil, // No paging - get all.
-	)
-	if err != nil {
-		err = gtserror.Newf(
-			"couldn't retrieve mutes for account %s: %w",
-			requester.ID, err,
-		)
-		return nil, gtserror.NewErrorInternalError(err)
-	}
-
 	// Retrieve the full thread context.
-	threadContext, errWithCode := p.contextGet(
-		ctx,
+	threadContext, errWithCode := p.contextGet(ctx,
 		requester,
 		targetStatusID,
 	)
@@ -324,18 +290,14 @@ func (p *Processor) ContextGet(
 	apiContext.Ancestors = p.c.GetVisibleAPIStatuses(ctx,
 		requester,
 		threadContext.ancestors,
-		statusfilter.FilterContextThread,
-		filters,
-		mutes,
+		gtsmodel.FilterContextThread,
 	)
 
 	// Convert and filter the thread context descendants
 	apiContext.Descendants = p.c.GetVisibleAPIStatuses(ctx,
 		requester,
 		threadContext.descendants,
-		statusfilter.FilterContextThread,
-		filters,
-		mutes,
+		gtsmodel.FilterContextThread,
 	)
 
 	return &apiContext, nil
@@ -352,8 +314,8 @@ func (p *Processor) WebContextGet(
 	targetStatusID string,
 ) (*apimodel.WebThreadContext, gtserror.WithCode) {
 	// Retrieve the internal thread context.
-	iCtx, errWithCode := p.contextGet(
-		ctx,
+	iCtx, errWithCode := p.contextGet(ctx,
+
 		nil, // No authed requester.
 		targetStatusID,
 	)

@@ -18,14 +18,12 @@
 package timeline_test
 
 import (
-	"context"
 	"testing"
 
 	apimodel "code.superseriousbusiness.org/gotosocial/internal/api/model"
 	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
 	"code.superseriousbusiness.org/gotosocial/internal/id"
 	"code.superseriousbusiness.org/gotosocial/internal/paging"
-	"code.superseriousbusiness.org/gotosocial/internal/util"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -35,7 +33,7 @@ type PublicTestSuite struct {
 
 func (suite *PublicTestSuite) TestPublicTimelineGet() {
 	var (
-		ctx       = context.Background()
+		ctx       = suite.T().Context()
 		requester = suite.testAccounts["local_account_1"]
 		maxID     = ""
 		sinceID   = ""
@@ -66,7 +64,7 @@ func (suite *PublicTestSuite) TestPublicTimelineGet() {
 
 func (suite *PublicTestSuite) TestPublicTimelineGetNotEmpty() {
 	var (
-		ctx       = context.Background()
+		ctx       = suite.T().Context()
 		requester = suite.testAccounts["local_account_1"]
 		// Select 1 *just above* a status we know should
 		// not be in the public timeline -- a public
@@ -101,7 +99,7 @@ func (suite *PublicTestSuite) TestPublicTimelineGetNotEmpty() {
 // A timeline containing a status hidden due to filtering should return other statuses with no error.
 func (suite *PublicTestSuite) TestPublicTimelineGetHideFiltered() {
 	var (
-		ctx                 = context.Background()
+		ctx                 = suite.T().Context()
 		requester           = suite.testAccounts["local_account_1"]
 		maxID               = ""
 		sinceID             = ""
@@ -111,24 +109,20 @@ func (suite *PublicTestSuite) TestPublicTimelineGetHideFiltered() {
 		filteredStatus      = suite.testStatuses["admin_account_status_2"]
 		filteredStatusFound = false
 		filterID            = id.NewULID()
-		filter              = &gtsmodel.Filter{
+		filterStatusID      = id.NewULID()
+		filterStatus        = &gtsmodel.FilterStatus{
+			ID:       filterStatusID,
+			FilterID: filterID,
+			StatusID: filteredStatus.ID,
+		}
+		filter = &gtsmodel.Filter{
 			ID:        filterID,
 			AccountID: requester.ID,
 			Title:     "timeline filtering test",
 			Action:    gtsmodel.FilterActionHide,
-			Statuses: []*gtsmodel.FilterStatus{
-				{
-					ID:        id.NewULID(),
-					AccountID: requester.ID,
-					FilterID:  filterID,
-					StatusID:  filteredStatus.ID,
-				},
-			},
-			ContextHome:          util.Ptr(false),
-			ContextNotifications: util.Ptr(false),
-			ContextPublic:        util.Ptr(true),
-			ContextThread:        util.Ptr(false),
-			ContextAccount:       util.Ptr(false),
+			Statuses:  []*gtsmodel.FilterStatus{filterStatus},
+			StatusIDs: []string{filterStatusID},
+			Contexts:  gtsmodel.FilterContexts(gtsmodel.FilterContextPublic),
 		}
 	)
 
@@ -152,6 +146,11 @@ func (suite *PublicTestSuite) TestPublicTimelineGetHideFiltered() {
 	}
 	if !filteredStatusFound {
 		suite.FailNow("precondition failed: status we would filter isn't present in unfiltered timeline")
+	}
+
+	// Create the filter status associated with the main filter.
+	if err := suite.db.PutFilterStatus(ctx, filterStatus); err != nil {
+		suite.FailNow(err.Error())
 	}
 
 	// Create a filter to hide one status on the timeline.

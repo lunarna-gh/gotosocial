@@ -24,7 +24,6 @@ import (
 
 	apimodel "code.superseriousbusiness.org/gotosocial/internal/api/model"
 	"code.superseriousbusiness.org/gotosocial/internal/db"
-	statusfilter "code.superseriousbusiness.org/gotosocial/internal/filter/status"
 	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
 	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
 	"code.superseriousbusiness.org/gotosocial/internal/log"
@@ -87,7 +86,7 @@ func (p *Processor) TagTimelineGet(
 		nil,
 
 		// Status filter context.
-		statusfilter.FilterContextPublic,
+		gtsmodel.FilterContextPublic,
 
 		// Database load function.
 		func(pg *paging.Page) (statuses []*gtsmodel.Status, err error) {
@@ -101,9 +100,22 @@ func (p *Processor) TagTimelineGet(
 			// Check the visibility of passed status to requesting user.
 			ok, err := p.visFilter.StatusPublicTimelineable(ctx, requester, s)
 			if err != nil {
-				log.Errorf(ctx, "error filtering status %s: %v", s.URI, err)
+				log.Errorf(ctx, "error checking status %s visibility: %v", s.URI, err)
+				return true // default assume not visible
+			} else if !ok {
+				return true
 			}
-			return !ok
+
+			// Check if status been muted by requester from timelines.
+			muted, err := p.muteFilter.StatusMuted(ctx, requester, s)
+			if err != nil {
+				log.Errorf(ctx, "error checking status %s mutes: %v", s.URI, err)
+				return true // default assume muted
+			} else if muted {
+				return true
+			}
+
+			return false
 		},
 
 		// Post filtering funtion,

@@ -18,7 +18,6 @@
 package subscriptions_test
 
 import (
-	"context"
 	"errors"
 	"testing"
 	"time"
@@ -51,7 +50,7 @@ func (suite *SubscriptionsTestSuite) SetupSuite() {
 
 func (suite *SubscriptionsTestSuite) TestDomainBlocksCSV() {
 	var (
-		ctx           = context.Background()
+		ctx           = suite.T().Context()
 		testStructs   = testrig.SetupTestStructs(rMediaPath, rTemplatePath)
 		testAccount   = suite.testAccounts["admin_account"]
 		subscriptions = subscriptions.New(
@@ -131,7 +130,7 @@ func (suite *SubscriptionsTestSuite) TestDomainBlocksCSV() {
 
 func (suite *SubscriptionsTestSuite) TestDomainBlocksJSON() {
 	var (
-		ctx           = context.Background()
+		ctx           = suite.T().Context()
 		testStructs   = testrig.SetupTestStructs(rMediaPath, rTemplatePath)
 		testAccount   = suite.testAccounts["admin_account"]
 		subscriptions = subscriptions.New(
@@ -211,7 +210,7 @@ func (suite *SubscriptionsTestSuite) TestDomainBlocksJSON() {
 
 func (suite *SubscriptionsTestSuite) TestDomainBlocksPlain() {
 	var (
-		ctx           = context.Background()
+		ctx           = suite.T().Context()
 		testStructs   = testrig.SetupTestStructs(rMediaPath, rTemplatePath)
 		testAccount   = suite.testAccounts["admin_account"]
 		subscriptions = subscriptions.New(
@@ -291,7 +290,7 @@ func (suite *SubscriptionsTestSuite) TestDomainBlocksPlain() {
 
 func (suite *SubscriptionsTestSuite) TestDomainBlocksCSVCaching() {
 	var (
-		ctx           = context.Background()
+		ctx           = suite.T().Context()
 		testStructs   = testrig.SetupTestStructs(rMediaPath, rTemplatePath)
 		testAccount   = suite.testAccounts["admin_account"]
 		subscriptions = subscriptions.New(
@@ -367,7 +366,7 @@ func (suite *SubscriptionsTestSuite) TestDomainBlocksCSVCaching() {
 
 func (suite *SubscriptionsTestSuite) TestDomainBlocksCSVFutureLastModified() {
 	var (
-		ctx           = context.Background()
+		ctx           = suite.T().Context()
 		testStructs   = testrig.SetupTestStructs(rMediaPath, rTemplatePath)
 		testAccount   = suite.testAccounts["admin_account"]
 		subscriptions = subscriptions.New(
@@ -439,7 +438,7 @@ func (suite *SubscriptionsTestSuite) TestDomainBlocksCSVFutureLastModified() {
 
 func (suite *SubscriptionsTestSuite) TestDomainBlocksCSVGarbageLastModified() {
 	var (
-		ctx           = context.Background()
+		ctx           = suite.T().Context()
 		testStructs   = testrig.SetupTestStructs(rMediaPath, rTemplatePath)
 		testAccount   = suite.testAccounts["admin_account"]
 		subscriptions = subscriptions.New(
@@ -511,7 +510,7 @@ func (suite *SubscriptionsTestSuite) TestDomainBlocksCSVGarbageLastModified() {
 
 func (suite *SubscriptionsTestSuite) TestDomainBlocks404() {
 	var (
-		ctx           = context.Background()
+		ctx           = suite.T().Context()
 		testStructs   = testrig.SetupTestStructs(rMediaPath, rTemplatePath)
 		testAccount   = suite.testAccounts["admin_account"]
 		subscriptions = subscriptions.New(
@@ -569,7 +568,7 @@ func (suite *SubscriptionsTestSuite) TestDomainBlocks404() {
 
 func (suite *SubscriptionsTestSuite) TestDomainBlocksWrongContentTypeCSV() {
 	var (
-		ctx           = context.Background()
+		ctx           = suite.T().Context()
 		testStructs   = testrig.SetupTestStructs(rMediaPath, rTemplatePath)
 		testAccount   = suite.testAccounts["admin_account"]
 		subscriptions = subscriptions.New(
@@ -627,7 +626,7 @@ func (suite *SubscriptionsTestSuite) TestDomainBlocksWrongContentTypeCSV() {
 
 func (suite *SubscriptionsTestSuite) TestDomainBlocksWrongContentTypePlain() {
 	var (
-		ctx           = context.Background()
+		ctx           = suite.T().Context()
 		testStructs   = testrig.SetupTestStructs(rMediaPath, rTemplatePath)
 		testAccount   = suite.testAccounts["admin_account"]
 		subscriptions = subscriptions.New(
@@ -685,7 +684,7 @@ func (suite *SubscriptionsTestSuite) TestDomainBlocksWrongContentTypePlain() {
 
 func (suite *SubscriptionsTestSuite) TestAdoption() {
 	var (
-		ctx           = context.Background()
+		ctx           = suite.T().Context()
 		testStructs   = testrig.SetupTestStructs(rMediaPath, rTemplatePath)
 		testAccount   = suite.testAccounts["admin_account"]
 		subscriptions = subscriptions.New(
@@ -817,7 +816,7 @@ func (suite *SubscriptionsTestSuite) TestAdoption() {
 
 func (suite *SubscriptionsTestSuite) TestDomainAllowsAndBlocks() {
 	var (
-		ctx           = context.Background()
+		ctx           = suite.T().Context()
 		testStructs   = testrig.SetupTestStructs(rMediaPath, rTemplatePath)
 		testAccount   = suite.testAccounts["admin_account"]
 		subscriptions = subscriptions.New(
@@ -948,6 +947,138 @@ func (suite *SubscriptionsTestSuite) TestDomainAllowsAndBlocks() {
 		suite.FailNow(err.Error())
 	}
 	suite.Equal(existingAllow.SubscriptionID, testAllowSubscription.ID)
+}
+
+func (suite *SubscriptionsTestSuite) TestRemoveRetraction() {
+	var (
+		ctx           = suite.T().Context()
+		testStructs   = testrig.SetupTestStructs(rMediaPath, rTemplatePath)
+		testAccount   = suite.testAccounts["admin_account"]
+		subscriptions = subscriptions.New(
+			testStructs.State,
+			testStructs.TransportController,
+			testStructs.TypeConverter,
+		)
+
+		// A subscription for a plain list of
+		// baddies, which removes retracted entries.
+		testSubscription = &gtsmodel.DomainPermissionSubscription{
+			ID:                 "01JGE681TQSBPAV59GZXPKE62H",
+			Priority:           255,
+			Title:              "whatever!",
+			PermissionType:     gtsmodel.DomainPermissionBlock,
+			AsDraft:            util.Ptr(false),
+			AdoptOrphans:       util.Ptr(false),
+			CreatedByAccountID: testAccount.ID,
+			CreatedByAccount:   testAccount,
+			URI:                "https://lists.example.org/baddies.txt",
+			ContentType:        gtsmodel.DomainPermSubContentTypePlain,
+			RemoveRetracted:    util.Ptr(true),
+		}
+
+		// Block owned by testSubscription
+		// that no longer exists on the remote
+		// list, ie., it's been retracted.
+		retractedBlock = &gtsmodel.DomainBlock{
+			ID:                 "01JHX2V5WN250TKB6FQ1M3QE1H",
+			Domain:             "retracted.example.org",
+			CreatedByAccount:   testAccount,
+			CreatedByAccountID: testAccount.ID,
+			SubscriptionID:     "01JGE681TQSBPAV59GZXPKE62H",
+		}
+	)
+	defer testrig.TearDownTestStructs(testStructs)
+
+	// Store test subscription.
+	if err := testStructs.State.DB.PutDomainPermissionSubscription(
+		ctx, testSubscription,
+	); err != nil {
+		suite.FailNow(err.Error())
+	}
+
+	// Store the retracted block.
+	if err := testStructs.State.DB.PutDomainBlock(
+		ctx, retractedBlock,
+	); err != nil {
+		suite.FailNow(err.Error())
+	}
+
+	// Process subscriptions.
+	subscriptions.ProcessDomainPermissionSubscriptions(ctx, testSubscription.PermissionType)
+
+	// Retracted block should be removed.
+	if !testrig.WaitFor(func() bool {
+		_, err := testStructs.State.DB.GetDomainBlock(ctx, retractedBlock.Domain)
+		return errors.Is(err, db.ErrNoEntries)
+	}) {
+		suite.FailNow("timed out waiting for block to be removed")
+	}
+}
+
+func (suite *SubscriptionsTestSuite) TestOrphanRetraction() {
+	var (
+		ctx           = suite.T().Context()
+		testStructs   = testrig.SetupTestStructs(rMediaPath, rTemplatePath)
+		testAccount   = suite.testAccounts["admin_account"]
+		subscriptions = subscriptions.New(
+			testStructs.State,
+			testStructs.TransportController,
+			testStructs.TypeConverter,
+		)
+
+		// A subscription for a plain list of
+		// baddies, which orphans retracted entries.
+		testSubscription = &gtsmodel.DomainPermissionSubscription{
+			ID:                 "01JGE681TQSBPAV59GZXPKE62H",
+			Priority:           255,
+			Title:              "whatever!",
+			PermissionType:     gtsmodel.DomainPermissionBlock,
+			AsDraft:            util.Ptr(false),
+			AdoptOrphans:       util.Ptr(false),
+			CreatedByAccountID: testAccount.ID,
+			CreatedByAccount:   testAccount,
+			URI:                "https://lists.example.org/baddies.txt",
+			ContentType:        gtsmodel.DomainPermSubContentTypePlain,
+			RemoveRetracted:    util.Ptr(false),
+		}
+
+		// Block owned by testSubscription
+		// that no longer exists on the remote
+		// list, ie., it's been retracted.
+		retractedBlock = &gtsmodel.DomainBlock{
+			ID:                 "01JHX2V5WN250TKB6FQ1M3QE1H",
+			Domain:             "retracted.example.org",
+			CreatedByAccount:   testAccount,
+			CreatedByAccountID: testAccount.ID,
+			SubscriptionID:     "01JGE681TQSBPAV59GZXPKE62H",
+		}
+	)
+	defer testrig.TearDownTestStructs(testStructs)
+
+	// Store test subscription.
+	if err := testStructs.State.DB.PutDomainPermissionSubscription(
+		ctx, testSubscription,
+	); err != nil {
+		suite.FailNow(err.Error())
+	}
+
+	// Store the retracted block.
+	if err := testStructs.State.DB.PutDomainBlock(
+		ctx, retractedBlock,
+	); err != nil {
+		suite.FailNow(err.Error())
+	}
+
+	// Process subscriptions.
+	subscriptions.ProcessDomainPermissionSubscriptions(ctx, testSubscription.PermissionType)
+
+	// Retracted block should be orphaned.
+	if !testrig.WaitFor(func() bool {
+		block, err := testStructs.State.DB.GetDomainBlock(ctx, retractedBlock.Domain)
+		return err == nil && block.SubscriptionID == ""
+	}) {
+		suite.FailNow("timed out waiting for block to be orphaned")
+	}
 }
 
 func TestSubscriptionTestSuite(t *testing.T) {

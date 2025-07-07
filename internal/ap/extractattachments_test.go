@@ -18,7 +18,6 @@
 package ap_test
 
 import (
-	"context"
 	"encoding/json"
 	"testing"
 
@@ -36,7 +35,7 @@ func (suite *ExtractAttachmentsTestSuite) TestExtractAttachmentMissingURL() {
 	d1.SetActivityStreamsUrl(streams.NewActivityStreamsUrlProperty())
 
 	attachment, err := ap.ExtractAttachment(d1)
-	suite.EqualError(err, "ExtractAttachment: error extracting attachment URL: ExtractURL: no valid URL property found")
+	suite.EqualError(err, "ExtractAttachment: empty attachment URL")
 	suite.Nil(attachment)
 }
 
@@ -59,7 +58,7 @@ func (suite *ExtractAttachmentsTestSuite) TestExtractDescription() {
 		suite.FailNow(err.Error())
 	}
 
-	t, err := streams.ToType(context.Background(), raw)
+	t, err := streams.ToType(suite.T().Context(), raw)
 	if err != nil {
 		suite.FailNow(err.Error())
 	}

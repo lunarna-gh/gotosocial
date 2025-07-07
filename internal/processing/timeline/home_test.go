@@ -18,14 +18,12 @@
 package timeline_test
 
 import (
-	"context"
 	"testing"
 
 	apimodel "code.superseriousbusiness.org/gotosocial/internal/api/model"
 	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
 	"code.superseriousbusiness.org/gotosocial/internal/id"
 	"code.superseriousbusiness.org/gotosocial/internal/paging"
-	"code.superseriousbusiness.org/gotosocial/internal/util"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -40,7 +38,7 @@ func (suite *HomeTestSuite) TearDownTest() {
 // A timeline containing a status hidden due to filtering should return other statuses with no error.
 func (suite *HomeTestSuite) TestHomeTimelineGetHideFiltered() {
 	var (
-		ctx                 = context.Background()
+		ctx                 = suite.T().Context()
 		requester           = suite.testAccounts["local_account_1"]
 		maxID               = ""
 		sinceID             = ""
@@ -50,24 +48,20 @@ func (suite *HomeTestSuite) TestHomeTimelineGetHideFiltered() {
 		filteredStatus      = suite.testStatuses["admin_account_status_2"]
 		filteredStatusFound = false
 		filterID            = id.NewULID()
-		filter              = &gtsmodel.Filter{
+		filterStatusID      = id.NewULID()
+		filterStatus        = &gtsmodel.FilterStatus{
+			ID:       filterStatusID,
+			FilterID: filterID,
+			StatusID: filteredStatus.ID,
+		}
+		filter = &gtsmodel.Filter{
 			ID:        filterID,
 			AccountID: requester.ID,
 			Title:     "timeline filtering test",
 			Action:    gtsmodel.FilterActionHide,
-			Statuses: []*gtsmodel.FilterStatus{
-				{
-					ID:        id.NewULID(),
-					AccountID: requester.ID,
-					FilterID:  filterID,
-					StatusID:  filteredStatus.ID,
-				},
-			},
-			ContextHome:          util.Ptr(true),
-			ContextNotifications: util.Ptr(false),
-			ContextPublic:        util.Ptr(false),
-			ContextThread:        util.Ptr(false),
-			ContextAccount:       util.Ptr(false),
+			Statuses:  []*gtsmodel.FilterStatus{filterStatus},
+			StatusIDs: []string{filterStatusID},
+			Contexts:  gtsmodel.FilterContexts(gtsmodel.FilterContextHome),
 		}
 	)
 
@@ -95,6 +89,11 @@ func (suite *HomeTestSuite) TestHomeTimelineGetHideFiltered() {
 
 	// Clear the timeline to drop all cached statuses.
 	suite.state.Caches.Timelines.Home.Clear(requester.ID)
+
+	// Create the filter status associated with the main filter.
+	if err := suite.db.PutFilterStatus(ctx, filterStatus); err != nil {
+		suite.FailNow(err.Error())
+	}
 
 	// Create a filter to hide one status on the timeline.
 	if err := suite.db.PutFilter(ctx, filter); err != nil {

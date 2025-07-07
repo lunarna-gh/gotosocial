@@ -1289,6 +1289,11 @@ definitions:
                 format: uint8
                 type: integer
                 x-go-name: Priority
+            remove_retracted:
+                description: If true, then when a list is processed, if the list does *not* contain entries that it *did* contain previously, ie., retracted entries, then domain permissions corresponding to those entries will be removed. If false, they will just be orphaned instead.
+                example: true
+                type: boolean
+                x-go-name: RemoveRetracted
             successfully_fetched_at:
                 description: Time of the most recent successful fetch (ISO 8601 Datetime).
                 example: "2021-07-30T09:20:25+00:00"
@@ -2108,6 +2113,20 @@ definitions:
                 example: <p>Registrations are currently closed on example.org because of spam bots!</p>
                 type: string
                 x-go-name: Message
+            min_age:
+                description: |-
+                    A minimum age required to register, if configured.
+                    Currently not implemented: will always be null.
+                format: int64
+                type: integer
+                x-go-name: MinAge
+            reason_required:
+                description: |-
+                    Whether registrations require the user to provide a reason for joining.
+                    Only applicable when ApprovalRequired is true.
+                example: true
+                type: boolean
+                x-go-name: ReasonRequired
         title: Information about registering for this instance.
         type: object
         x-go-name: InstanceV2Registrations
@@ -2178,11 +2197,26 @@ definitions:
         x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     instanceV2URLs:
         properties:
+            about:
+                description: Address of the server about page.
+                example: https://example.org/about
+                type: string
+                x-go-name: About
+            privacy_policy:
+                description: Address of the server privacy policy, if any.
+                example: https://example.org/about#rules
+                type: string
+                x-go-name: PrivacyPolicy
             streaming:
                 description: Websockets address for status and notification streaming.
                 example: wss://example.org
                 type: string
                 x-go-name: Streaming
+            terms_of_service:
+                description: Address of the server current terms of service, if any.
+                example: https://example.org/about#privacy_policy
+                type: string
+                x-go-name: TermsOfService
         title: InstanceV2URLs models instance-relevant URLs for client application consumption.
         type: object
         x-go-name: InstanceV2URLs
@@ -3752,6 +3786,7 @@ info:
         read:applications: grants read access to user-managed applications
         read:blocks: grants read access to blocks
         read:bookmarks: grants read access to bookmarks
+        read:custom_emojis: grants read access to custom emojis
         read:favourites: grants read access to accounts
         read:filters: grants read access to filters
         read:follows: grants read access to follows
@@ -6721,6 +6756,11 @@ paths:
                   in: formData
                   name: adopt_orphans
                   type: boolean
+                - default: true
+                  description: If true, then when a list is processed, if the list does *not* contain entries that it *did* contain previously, ie., retracted entries, then domain permissions corresponding to those entries will be removed. If false, they will just be orphaned instead.
+                  in: formData
+                  name: remove_retracted
+                  type: boolean
                 - description: URI to call in order to fetch the permissions list.
                   in: formData
                   name: uri
@@ -6799,6 +6839,11 @@ paths:
                   description: 'If true, this domain permission subscription will "adopt" domain permissions which already exist on the instance, and which meet the following conditions: 1) they have no subscription ID (ie., they''re "orphaned") and 2) they are present in the subscribed list. Such orphaned domain permissions will be given this subscription''s subscription ID value and be managed by this subscription.'
                   in: formData
                   name: adopt_orphans
+                  type: boolean
+                - default: true
+                  description: If true, then when a list is processed, if the list does *not* contain entries that it *did* contain previously, ie., retracted entries, then domain permissions corresponding to those entries will be removed. If false, they will just be orphaned instead.
+                  in: formData
+                  name: remove_retracted
                   type: boolean
                 - description: MIME content type to use when parsing the permissions list. One of "text/plain", "text/csv", and "application/json".
                   in: formData
@@ -8126,6 +8171,7 @@ paths:
                 - conversations
     /api/v1/custom_emojis:
         get:
+            description: If the instance config setting `instance-expose-custom-emojis` is `true` then authentication is not required.
             operationId: customEmojisGet
             produces:
                 - application/json
@@ -8143,7 +8189,8 @@ paths:
                 "500":
                     description: internal server error
             security:
-                - OAuth2 Bearer: []
+                - OAuth2 Bearer:
+                    - read:custom_emojis
             summary: Get an array of custom emojis available on the instance.
             tags:
                 - custom_emojis
@@ -8743,6 +8790,65 @@ paths:
                 - OAuth2 Bearer:
                     - write:follows
             summary: Reject/deny follow request from the given account ID.
+            tags:
+                - follow_requests
+    /api/v1/follow_requests/outgoing:
+        get:
+            description: |-
+                The next and previous queries can be parsed from the returned Link header.
+                Example:
+
+                ```
+                <https://example.org/api/v1/follow_requests/outgoing?limit=80&max_id=01FC0SKA48HNSVR6YKZCQGS2V8>; rel="next", <https://example.org/api/v1/follow_requests/outgoing?limit=80&min_id=01FC0SKW5JK2Q4EVAV2B462YY0>; rel="prev"
+                ````
+            operationId: getOutgoingFollowRequests
+            parameters:
+                - description: 'Return only follow requested accounts *OLDER* than the given max ID. The follow requestee with the specified ID will not be included in the response. NOTE: the ID is of the internal follow request, NOT any of the returned accounts.'
+                  in: query
+                  name: max_id
+                  type: string
+                - description: 'Return only follow requested accounts *NEWER* than the given since ID. The follow requestee with the specified ID will not be included in the response. NOTE: the ID is of the internal follow request, NOT any of the returned accounts.'
+                  in: query
+                  name: since_id
+                  type: string
+                - description: 'Return only follow requested accounts *IMMEDIATELY NEWER* than the given min ID. The follow requestee with the specified ID will not be included in the response. NOTE: the ID is of the internal follow request, NOT any of the returned accounts.'
+                  in: query
+                  name: min_id
+                  type: string
+                - default: 40
+                  description: Number of follow requested accounts to return.
+                  in: query
+                  maximum: 80
+                  minimum: 1
+                  name: limit
+                  type: integer
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: ""
+                    headers:
+                        Link:
+                            description: Links to the next and previous queries.
+                            type: string
+                    schema:
+                        items:
+                            $ref: '#/definitions/account'
+                        type: array
+                "400":
+                    description: bad request
+                "401":
+                    description: unauthorized
+                "404":
+                    description: not found
+                "406":
+                    description: not acceptable
+                "500":
+                    description: internal server error
+            security:
+                - OAuth2 Bearer:
+                    - read:follows
+            summary: Get an array of accounts that you have requested to follow.
             tags:
                 - follow_requests
     /api/v1/followed_tags:
@@ -9449,7 +9555,7 @@ paths:
             security:
                 - OAuth2 Bearer:
                     - read:lists
-            summary: Get all lists for owned by authorized user.
+            summary: Get all lists owned by authorized user.
             tags:
                 - lists
         post:
@@ -11241,7 +11347,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - write:statuses
+                    - write:favourites
             summary: Star/like/favourite the given status, if permitted.
             tags:
                 - statuses
@@ -13529,6 +13635,7 @@ securityDefinitions:
             read:applications: grants read access to user-managed applications
             read:blocks: grants read access to blocks
             read:bookmarks: grants read access to bookmarks
+            read:custom_emojis: grants read access to custom emojis
             read:favourites: grants read access to accounts
             read:filters: grants read access to filters
             read:follows: grants read access to follows

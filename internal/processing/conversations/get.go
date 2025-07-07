@@ -64,29 +64,38 @@ func (p *Processor) GetAll(
 
 	items := make([]interface{}, 0, count)
 
-	filters, mutes, errWithCode := p.getFiltersAndMutes(ctx, requestingAccount)
-	if errWithCode != nil {
-		return nil, errWithCode
-	}
-
 	for _, conversation := range conversations {
-		// Convert conversation to frontend API model.
-		apiConversation, err := p.converter.ConversationToAPIConversation(
-			ctx,
-			conversation,
+		// Check whether status if filtered by local participant in context.
+		filtered, hide, err := p.statusFilter.StatusFilterResultsInContext(ctx,
 			requestingAccount,
-			filters,
-			mutes,
+			conversation.LastStatus,
+			gtsmodel.FilterContextNotifications,
 		)
 		if err != nil {
-			log.Errorf(
-				ctx,
+			log.Errorf(ctx, "error filtering status: %v", err)
+			continue
+		}
+
+		if hide {
+			continue
+		}
+
+		// Convert conversation to frontend API model.
+		apiConversation, err := p.converter.ConversationToAPIConversation(ctx,
+			conversation,
+			requestingAccount,
+		)
+		if err != nil {
+			log.Errorf(ctx,
 				"error converting conversation %s to API representation: %v",
 				conversation.ID,
 				err,
 			)
 			continue
 		}
+
+		// Set filter results on attached status model.
+		apiConversation.LastStatus.Filtered = filtered
 
 		// Append conversation to return items.
 		items = append(items, apiConversation)

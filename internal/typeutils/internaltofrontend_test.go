@@ -24,11 +24,8 @@ import (
 	"strings"
 	"testing"
 
-	apimodel "code.superseriousbusiness.org/gotosocial/internal/api/model"
 	"code.superseriousbusiness.org/gotosocial/internal/config"
 	"code.superseriousbusiness.org/gotosocial/internal/db"
-	statusfilter "code.superseriousbusiness.org/gotosocial/internal/filter/status"
-	"code.superseriousbusiness.org/gotosocial/internal/filter/usermute"
 	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
 	"code.superseriousbusiness.org/gotosocial/internal/util"
 	"code.superseriousbusiness.org/gotosocial/testrig"
@@ -41,7 +38,7 @@ type InternalToFrontendTestSuite struct {
 
 func (suite *InternalToFrontendTestSuite) TestAccountToFrontend() {
 	testAccount := suite.testAccounts["local_account_1"] // take zork for this test
-	apiAccount, err := suite.typeconverter.AccountToAPIAccountPublic(context.Background(), testAccount)
+	apiAccount, err := suite.typeconverter.AccountToAPIAccountPublic(suite.T().Context(), testAccount)
 	suite.NoError(err)
 	suite.NotNil(apiAccount)
 
@@ -88,11 +85,11 @@ func (suite *InternalToFrontendTestSuite) TestAccountToFrontendAliasedAndMoved()
 	testAccount.MovedToURI = movedTo.URI
 	testAccount.AlsoKnownAsURIs = []string{movedTo.URI}
 
-	if err := suite.state.DB.UpdateAccount(context.Background(), testAccount, "moved_to_uri"); err != nil {
+	if err := suite.state.DB.UpdateAccount(suite.T().Context(), testAccount, "moved_to_uri"); err != nil {
 		suite.FailNow(err.Error())
 	}
 
-	apiAccount, err := suite.typeconverter.AccountToAPIAccountSensitive(context.Background(), testAccount)
+	apiAccount, err := suite.typeconverter.AccountToAPIAccountSensitive(suite.T().Context(), testAccount)
 	suite.NoError(err)
 	suite.NotNil(apiAccount)
 
@@ -195,7 +192,7 @@ func (suite *InternalToFrontendTestSuite) TestAccountToFrontendWithEmojiStruct()
 	testAccount.Emojis = []*gtsmodel.Emoji{testEmoji}
 	testAccount.EmojiIDs = []string{testEmoji.ID}
 
-	apiAccount, err := suite.typeconverter.AccountToAPIAccountPublic(context.Background(), testAccount)
+	apiAccount, err := suite.typeconverter.AccountToAPIAccountPublic(suite.T().Context(), testAccount)
 	suite.NoError(err)
 	suite.NotNil(apiAccount)
 
@@ -245,7 +242,7 @@ func (suite *InternalToFrontendTestSuite) TestAccountToFrontendWithEmojiIDs() {
 
 	testAccount.EmojiIDs = []string{testEmoji.ID}
 
-	apiAccount, err := suite.typeconverter.AccountToAPIAccountPublic(context.Background(), testAccount)
+	apiAccount, err := suite.typeconverter.AccountToAPIAccountPublic(suite.T().Context(), testAccount)
 	suite.NoError(err)
 	suite.NotNil(apiAccount)
 
@@ -291,7 +288,7 @@ func (suite *InternalToFrontendTestSuite) TestAccountToFrontendWithEmojiIDs() {
 
 func (suite *InternalToFrontendTestSuite) TestAccountToFrontendSensitive() {
 	testAccount := suite.testAccounts["local_account_1"] // take zork for this test
-	apiAccount, err := suite.typeconverter.AccountToAPIAccountSensitive(context.Background(), testAccount)
+	apiAccount, err := suite.typeconverter.AccountToAPIAccountSensitive(suite.T().Context(), testAccount)
 	suite.NoError(err)
 	suite.NotNil(apiAccount)
 
@@ -347,7 +344,7 @@ func (suite *InternalToFrontendTestSuite) TestAccountToFrontendSensitive() {
 
 func (suite *InternalToFrontendTestSuite) TestAccountToFrontendPublicPunycode() {
 	testAccount := suite.testAccounts["remote_account_4"]
-	apiAccount, err := suite.typeconverter.AccountToAPIAccountPublic(context.Background(), testAccount)
+	apiAccount, err := suite.typeconverter.AccountToAPIAccountPublic(suite.T().Context(), testAccount)
 	suite.NoError(err)
 	suite.NotNil(apiAccount)
 
@@ -384,7 +381,7 @@ func (suite *InternalToFrontendTestSuite) TestAccountToFrontendPublicPunycode() 
 }
 
 func (suite *InternalToFrontendTestSuite) TestLocalInstanceAccountToFrontendPublic() {
-	ctx := context.Background()
+	ctx := suite.T().Context()
 	testAccount, err := suite.db.GetInstanceAccount(ctx, "")
 	if err != nil {
 		suite.FailNow(err.Error())
@@ -424,7 +421,7 @@ func (suite *InternalToFrontendTestSuite) TestLocalInstanceAccountToFrontendPubl
 }
 
 func (suite *InternalToFrontendTestSuite) TestLocalInstanceAccountToFrontendBlocked() {
-	ctx := context.Background()
+	ctx := suite.T().Context()
 	testAccount, err := suite.db.GetInstanceAccount(ctx, "")
 	if err != nil {
 		suite.FailNow(err.Error())
@@ -466,7 +463,7 @@ func (suite *InternalToFrontendTestSuite) TestLocalInstanceAccountToFrontendBloc
 func (suite *InternalToFrontendTestSuite) TestStatusToFrontend() {
 	testStatus := suite.testStatuses["admin_account_status_1"]
 	requestingAccount := suite.testAccounts["local_account_1"]
-	apiStatus, err := suite.typeconverter.StatusToAPIStatus(context.Background(), testStatus, requestingAccount, statusfilter.FilterContextNone, nil, nil)
+	apiStatus, err := suite.typeconverter.StatusToAPIStatus(suite.T().Context(), testStatus, requestingAccount)
 	suite.NoError(err)
 
 	b, err := json.MarshalIndent(apiStatus, "", "  ")
@@ -629,7 +626,7 @@ func (suite *InternalToFrontendTestSuite) TestStatusToFrontendHTMLContentWarning
 	testStatus.ContentWarning = `<p>First paragraph of content warning</p><h4>Here's the title!</h4><p></p><p>Big boobs<br>Tee hee!<br><br>Some more text<br>And a bunch more<br><br>Hasta la victoria siempre!</p>`
 
 	requestingAccount := suite.testAccounts["local_account_1"]
-	apiStatus, err := suite.typeconverter.StatusToAPIStatus(context.Background(), testStatus, requestingAccount, statusfilter.FilterContextNone, nil, nil)
+	apiStatus, err := suite.typeconverter.StatusToAPIStatus(suite.T().Context(), testStatus, requestingAccount)
 	suite.NoError(err)
 
 	b, err := json.MarshalIndent(apiStatus, "", "  ")
@@ -786,7 +783,7 @@ func (suite *InternalToFrontendTestSuite) TestStatusToFrontendHTMLContentWarning
 }
 
 func (suite *InternalToFrontendTestSuite) TestStatusToFrontendApplicationDeleted() {
-	ctx := context.Background()
+	ctx := suite.T().Context()
 	testStatus := suite.testStatuses["admin_account_status_1"]
 
 	// Delete the application this status was created with.
@@ -795,7 +792,7 @@ func (suite *InternalToFrontendTestSuite) TestStatusToFrontendApplicationDeleted
 	}
 
 	requestingAccount := suite.testAccounts["local_account_1"]
-	apiStatus, err := suite.typeconverter.StatusToAPIStatus(ctx, testStatus, requestingAccount, statusfilter.FilterContextNone, nil, nil)
+	apiStatus, err := suite.typeconverter.StatusToAPIStatus(ctx, testStatus, requestingAccount)
 	suite.NoError(err)
 
 	b, err := json.MarshalIndent(apiStatus, "", "  ")
@@ -950,715 +947,11 @@ func (suite *InternalToFrontendTestSuite) TestStatusToFrontendApplicationDeleted
 }`, string(b))
 }
 
-// Modify a fixture status into a status that should be filtered,
-// and then filter it, returning the API status or any error from converting it.
-func (suite *InternalToFrontendTestSuite) filteredStatusToFrontend(action gtsmodel.FilterAction, boost bool) (*apimodel.Status, error) {
-	testStatus := suite.testStatuses["admin_account_status_1"]
-	testStatus.Content += " fnord"
-	testStatus.Text += " fnord"
-
-	if boost {
-		// Modify a fixture boost into a boost of the above status.
-		boostStatus := suite.testStatuses["admin_account_status_4"]
-		boostStatus.BoostOf = testStatus
-		boostStatus.BoostOfID = testStatus.ID
-		testStatus = boostStatus
-	}
-
-	requestingAccount := suite.testAccounts["local_account_1"]
-
-	expectedMatchingFilter := suite.testFilters["local_account_1_filter_1"]
-	expectedMatchingFilter.Action = action
-
-	expectedMatchingFilterKeyword := suite.testFilterKeywords["local_account_1_filter_1_keyword_1"]
-	suite.NoError(expectedMatchingFilterKeyword.Compile())
-	expectedMatchingFilterKeyword.Filter = expectedMatchingFilter
-
-	expectedMatchingFilter.Keywords = []*gtsmodel.FilterKeyword{expectedMatchingFilterKeyword}
-
-	requestingAccountFilters := []*gtsmodel.Filter{expectedMatchingFilter}
-
-	return suite.typeconverter.StatusToAPIStatus(
-		context.Background(),
-		testStatus,
-		requestingAccount,
-		statusfilter.FilterContextHome,
-		requestingAccountFilters,
-		nil,
-	)
-}
-
-// Test that a status which is filtered with a warn filter by the requesting user has `filtered` set correctly.
-func (suite *InternalToFrontendTestSuite) TestWarnFilteredStatusToFrontend() {
-	apiStatus, err := suite.filteredStatusToFrontend(gtsmodel.FilterActionWarn, false)
-	suite.NoError(err)
-
-	b, err := json.MarshalIndent(apiStatus, "", "  ")
-	suite.NoError(err)
-
-	suite.Equal(`{
-  "id": "01F8MH75CBF9JFX4ZAD54N0W0R",
-  "created_at": "2021-10-20T11:36:45.000Z",
-  "edited_at": null,
-  "in_reply_to_id": null,
-  "in_reply_to_account_id": null,
-  "sensitive": false,
-  "spoiler_text": "",
-  "visibility": "public",
-  "language": "en",
-  "uri": "http://localhost:8080/users/admin/statuses/01F8MH75CBF9JFX4ZAD54N0W0R",
-  "url": "http://localhost:8080/@admin/statuses/01F8MH75CBF9JFX4ZAD54N0W0R",
-  "replies_count": 1,
-  "reblogs_count": 0,
-  "favourites_count": 1,
-  "favourited": true,
-  "reblogged": false,
-  "muted": false,
-  "bookmarked": true,
-  "pinned": false,
-  "content": "\u003cp\u003ehello world! \u003ca href=\"http://localhost:8080/tags/welcome\" class=\"mention hashtag\" rel=\"tag nofollow noreferrer noopener\" target=\"_blank\"\u003e#\u003cspan\u003ewelcome\u003c/span\u003e\u003c/a\u003e ! first post on the instance :rainbow: !\u003c/p\u003e fnord",
-  "reblog": null,
-  "application": {
-    "name": "superseriousbusiness",
-    "website": "https://superserious.business"
-  },
-  "account": {
-    "id": "01F8MH17FWEB39HZJ76B6VXSKF",
-    "username": "admin",
-    "acct": "admin",
-    "display_name": "",
-    "locked": false,
-    "discoverable": true,
-    "bot": false,
-    "created_at": "2022-05-17T13:10:59.000Z",
-    "note": "",
-    "url": "http://localhost:8080/@admin",
-    "avatar": "",
-    "avatar_static": "",
-    "header": "http://localhost:8080/assets/default_header.webp",
-    "header_static": "http://localhost:8080/assets/default_header.webp",
-    "header_description": "Flat gray background (default header).",
-    "followers_count": 1,
-    "following_count": 1,
-    "statuses_count": 4,
-    "last_status_at": "2021-10-20",
-    "emojis": [],
-    "fields": [],
-    "enable_rss": true,
-    "roles": [
-      {
-        "id": "admin",
-        "name": "admin",
-        "color": ""
-      }
-    ],
-    "group": false
-  },
-  "media_attachments": [
-    {
-      "id": "01F8MH6NEM8D7527KZAECTCR76",
-      "type": "image",
-      "url": "http://localhost:8080/fileserver/01F8MH17FWEB39HZJ76B6VXSKF/attachment/original/01F8MH6NEM8D7527KZAECTCR76.jpg",
-      "text_url": "http://localhost:8080/fileserver/01F8MH17FWEB39HZJ76B6VXSKF/attachment/original/01F8MH6NEM8D7527KZAECTCR76.jpg",
-      "preview_url": "http://localhost:8080/fileserver/01F8MH17FWEB39HZJ76B6VXSKF/attachment/small/01F8MH6NEM8D7527KZAECTCR76.webp",
-      "remote_url": null,
-      "preview_remote_url": null,
-      "meta": {
-        "original": {
-          "width": 1200,
-          "height": 630,
-          "size": "1200x630",
-          "aspect": 1.9047619
-        },
-        "small": {
-          "width": 512,
-          "height": 268,
-          "size": "512x268",
-          "aspect": 1.9104477
-        },
-        "focus": {
-          "x": -0.5,
-          "y": 0.5
-        }
-      },
-      "description": "Black and white image of some 50's style text saying: Welcome On Board",
-      "blurhash": "LIIE|gRj00WB-;j[t7j[4nWBj[Rj"
-    }
-  ],
-  "mentions": [],
-  "tags": [
-    {
-      "name": "welcome",
-      "url": "http://localhost:8080/tags/welcome"
-    }
-  ],
-  "emojis": [
-    {
-      "shortcode": "rainbow",
-      "url": "http://localhost:8080/fileserver/01AY6P665V14JJR0AFVRT7311Y/emoji/original/01F8MH9H8E4VG3KDYJR9EGPXCQ.png",
-      "static_url": "http://localhost:8080/fileserver/01AY6P665V14JJR0AFVRT7311Y/emoji/static/01F8MH9H8E4VG3KDYJR9EGPXCQ.png",
-      "visible_in_picker": true,
-      "category": "reactions"
-    }
-  ],
-  "card": null,
-  "poll": null,
-  "text": "hello world! #welcome ! first post on the instance :rainbow: ! fnord",
-  "content_type": "text/plain",
-  "filtered": [
-    {
-      "filter": {
-        "id": "01HN26VM6KZTW1ANNRVSBMA461",
-        "title": "fnord",
-        "context": [
-          "home",
-          "public"
-        ],
-        "expires_at": null,
-        "filter_action": "warn",
-        "keywords": [
-          {
-            "id": "01HN272TAVWAXX72ZX4M8JZ0PS",
-            "keyword": "fnord",
-            "whole_word": true
-          }
-        ],
-        "statuses": []
-      },
-      "keyword_matches": [
-        "fnord"
-      ],
-      "status_matches": []
-    }
-  ],
-  "interaction_policy": {
-    "can_favourite": {
-      "automatic_approval": [
-        "public",
-        "me"
-      ],
-      "manual_approval": [],
-      "always": [
-        "public",
-        "me"
-      ],
-      "with_approval": []
-    },
-    "can_reply": {
-      "automatic_approval": [
-        "public",
-        "me"
-      ],
-      "manual_approval": [],
-      "always": [
-        "public",
-        "me"
-      ],
-      "with_approval": []
-    },
-    "can_reblog": {
-      "automatic_approval": [
-        "public",
-        "me"
-      ],
-      "manual_approval": [],
-      "always": [
-        "public",
-        "me"
-      ],
-      "with_approval": []
-    }
-  }
-}`, string(b))
-}
-
-// Test that a status which is filtered with a warn filter by the requesting user has `filtered` set correctly when boosted.
-func (suite *InternalToFrontendTestSuite) TestWarnFilteredBoostToFrontend() {
-	apiStatus, err := suite.filteredStatusToFrontend(gtsmodel.FilterActionWarn, true)
-	suite.NoError(err)
-
-	b, err := json.MarshalIndent(apiStatus, "", "  ")
-	suite.NoError(err)
-
-	suite.Equal(`{
-  "id": "01G36SF3V6Y6V5BF9P4R7PQG7G",
-  "created_at": "2021-10-20T10:41:37.000Z",
-  "edited_at": null,
-  "in_reply_to_id": null,
-  "in_reply_to_account_id": null,
-  "sensitive": false,
-  "spoiler_text": "",
-  "visibility": "public",
-  "language": null,
-  "uri": "http://localhost:8080/users/admin/statuses/01G36SF3V6Y6V5BF9P4R7PQG7G",
-  "url": "http://localhost:8080/@admin/statuses/01G36SF3V6Y6V5BF9P4R7PQG7G",
-  "replies_count": 0,
-  "reblogs_count": 0,
-  "favourites_count": 0,
-  "favourited": true,
-  "reblogged": false,
-  "muted": false,
-  "bookmarked": true,
-  "pinned": false,
-  "content": "",
-  "reblog": {
-    "id": "01F8MH75CBF9JFX4ZAD54N0W0R",
-    "created_at": "2021-10-20T11:36:45.000Z",
-    "edited_at": null,
-    "in_reply_to_id": null,
-    "in_reply_to_account_id": null,
-    "sensitive": false,
-    "spoiler_text": "",
-    "visibility": "public",
-    "language": "en",
-    "uri": "http://localhost:8080/users/admin/statuses/01F8MH75CBF9JFX4ZAD54N0W0R",
-    "url": "http://localhost:8080/@admin/statuses/01F8MH75CBF9JFX4ZAD54N0W0R",
-    "replies_count": 1,
-    "reblogs_count": 0,
-    "favourites_count": 1,
-    "favourited": true,
-    "reblogged": false,
-    "muted": false,
-    "bookmarked": true,
-    "pinned": false,
-    "content": "\u003cp\u003ehello world! \u003ca href=\"http://localhost:8080/tags/welcome\" class=\"mention hashtag\" rel=\"tag nofollow noreferrer noopener\" target=\"_blank\"\u003e#\u003cspan\u003ewelcome\u003c/span\u003e\u003c/a\u003e ! first post on the instance :rainbow: !\u003c/p\u003e fnord",
-    "reblog": null,
-    "application": {
-      "name": "superseriousbusiness",
-      "website": "https://superserious.business"
-    },
-    "account": {
-      "id": "01F8MH1H7YV1Z7D2C8K2730QBF",
-      "username": "the_mighty_zork",
-      "acct": "the_mighty_zork",
-      "display_name": "original zork (he/they)",
-      "locked": false,
-      "discoverable": true,
-      "bot": false,
-      "created_at": "2022-05-20T11:09:18.000Z",
-      "note": "\u003cp\u003ehey yo this is my profile!\u003c/p\u003e",
-      "url": "http://localhost:8080/@the_mighty_zork",
-      "avatar": "http://localhost:8080/fileserver/01F8MH1H7YV1Z7D2C8K2730QBF/avatar/original/01F8MH58A357CV5K7R7TJMSH6S.jpg",
-      "avatar_static": "http://localhost:8080/fileserver/01F8MH1H7YV1Z7D2C8K2730QBF/avatar/small/01F8MH58A357CV5K7R7TJMSH6S.webp",
-      "avatar_description": "a green goblin looking nasty",
-      "avatar_media_id": "01F8MH58A357CV5K7R7TJMSH6S",
-      "header": "http://localhost:8080/fileserver/01F8MH1H7YV1Z7D2C8K2730QBF/header/original/01PFPMWK2FF0D9WMHEJHR07C3Q.jpg",
-      "header_static": "http://localhost:8080/fileserver/01F8MH1H7YV1Z7D2C8K2730QBF/header/small/01PFPMWK2FF0D9WMHEJHR07C3Q.webp",
-      "header_description": "A very old-school screenshot of the original team fortress mod for quake",
-      "header_media_id": "01PFPMWK2FF0D9WMHEJHR07C3Q",
-      "followers_count": 2,
-      "following_count": 2,
-      "statuses_count": 9,
-      "last_status_at": "2024-11-01",
-      "emojis": [],
-      "fields": [],
-      "enable_rss": true,
-      "group": false
-    },
-    "media_attachments": [
-      {
-        "id": "01F8MH6NEM8D7527KZAECTCR76",
-        "type": "image",
-        "url": "http://localhost:8080/fileserver/01F8MH17FWEB39HZJ76B6VXSKF/attachment/original/01F8MH6NEM8D7527KZAECTCR76.jpg",
-        "text_url": "http://localhost:8080/fileserver/01F8MH17FWEB39HZJ76B6VXSKF/attachment/original/01F8MH6NEM8D7527KZAECTCR76.jpg",
-        "preview_url": "http://localhost:8080/fileserver/01F8MH17FWEB39HZJ76B6VXSKF/attachment/small/01F8MH6NEM8D7527KZAECTCR76.webp",
-        "remote_url": null,
-        "preview_remote_url": null,
-        "meta": {
-          "original": {
-            "width": 1200,
-            "height": 630,
-            "size": "1200x630",
-            "aspect": 1.9047619
-          },
-          "small": {
-            "width": 512,
-            "height": 268,
-            "size": "512x268",
-            "aspect": 1.9104477
-          },
-          "focus": {
-            "x": -0.5,
-            "y": 0.5
-          }
-        },
-        "description": "Black and white image of some 50's style text saying: Welcome On Board",
-        "blurhash": "LIIE|gRj00WB-;j[t7j[4nWBj[Rj"
-      }
-    ],
-    "mentions": [],
-    "tags": [
-      {
-        "name": "welcome",
-        "url": "http://localhost:8080/tags/welcome"
-      }
-    ],
-    "emojis": [
-      {
-        "shortcode": "rainbow",
-        "url": "http://localhost:8080/fileserver/01AY6P665V14JJR0AFVRT7311Y/emoji/original/01F8MH9H8E4VG3KDYJR9EGPXCQ.png",
-        "static_url": "http://localhost:8080/fileserver/01AY6P665V14JJR0AFVRT7311Y/emoji/static/01F8MH9H8E4VG3KDYJR9EGPXCQ.png",
-        "visible_in_picker": true,
-        "category": "reactions"
-      }
-    ],
-    "card": null,
-    "poll": null,
-    "text": "hello world! #welcome ! first post on the instance :rainbow: ! fnord",
-    "content_type": "text/plain",
-    "filtered": [
-      {
-        "filter": {
-          "id": "01HN26VM6KZTW1ANNRVSBMA461",
-          "title": "fnord",
-          "context": [
-            "home",
-            "public"
-          ],
-          "expires_at": null,
-          "filter_action": "warn",
-          "keywords": [
-            {
-              "id": "01HN272TAVWAXX72ZX4M8JZ0PS",
-              "keyword": "fnord",
-              "whole_word": true
-            }
-          ],
-          "statuses": []
-        },
-        "keyword_matches": [
-          "fnord"
-        ],
-        "status_matches": []
-      }
-    ],
-    "interaction_policy": {
-      "can_favourite": {
-        "automatic_approval": [
-          "public",
-          "me"
-        ],
-        "manual_approval": [],
-        "always": [
-          "public",
-          "me"
-        ],
-        "with_approval": []
-      },
-      "can_reply": {
-        "automatic_approval": [
-          "public",
-          "me"
-        ],
-        "manual_approval": [],
-        "always": [
-          "public",
-          "me"
-        ],
-        "with_approval": []
-      },
-      "can_reblog": {
-        "automatic_approval": [
-          "public",
-          "me"
-        ],
-        "manual_approval": [],
-        "always": [
-          "public",
-          "me"
-        ],
-        "with_approval": []
-      }
-    }
-  },
-  "application": {
-    "name": "superseriousbusiness",
-    "website": "https://superserious.business"
-  },
-  "account": {
-    "id": "01F8MH17FWEB39HZJ76B6VXSKF",
-    "username": "admin",
-    "acct": "admin",
-    "display_name": "",
-    "locked": false,
-    "discoverable": true,
-    "bot": false,
-    "created_at": "2022-05-17T13:10:59.000Z",
-    "note": "",
-    "url": "http://localhost:8080/@admin",
-    "avatar": "",
-    "avatar_static": "",
-    "header": "http://localhost:8080/assets/default_header.webp",
-    "header_static": "http://localhost:8080/assets/default_header.webp",
-    "header_description": "Flat gray background (default header).",
-    "followers_count": 1,
-    "following_count": 1,
-    "statuses_count": 4,
-    "last_status_at": "2021-10-20",
-    "emojis": [],
-    "fields": [],
-    "enable_rss": true,
-    "roles": [
-      {
-        "id": "admin",
-        "name": "admin",
-        "color": ""
-      }
-    ],
-    "group": false
-  },
-  "media_attachments": [],
-  "mentions": [],
-  "tags": [],
-  "emojis": [],
-  "card": null,
-  "poll": null,
-  "filtered": [
-    {
-      "filter": {
-        "id": "01HN26VM6KZTW1ANNRVSBMA461",
-        "title": "fnord",
-        "context": [
-          "home",
-          "public"
-        ],
-        "expires_at": null,
-        "filter_action": "warn",
-        "keywords": [
-          {
-            "id": "01HN272TAVWAXX72ZX4M8JZ0PS",
-            "keyword": "fnord",
-            "whole_word": true
-          }
-        ],
-        "statuses": []
-      },
-      "keyword_matches": [
-        "fnord"
-      ],
-      "status_matches": []
-    }
-  ],
-  "interaction_policy": {
-    "can_favourite": {
-      "automatic_approval": [
-        "public",
-        "me"
-      ],
-      "manual_approval": [],
-      "always": [
-        "public",
-        "me"
-      ],
-      "with_approval": []
-    },
-    "can_reply": {
-      "automatic_approval": [
-        "public",
-        "me"
-      ],
-      "manual_approval": [],
-      "always": [
-        "public",
-        "me"
-      ],
-      "with_approval": []
-    },
-    "can_reblog": {
-      "automatic_approval": [
-        "public",
-        "me"
-      ],
-      "manual_approval": [],
-      "always": [
-        "public",
-        "me"
-      ],
-      "with_approval": []
-    }
-  }
-}`, string(b))
-}
-
-// Test that a status which is filtered with a hide filter by the requesting user results in the ErrHideStatus error.
-func (suite *InternalToFrontendTestSuite) TestHideFilteredStatusToFrontend() {
-	_, err := suite.filteredStatusToFrontend(gtsmodel.FilterActionHide, false)
-	suite.ErrorIs(err, statusfilter.ErrHideStatus)
-}
-
-// Test that a status which is filtered with a hide filter by the requesting user results in the ErrHideStatus error for a boost of that status.
-func (suite *InternalToFrontendTestSuite) TestHideFilteredBoostToFrontend() {
-	_, err := suite.filteredStatusToFrontend(gtsmodel.FilterActionHide, true)
-	suite.ErrorIs(err, statusfilter.ErrHideStatus)
-}
-
-// Test that a hashtag filter for a hashtag in Mastodon HTML content works the way most users would expect.
-func (suite *InternalToFrontendTestSuite) testHashtagFilteredStatusToFrontend(wholeWord bool, boost bool) {
-	testStatus := new(gtsmodel.Status)
-	*testStatus = *suite.testStatuses["admin_account_status_1"]
-	testStatus.Content = `<p>doggo doggin' it</p><p><a href="https://example.test/tags/dogsofmastodon" class="mention hashtag" rel="tag nofollow noreferrer noopener" target="_blank">#<span>dogsofmastodon</span></a></p>`
-
-	if boost {
-		boost, err := suite.typeconverter.StatusToBoost(
-			context.Background(),
-			testStatus,
-			suite.testAccounts["admin_account"],
-			"",
-		)
-		if err != nil {
-			suite.FailNow(err.Error())
-		}
-		testStatus = boost
-	}
-
-	requestingAccount := suite.testAccounts["local_account_1"]
-
-	filterKeyword := &gtsmodel.FilterKeyword{
-		Keyword:   "#dogsofmastodon",
-		WholeWord: &wholeWord,
-		Regexp:    nil,
-	}
-	if err := filterKeyword.Compile(); err != nil {
-		suite.FailNow(err.Error())
-	}
-
-	filter := &gtsmodel.Filter{
-		Action:               gtsmodel.FilterActionWarn,
-		Keywords:             []*gtsmodel.FilterKeyword{filterKeyword},
-		ContextHome:          util.Ptr(true),
-		ContextNotifications: util.Ptr(false),
-		ContextPublic:        util.Ptr(false),
-		ContextThread:        util.Ptr(false),
-		ContextAccount:       util.Ptr(false),
-	}
-
-	apiStatus, err := suite.typeconverter.StatusToAPIStatus(
-		context.Background(),
-		testStatus,
-		requestingAccount,
-		statusfilter.FilterContextHome,
-		[]*gtsmodel.Filter{filter},
-		nil,
-	)
-	if err != nil {
-		suite.FailNow(err.Error())
-	}
-
-	suite.NotEmpty(apiStatus.Filtered)
-}
-
-func (suite *InternalToFrontendTestSuite) TestHashtagWholeWordFilteredStatusToFrontend() {
-	suite.testHashtagFilteredStatusToFrontend(true, false)
-}
-
-func (suite *InternalToFrontendTestSuite) TestHashtagWholeWordFilteredBoostToFrontend() {
-	suite.testHashtagFilteredStatusToFrontend(true, true)
-}
-
-func (suite *InternalToFrontendTestSuite) TestHashtagAnywhereFilteredStatusToFrontend() {
-	suite.testHashtagFilteredStatusToFrontend(false, false)
-}
-
-func (suite *InternalToFrontendTestSuite) TestHashtagAnywhereFilteredBoostToFrontend() {
-	suite.testHashtagFilteredStatusToFrontend(false, true)
-}
-
-// Test that a status from a user muted by the requesting user results in the ErrHideStatus error.
-func (suite *InternalToFrontendTestSuite) TestMutedStatusToFrontend() {
-	testStatus := suite.testStatuses["admin_account_status_1"]
-	requestingAccount := suite.testAccounts["local_account_1"]
-
-	mutes := usermute.NewCompiledUserMuteList([]*gtsmodel.UserMute{
-		{
-			AccountID:       requestingAccount.ID,
-			TargetAccountID: testStatus.AccountID,
-			Notifications:   util.Ptr(false),
-		},
-	})
-
-	_, err := suite.typeconverter.StatusToAPIStatus(
-		context.Background(),
-		testStatus,
-		requestingAccount,
-		statusfilter.FilterContextHome,
-		nil,
-		mutes,
-	)
-	suite.ErrorIs(err, statusfilter.ErrHideStatus)
-}
-
-// Test that a status replying to a user muted by the requesting user results in the ErrHideStatus error.
-func (suite *InternalToFrontendTestSuite) TestMutedReplyStatusToFrontend() {
-	mutedAccount := suite.testAccounts["local_account_2"]
-	testStatus := suite.testStatuses["admin_account_status_1"]
-	testStatus.InReplyToID = suite.testStatuses["local_account_2_status_1"].ID
-	testStatus.InReplyToAccountID = mutedAccount.ID
-	requestingAccount := suite.testAccounts["local_account_1"]
-
-	mutes := usermute.NewCompiledUserMuteList([]*gtsmodel.UserMute{
-		{
-			AccountID:       requestingAccount.ID,
-			TargetAccountID: mutedAccount.ID,
-			Notifications:   util.Ptr(false),
-		},
-	})
-
-	// Populate status so the converter has the account objects it needs for muting.
-	err := suite.db.PopulateStatus(context.Background(), testStatus)
-	if err != nil {
-		suite.FailNow(err.Error())
-	}
-
-	// Convert the status to API format, which should fail.
-	_, err = suite.typeconverter.StatusToAPIStatus(
-		context.Background(),
-		testStatus,
-		requestingAccount,
-		statusfilter.FilterContextHome,
-		nil,
-		mutes,
-	)
-	suite.ErrorIs(err, statusfilter.ErrHideStatus)
-}
-
-func (suite *InternalToFrontendTestSuite) TestMutedBoostStatusToFrontend() {
-	mutedAccount := suite.testAccounts["local_account_2"]
-	testStatus := suite.testStatuses["admin_account_status_1"]
-	testStatus.BoostOfID = suite.testStatuses["local_account_2_status_1"].ID
-	testStatus.BoostOfAccountID = mutedAccount.ID
-	requestingAccount := suite.testAccounts["local_account_1"]
-
-	mutes := usermute.NewCompiledUserMuteList([]*gtsmodel.UserMute{
-		{
-			AccountID:       requestingAccount.ID,
-			TargetAccountID: mutedAccount.ID,
-			Notifications:   util.Ptr(false),
-		},
-	})
-
-	// Populate status so the converter has the account objects it needs for muting.
-	err := suite.db.PopulateStatus(context.Background(), testStatus)
-	if err != nil {
-		suite.FailNow(err.Error())
-	}
-
-	// Convert the status to API format, which should fail.
-	_, err = suite.typeconverter.StatusToAPIStatus(
-		context.Background(),
-		testStatus,
-		requestingAccount,
-		statusfilter.FilterContextHome,
-		nil,
-		mutes,
-	)
-	suite.ErrorIs(err, statusfilter.ErrHideStatus)
-}
-
 func (suite *InternalToFrontendTestSuite) TestStatusToFrontendUnknownAttachments() {
 	testStatus := suite.testStatuses["remote_account_2_status_1"]
 	requestingAccount := suite.testAccounts["admin_account"]
 
-	apiStatus, err := suite.typeconverter.StatusToAPIStatus(context.Background(), testStatus, requestingAccount, statusfilter.FilterContextNone, nil, nil)
+	apiStatus, err := suite.typeconverter.StatusToAPIStatus(suite.T().Context(), testStatus, requestingAccount)
 	suite.NoError(err)
 
 	b, err := json.MarshalIndent(apiStatus, "", "  ")
@@ -1797,7 +1090,7 @@ func (suite *InternalToFrontendTestSuite) TestStatusToFrontendUnknownAttachments
 func (suite *InternalToFrontendTestSuite) TestStatusToWebStatus() {
 	testStatus := suite.testStatuses["remote_account_2_status_1"]
 
-	apiStatus, err := suite.typeconverter.StatusToWebStatus(context.Background(), testStatus)
+	apiStatus, err := suite.typeconverter.StatusToWebStatus(suite.T().Context(), testStatus)
 	suite.NoError(err)
 
 	// MediaAttachments should inherit
@@ -1985,7 +1278,7 @@ func (suite *InternalToFrontendTestSuite) TestStatusToFrontendUnknownLanguage() 
 	*testStatus = *suite.testStatuses["admin_account_status_1"]
 	testStatus.Language = ""
 	requestingAccount := suite.testAccounts["local_account_1"]
-	apiStatus, err := suite.typeconverter.StatusToAPIStatus(context.Background(), testStatus, requestingAccount, statusfilter.FilterContextNone, nil, nil)
+	apiStatus, err := suite.typeconverter.StatusToAPIStatus(suite.T().Context(), testStatus, requestingAccount)
 	suite.NoError(err)
 
 	b, err := json.MarshalIndent(apiStatus, "", "  ")
@@ -2146,7 +1439,7 @@ func (suite *InternalToFrontendTestSuite) TestStatusToFrontendPartialInteraction
 	*testStatus = *suite.testStatuses["local_account_1_status_3"]
 	testStatus.Language = ""
 	requestingAccount := suite.testAccounts["admin_account"]
-	apiStatus, err := suite.typeconverter.StatusToAPIStatus(context.Background(), testStatus, requestingAccount, statusfilter.FilterContextNone, nil, nil)
+	apiStatus, err := suite.typeconverter.StatusToAPIStatus(suite.T().Context(), testStatus, requestingAccount)
 	suite.NoError(err)
 
 	b, err := json.MarshalIndent(apiStatus, "", "  ")
@@ -2256,12 +1549,9 @@ func (suite *InternalToFrontendTestSuite) TestStatusToAPIStatusPendingApproval()
 	)
 
 	apiStatus, err := suite.typeconverter.StatusToAPIStatus(
-		context.Background(),
+		suite.T().Context(),
 		testStatus,
 		requestingAccount,
-		statusfilter.FilterContextNone,
-		nil,
-		nil,
 	)
 	if err != nil {
 		suite.FailNow(err.Error())
@@ -2394,7 +1684,7 @@ func (suite *InternalToFrontendTestSuite) TestStatusToAPIStatusPendingApproval()
 
 func (suite *InternalToFrontendTestSuite) TestVideoAttachmentToFrontend() {
 	testAttachment := suite.testAttachments["local_account_1_status_4_attachment_2"]
-	apiAttachment, err := suite.typeconverter.AttachmentToAPIAttachment(context.Background(), testAttachment)
+	apiAttachment, err := suite.typeconverter.AttachmentToAPIAttachment(suite.T().Context(), testAttachment)
 	suite.NoError(err)
 
 	b, err := json.MarshalIndent(apiAttachment, "", "  ")
@@ -2435,7 +1725,7 @@ func (suite *InternalToFrontendTestSuite) TestVideoAttachmentToFrontend() {
 }
 
 func (suite *InternalToFrontendTestSuite) TestInstanceV1ToFrontend() {
-	ctx := context.Background()
+	ctx := suite.T().Context()
 
 	i := &gtsmodel.Instance{}
 	if err := suite.db.GetWhere(ctx, []db.Where{{Key: "domain", Value: config.GetHost()}}, i); err != nil {
@@ -2572,7 +1862,7 @@ func (suite *InternalToFrontendTestSuite) TestInstanceV1ToFrontend() {
 }
 
 func (suite *InternalToFrontendTestSuite) TestInstanceV2ToFrontend() {
-	ctx := context.Background()
+	ctx := suite.T().Context()
 
 	i := &gtsmodel.Instance{}
 	if err := suite.db.GetWhere(ctx, []db.Where{{Key: "domain", Value: config.GetHost()}}, i); err != nil {
@@ -2616,7 +1906,10 @@ func (suite *InternalToFrontendTestSuite) TestInstanceV2ToFrontend() {
   ],
   "configuration": {
     "urls": {
-      "streaming": "wss://localhost:8080"
+      "streaming": "wss://localhost:8080",
+      "about": "http://localhost:8080/about",
+      "privacy_policy": null,
+      "terms_of_service": "http://localhost:8080/about#rules"
     },
     "accounts": {
       "allow_custom_css": true,
@@ -2682,7 +1975,9 @@ func (suite *InternalToFrontendTestSuite) TestInstanceV2ToFrontend() {
   "registrations": {
     "enabled": true,
     "approval_required": true,
-    "message": null
+    "message": null,
+    "min_age": null,
+    "reason_required": true
   },
   "contact": {
     "email": "admin@example.org",
@@ -2726,7 +2021,7 @@ func (suite *InternalToFrontendTestSuite) TestInstanceV2ToFrontend() {
 }
 
 func (suite *InternalToFrontendTestSuite) TestEmojiToFrontend() {
-	emoji, err := suite.typeconverter.EmojiToAPIEmoji(context.Background(), suite.testEmojis["rainbow"])
+	emoji, err := suite.typeconverter.EmojiToAPIEmoji(suite.T().Context(), suite.testEmojis["rainbow"])
 	suite.NoError(err)
 
 	b, err := json.MarshalIndent(emoji, "", "  ")
@@ -2742,7 +2037,7 @@ func (suite *InternalToFrontendTestSuite) TestEmojiToFrontend() {
 }
 
 func (suite *InternalToFrontendTestSuite) TestEmojiToFrontendAdmin1() {
-	emoji, err := suite.typeconverter.EmojiToAdminAPIEmoji(context.Background(), suite.testEmojis["rainbow"])
+	emoji, err := suite.typeconverter.EmojiToAdminAPIEmoji(suite.T().Context(), suite.testEmojis["rainbow"])
 	suite.NoError(err)
 
 	b, err := json.MarshalIndent(emoji, "", "  ")
@@ -2764,7 +2059,7 @@ func (suite *InternalToFrontendTestSuite) TestEmojiToFrontendAdmin1() {
 }
 
 func (suite *InternalToFrontendTestSuite) TestEmojiToFrontendAdmin2() {
-	emoji, err := suite.typeconverter.EmojiToAdminAPIEmoji(context.Background(), suite.testEmojis["yell"])
+	emoji, err := suite.typeconverter.EmojiToAdminAPIEmoji(suite.T().Context(), suite.testEmojis["yell"])
 	suite.NoError(err)
 
 	b, err := json.MarshalIndent(emoji, "", "  ")
@@ -2786,7 +2081,7 @@ func (suite *InternalToFrontendTestSuite) TestEmojiToFrontendAdmin2() {
 }
 
 func (suite *InternalToFrontendTestSuite) TestReportToFrontend1() {
-	report, err := suite.typeconverter.ReportToAPIReport(context.Background(), suite.testReports["local_account_2_report_remote_account_1"])
+	report, err := suite.typeconverter.ReportToAPIReport(suite.T().Context(), suite.testReports["local_account_2_report_remote_account_1"])
 	suite.NoError(err)
 
 	b, err := json.MarshalIndent(report, "", "  ")
@@ -2836,7 +2131,7 @@ func (suite *InternalToFrontendTestSuite) TestReportToFrontend1() {
 }
 
 func (suite *InternalToFrontendTestSuite) TestReportToFrontend2() {
-	report, err := suite.typeconverter.ReportToAPIReport(context.Background(), suite.testReports["remote_account_1_report_local_account_2"])
+	report, err := suite.typeconverter.ReportToAPIReport(suite.T().Context(), suite.testReports["remote_account_1_report_local_account_2"])
 	suite.NoError(err)
 
 	b, err := json.MarshalIndent(report, "", "  ")
@@ -2894,7 +2189,7 @@ func (suite *InternalToFrontendTestSuite) TestReportToFrontend2() {
 
 func (suite *InternalToFrontendTestSuite) TestAdminReportToFrontend1() {
 	requestingAccount := suite.testAccounts["admin_account"]
-	adminReport, err := suite.typeconverter.ReportToAdminAPIReport(context.Background(), suite.testReports["remote_account_1_report_local_account_2"], requestingAccount)
+	adminReport, err := suite.typeconverter.ReportToAdminAPIReport(suite.T().Context(), suite.testReports["remote_account_1_report_local_account_2"], requestingAccount)
 	suite.NoError(err)
 
 	b, err := json.MarshalIndent(adminReport, "", "  ")
@@ -3136,7 +2431,7 @@ func (suite *InternalToFrontendTestSuite) TestAdminReportToFrontend1() {
 
 func (suite *InternalToFrontendTestSuite) TestAdminReportToFrontend2() {
 	requestingAccount := suite.testAccounts["admin_account"]
-	adminReport, err := suite.typeconverter.ReportToAdminAPIReport(context.Background(), suite.testReports["local_account_2_report_remote_account_1"], requestingAccount)
+	adminReport, err := suite.typeconverter.ReportToAdminAPIReport(suite.T().Context(), suite.testReports["local_account_2_report_remote_account_1"], requestingAccount)
 	suite.NoError(err)
 
 	b, err := json.MarshalIndent(adminReport, "", "  ")
@@ -3398,7 +2693,7 @@ func (suite *InternalToFrontendTestSuite) TestAdminReportToFrontend2() {
 }
 
 func (suite *InternalToFrontendTestSuite) TestAdminReportToFrontendSuspendedLocalAccount() {
-	ctx := context.Background()
+	ctx := suite.T().Context()
 	requestingAccount := suite.testAccounts["admin_account"]
 	reportedAccount := &gtsmodel.Account{}
 	*reportedAccount = *suite.testAccounts["local_account_2"]
@@ -3421,7 +2716,7 @@ func (suite *InternalToFrontendTestSuite) TestAdminReportToFrontendSuspendedLoca
 		suite.FailNow("timed out waiting for account delete")
 	}
 
-	adminReport, err := suite.typeconverter.ReportToAdminAPIReport(context.Background(), suite.testReports["remote_account_1_report_local_account_2"], requestingAccount)
+	adminReport, err := suite.typeconverter.ReportToAdminAPIReport(suite.T().Context(), suite.testReports["remote_account_1_report_local_account_2"], requestingAccount)
 	suite.NoError(err)
 
 	b, err := json.MarshalIndent(adminReport, "", "  ")
@@ -3652,7 +2947,7 @@ func (suite *InternalToFrontendTestSuite) TestAdminReportToFrontendSuspendedLoca
 
 func (suite *InternalToFrontendTestSuite) TestRelationshipFollowRequested() {
 	var (
-		ctx      = context.Background()
+		ctx      = suite.T().Context()
 		account1 = suite.testAccounts["admin_account"]
 		account2 = suite.testAccounts["local_account_2"]
 	)
@@ -3741,7 +3036,7 @@ func (suite *InternalToFrontendTestSuite) TestRelationshipFollowRequested() {
 func (suite *InternalToFrontendTestSuite) TestIntReqToAPI() {
 	requestingAccount := suite.testAccounts["local_account_2"]
 	adminReport, err := suite.typeconverter.InteractionReqToAPIInteractionReq(
-		context.Background(),
+		suite.T().Context(),
 		suite.testInteractionRequests["admin_account_reply_turtle"],
 		requestingAccount,
 	)
@@ -4020,11 +3315,9 @@ func (suite *InternalToFrontendTestSuite) TestIntReqToAPI() {
 
 func (suite *InternalToFrontendTestSuite) TestConversationToAPISelfConvo() {
 	var (
-		ctx                                       = context.Background()
-		requester                                 = suite.testAccounts["local_account_1"]
-		lastStatus                                = suite.testStatuses["local_account_1_status_1"]
-		filters    []*gtsmodel.Filter             = nil
-		mutes      *usermute.CompiledUserMuteList = nil
+		ctx        = suite.T().Context()
+		requester  = suite.testAccounts["local_account_1"]
+		lastStatus = suite.testStatuses["local_account_1_status_1"]
 	)
 
 	convo := &gtsmodel.Conversation{
@@ -4042,8 +3335,6 @@ func (suite *InternalToFrontendTestSuite) TestConversationToAPISelfConvo() {
 		ctx,
 		convo,
 		requester,
-		filters,
-		mutes,
 	)
 	if err != nil {
 		suite.FailNow(err.Error())
@@ -4195,11 +3486,9 @@ func (suite *InternalToFrontendTestSuite) TestConversationToAPISelfConvo() {
 
 func (suite *InternalToFrontendTestSuite) TestConversationToAPI() {
 	var (
-		ctx                                       = context.Background()
-		requester                                 = suite.testAccounts["local_account_1"]
-		lastStatus                                = suite.testStatuses["local_account_1_status_1"]
-		filters    []*gtsmodel.Filter             = nil
-		mutes      *usermute.CompiledUserMuteList = nil
+		ctx        = suite.T().Context()
+		requester  = suite.testAccounts["local_account_1"]
+		lastStatus = suite.testStatuses["local_account_1_status_1"]
 	)
 
 	convo := &gtsmodel.Conversation{
@@ -4219,8 +3508,6 @@ func (suite *InternalToFrontendTestSuite) TestConversationToAPI() {
 		ctx,
 		convo,
 		requester,
-		filters,
-		mutes,
 	)
 	if err != nil {
 		suite.FailNow(err.Error())
@@ -4379,7 +3666,7 @@ func (suite *InternalToFrontendTestSuite) TestConversationToAPI() {
 }
 
 func (suite *InternalToFrontendTestSuite) TestStatusToAPIEdits() {
-	ctx, cncl := context.WithCancel(context.Background())
+	ctx, cncl := context.WithCancel(suite.T().Context())
 	defer cncl()
 
 	statusID := suite.testStatuses["local_account_1_status_9"].ID

@@ -217,12 +217,10 @@ func (p *Processor) Create(
 		return nil, errWithCode
 	}
 
-	if errWithCode := p.processThreadID(ctx, status); errWithCode != nil {
+	// Process the incoming created status visibility.
+	if errWithCode := processVisibility(form, requester.Settings.Privacy, status); errWithCode != nil {
 		return nil, errWithCode
 	}
-
-	// Process the incoming created status visibility.
-	processVisibility(form, requester.Settings.Privacy, status)
 
 	// Process policy AFTER visibility as it relies
 	// on status.Visibility and form.Visibility being set.
@@ -277,21 +275,6 @@ func (p *Processor) Create(
 		}
 	}
 
-	var model any = status
-	if backfill {
-		// We specifically wrap backfilled statuses in
-		// a different type to signal to worker process.
-		model = &gtsmodel.BackfillStatus{Status: status}
-	}
-
-	// Send it to the client API worker for async side-effects.
-	p.state.Workers.Client.Queue.Push(&messages.FromClientAPI{
-		APObjectType:   ap.ObjectNote,
-		APActivityType: ap.ActivityCreate,
-		GTSModel:       model,
-		Origin:         requester,
-	})
-
 	// If the new status replies to a status that
 	// replies to us, use our reply as an implicit
 	// accept of any pending interaction.
@@ -308,6 +291,22 @@ func (p *Processor) Create(
 	if implicitlyAccepted {
 		status.InReplyTo.PendingApproval = util.Ptr(false)
 	}
+
+	var model any = status
+	if backfill {
+		// We specifically wrap backfilled statuses in
+		// a different type to signal to worker process.
+		model = &gtsmodel.BackfillStatus{Status: status}
+	}
+
+	// Queue remaining create side effects
+	// (send out status, update timeline, etc).
+	p.state.Workers.Client.Queue.Push(&messages.FromClientAPI{
+		APObjectType:   ap.ObjectNote,
+		APActivityType: ap.ActivityCreate,
+		GTSModel:       model,
+		Origin:         requester,
+	})
 
 	return p.c.GetAPIStatus(ctx, requester, status)
 }
@@ -444,55 +443,24 @@ func (p *Processor) processInReplyTo(
 	return nil
 }
 
-func (p *Processor) processThreadID(ctx context.Context, status *gtsmodel.Status) gtserror.WithCode {
-	// Status takes the thread ID of
-	// whatever it replies to, if set.
-	//
-	// Might not be set if status is local
-	// and replies to a remote status that
-	// doesn't have a thread ID yet.
-	//
-	// If so, we can just thread from this
-	// status onwards instead, since this
-	// is where the relevant part of the
-	// thread starts, from the perspective
-	// of our instance at least.
-	if status.InReplyTo != nil &&
-		status.InReplyTo.ThreadID != "" {
-		// Just inherit threadID from parent.
-		status.ThreadID = status.InReplyTo.ThreadID
-		return nil
-	}
-
-	// Mark new thread (or threaded
-	// subsection) starting from here.
-	threadID := id.NewULID()
-	if err := p.state.DB.PutThread(
-		ctx,
-		&gtsmodel.Thread{
-			ID: threadID,
-		},
-	); err != nil {
-		err := gtserror.Newf("error inserting new thread in db: %w", err)
-		return gtserror.NewErrorInternalError(err)
-	}
-
-	// Future replies to this status
-	// (if any) will inherit this thread ID.
-	status.ThreadID = threadID
-
-	return nil
-}
-
 func processVisibility(
 	form *apimodel.StatusCreateRequest,
 	accountDefaultVis gtsmodel.Visibility,
 	status *gtsmodel.Status,
-) {
+) gtserror.WithCode {
 	switch {
 	// Visibility set on form, use that.
 	case form.Visibility != "":
-		status.Visibility = typeutils.APIVisToVis(form.Visibility)
+		visibility := typeutils.APIVisToVis(form.Visibility)
+
+		if visibility == 0 {
+			const errText = "invalid visibility"
+			err := gtserror.New(errText)
+			errWithCode := gtserror.NewErrorUnprocessableEntity(err, err.Error())
+			return errWithCode
+		}
+
+		status.Visibility = visibility
 
 	// Fall back to account default, set
 	// this back on the form for later use.
@@ -511,6 +479,8 @@ func processVisibility(
 	// assuming federated (ie., not local-only) by default.
 	localOnly := util.PtrOrValue(form.LocalOnly, false)
 	status.Federated = util.Ptr(!localOnly)
+
+	return nil
 }
 
 func processInteractionPolicy(

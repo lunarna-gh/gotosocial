@@ -24,6 +24,8 @@ import (
 	"testing"
 
 	apimodel "code.superseriousbusiness.org/gotosocial/internal/api/model"
+	"code.superseriousbusiness.org/gotosocial/internal/filter/mutes"
+	"code.superseriousbusiness.org/gotosocial/internal/filter/status"
 	"code.superseriousbusiness.org/gotosocial/internal/filter/visibility"
 	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
 	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
@@ -38,9 +40,10 @@ import (
 
 type PollTestSuite struct {
 	suite.Suite
-	state  state.State
-	filter *visibility.Filter
-	polls  polls.Processor
+	state      state.State
+	visFilter  *visibility.Filter
+	muteFilter *mutes.Filter
+	polls      polls.Processor
 
 	testAccounts map[string]*gtsmodel.Account
 	testPolls    map[string]*gtsmodel.Poll
@@ -56,8 +59,10 @@ func (suite *PollTestSuite) SetupTest() {
 	controller := testrig.NewTestTransportController(&suite.state, nil)
 	mediaMgr := media.NewManager(&suite.state)
 	federator := testrig.NewTestFederator(&suite.state, controller, mediaMgr)
-	suite.filter = visibility.NewFilter(&suite.state)
-	common := common.New(&suite.state, mediaMgr, converter, federator, suite.filter)
+	suite.visFilter = visibility.NewFilter(&suite.state)
+	suite.muteFilter = mutes.NewFilter(&suite.state)
+	statusFilter := status.NewFilter(&suite.state)
+	common := common.New(&suite.state, mediaMgr, converter, federator, suite.visFilter, suite.muteFilter, statusFilter)
 	suite.polls = polls.New(&common, &suite.state, converter)
 }
 
@@ -68,7 +73,7 @@ func (suite *PollTestSuite) TearDownTest() {
 
 func (suite *PollTestSuite) TestPollGet() {
 	// Create a new context for this test.
-	ctx, cncl := context.WithCancel(context.Background())
+	ctx, cncl := context.WithCancel(suite.T().Context())
 	defer cncl()
 
 	// Perform test for all requester + poll combos.
@@ -88,7 +93,7 @@ func (suite *PollTestSuite) testPollGet(ctx context.Context, requester *gtsmodel
 	var check func(*apimodel.Poll, gtserror.WithCode) bool
 
 	switch {
-	case !pollIsVisible(suite.filter, ctx, requester, poll):
+	case !pollIsVisible(suite.visFilter, ctx, requester, poll):
 		// Poll should not be visible to requester, this should
 		// return an error code 404 (to prevent info leak).
 		check = func(poll *apimodel.Poll, err gtserror.WithCode) bool {
@@ -111,7 +116,7 @@ func (suite *PollTestSuite) testPollGet(ctx context.Context, requester *gtsmodel
 
 func (suite *PollTestSuite) TestPollVote() {
 	// Create a new context for this test.
-	ctx, cncl := context.WithCancel(context.Background())
+	ctx, cncl := context.WithCancel(suite.T().Context())
 	defer cncl()
 
 	// randomChoices generates random vote choices in poll.
@@ -188,7 +193,7 @@ func (suite *PollTestSuite) testPollVote(ctx context.Context, requester *gtsmode
 			return poll == nil && err.Code() == http.StatusUnprocessableEntity
 		}
 
-	case !pollIsVisible(suite.filter, ctx, requester, poll):
+	case !pollIsVisible(suite.visFilter, ctx, requester, poll):
 		// Poll should not be visible to requester, this should
 		// return an error code 404 (to prevent info leak).
 		check = func(poll *apimodel.Poll, err gtserror.WithCode) bool {

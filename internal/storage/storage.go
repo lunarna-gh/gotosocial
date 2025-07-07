@@ -99,6 +99,7 @@ func (d *Driver) Put(ctx context.Context, key string, value []byte) (int, error)
 
 // PutFile moves the contents of file at path, to storage.Driver{} under given key (with content-type if supported).
 func (d *Driver) PutFile(ctx context.Context, key, filepath, contentType string) (int64, error) {
+
 	// Open file at path for reading.
 	file, err := os.Open(filepath)
 	if err != nil {
@@ -164,6 +165,7 @@ func (d *Driver) WalkKeys(ctx context.Context, walk func(string) error) error {
 
 // URL will return a presigned GET object URL, but only if running on S3 storage with proxying disabled.
 func (d *Driver) URL(ctx context.Context, key string) *PresignedURL {
+
 	// Check whether S3 *without* proxying is enabled
 	s3, ok := d.Storage.(*s3.S3Storage)
 	if !ok || d.Proxy {
@@ -324,12 +326,13 @@ func NewS3Storage() (*Driver, error) {
 	case "path":
 		bucketLookup = minio.BucketLookupPath
 	default:
-		log.Warnf(nil, "%s set to %s which is not recognized, defaulting to 'auto'", config.StorageS3BucketLookupFlag(), s)
+		log.Warnf(nil, "%s set to %s which is not recognized, defaulting to 'auto'", config.StorageS3BucketLookupFlag, s)
 		bucketLookup = minio.BucketLookupAuto
 	}
 
 	// Open the s3 storage implementation
 	s3, err := s3.Open(endpoint, bucket, &s3.Config{
+		KeyPrefix: config.GetStorageS3KeyPrefix(),
 		CoreOpts: minio.Options{
 			Creds:        credentials.NewStaticV4(access, secret, ""),
 			Secure:       secure,

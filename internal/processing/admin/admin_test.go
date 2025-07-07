@@ -24,6 +24,8 @@ import (
 	"code.superseriousbusiness.org/gotosocial/internal/email"
 	"code.superseriousbusiness.org/gotosocial/internal/federation"
 	"code.superseriousbusiness.org/gotosocial/internal/filter/interaction"
+	"code.superseriousbusiness.org/gotosocial/internal/filter/mutes"
+	"code.superseriousbusiness.org/gotosocial/internal/filter/status"
 	"code.superseriousbusiness.org/gotosocial/internal/filter/visibility"
 	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
 	"code.superseriousbusiness.org/gotosocial/internal/media"
@@ -113,7 +115,9 @@ func (suite *AdminStandardTestSuite) SetupTest() {
 		suite.emailSender,
 		testrig.NewNoopWebPushSender(),
 		visibility.NewFilter(&suite.state),
+		mutes.NewFilter(&suite.state),
 		interaction.NewFilter(&suite.state),
+		status.NewFilter(&suite.state),
 	)
 
 	testrig.StartWorkers(&suite.state, suite.processor.Workers())

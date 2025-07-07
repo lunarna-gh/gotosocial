@@ -18,7 +18,7 @@
 package status_test
 
 import (
-	"context"
+	"net/http"
 	"testing"
 
 	apimodel "code.superseriousbusiness.org/gotosocial/internal/api/model"
@@ -34,7 +34,7 @@ type StatusCreateTestSuite struct {
 }
 
 func (suite *StatusCreateTestSuite) TestProcessContentWarningWithQuotationMarks() {
-	ctx := context.Background()
+	ctx := suite.T().Context()
 
 	creatingAccount := suite.testAccounts["local_account_1"]
 	creatingApplication := suite.testApplications["application_1"]
@@ -61,7 +61,7 @@ func (suite *StatusCreateTestSuite) TestProcessContentWarningWithQuotationMarks(
 }
 
 func (suite *StatusCreateTestSuite) TestProcessStatusMarkdownWithUnderscoreEmoji() {
-	ctx := context.Background()
+	ctx := suite.T().Context()
 
 	// update the shortcode of the rainbow emoji to surround it in underscores
 	if err := suite.db.UpdateWhere(ctx, []db.Where{{Key: "shortcode", Value: "rainbow"}}, "shortcode", "_rainbow_", &gtsmodel.Emoji{}); err != nil {
@@ -93,7 +93,7 @@ func (suite *StatusCreateTestSuite) TestProcessStatusMarkdownWithUnderscoreEmoji
 }
 
 func (suite *StatusCreateTestSuite) TestProcessStatusMarkdownWithSpoilerTextEmoji() {
-	ctx := context.Background()
+	ctx := suite.T().Context()
 	creatingAccount := suite.testAccounts["local_account_1"]
 	creatingApplication := suite.testApplications["application_1"]
 
@@ -121,7 +121,7 @@ func (suite *StatusCreateTestSuite) TestProcessStatusMarkdownWithSpoilerTextEmoj
 }
 
 func (suite *StatusCreateTestSuite) TestProcessMediaDescriptionTooShort() {
-	ctx := context.Background()
+	ctx := suite.T().Context()
 
 	config.SetMediaDescriptionMinChars(100)
 
@@ -148,7 +148,7 @@ func (suite *StatusCreateTestSuite) TestProcessMediaDescriptionTooShort() {
 }
 
 func (suite *StatusCreateTestSuite) TestProcessLanguageWithScriptPart() {
-	ctx := context.Background()
+	ctx := suite.T().Context()
 
 	creatingAccount := suite.testAccounts["local_account_1"]
 	creatingApplication := suite.testApplications["application_1"]
@@ -175,7 +175,7 @@ func (suite *StatusCreateTestSuite) TestProcessLanguageWithScriptPart() {
 }
 
 func (suite *StatusCreateTestSuite) TestProcessReplyToUnthreadedRemoteStatus() {
-	ctx := context.Background()
+	ctx := suite.T().Context()
 
 	creatingAccount := suite.testAccounts["local_account_1"]
 	creatingApplication := suite.testApplications["application_1"]
@@ -212,7 +212,7 @@ func (suite *StatusCreateTestSuite) TestProcessReplyToUnthreadedRemoteStatus() {
 }
 
 func (suite *StatusCreateTestSuite) TestProcessNoContentTypeUsesDefault() {
-	ctx := context.Background()
+	ctx := suite.T().Context()
 	creatingAccount := suite.testAccounts["local_account_1"]
 	creatingApplication := suite.testApplications["application_1"]
 
@@ -239,6 +239,31 @@ func (suite *StatusCreateTestSuite) TestProcessNoContentTypeUsesDefault() {
 	// the test accounts don't have settings, so we're comparing to
 	// the global default value instead of the requester's default
 	suite.Equal(apimodel.StatusContentTypeDefault, apiStatus.ContentType)
+}
+
+func (suite *StatusCreateTestSuite) TestProcessInvalidVisibility() {
+	ctx := suite.T().Context()
+	creatingAccount := suite.testAccounts["local_account_1"]
+	creatingApplication := suite.testApplications["application_1"]
+
+	statusCreateForm := &apimodel.StatusCreateRequest{
+		Status:      "my tests content is boring",
+		SpoilerText: "",
+		MediaIDs:    []string{},
+		Poll:        nil,
+		InReplyToID: "",
+		Sensitive:   false,
+		Visibility:  "local",
+		LocalOnly:   util.Ptr(false),
+		ScheduledAt: nil,
+		Language:    "en",
+		ContentType: apimodel.StatusContentTypePlain,
+	}
+
+	apiStatus, errWithCode := suite.status.Create(ctx, creatingAccount, creatingApplication, statusCreateForm)
+	suite.Nil(apiStatus)
+	suite.Equal(http.StatusUnprocessableEntity, errWithCode.Code())
+	suite.Equal("Unprocessable Entity: processVisibility: invalid visibility", errWithCode.Safe())
 }
 
 func TestStatusCreateTestSuite(t *testing.T) {

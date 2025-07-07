@@ -18,11 +18,11 @@
 package workers_test
 
 import (
-	"context"
 	"sync"
 	"testing"
 	"time"
 
+	"code.superseriousbusiness.org/gotosocial/internal/filter/mutes"
 	"code.superseriousbusiness.org/gotosocial/internal/filter/visibility"
 	"code.superseriousbusiness.org/gotosocial/internal/gtscontext"
 	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
@@ -44,13 +44,14 @@ func (suite *SurfaceNotifyTestSuite) TestSpamNotifs() {
 		Converter:     testStructs.TypeConverter,
 		Stream:        testStructs.Processor.Stream(),
 		VisFilter:     visibility.NewFilter(testStructs.State),
+		MuteFilter:    mutes.NewFilter(testStructs.State),
 		EmailSender:   testStructs.EmailSender,
 		WebPushSender: testStructs.WebPushSender,
 		Conversations: testStructs.Processor.Conversations(),
 	}
 
 	var (
-		ctx              = context.Background()
+		ctx              = suite.T().Context()
 		notificationType = gtsmodel.NotificationFollow
 		targetAccount    = suite.testAccounts["local_account_1"]
 		originAccount    = suite.testAccounts["local_account_2"]
@@ -75,7 +76,8 @@ func (suite *SurfaceNotifyTestSuite) TestSpamNotifs() {
 				notificationType,
 				targetAccount,
 				originAccount,
-				"",
+				nil,
+				nil,
 			); err != nil {
 				suite.FailNow(err.Error())
 			}

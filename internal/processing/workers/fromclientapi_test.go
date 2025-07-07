@@ -27,7 +27,6 @@ import (
 	"code.superseriousbusiness.org/gotosocial/internal/ap"
 	"code.superseriousbusiness.org/gotosocial/internal/config"
 	"code.superseriousbusiness.org/gotosocial/internal/db"
-	statusfilter "code.superseriousbusiness.org/gotosocial/internal/filter/status"
 	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
 	"code.superseriousbusiness.org/gotosocial/internal/id"
 	"code.superseriousbusiness.org/gotosocial/internal/messages"
@@ -158,7 +157,7 @@ func (suite *FromClientAPITestSuite) checkStreamed(
 ) {
 
 	// Set a 5s timeout on context.
-	ctx := context.Background()
+	ctx := suite.T().Context()
 	ctx, cncl := context.WithTimeout(ctx, time.Second*5)
 	defer cncl()
 
@@ -213,9 +212,6 @@ func (suite *FromClientAPITestSuite) statusJSON(
 		ctx,
 		status,
 		requestingAccount,
-		statusfilter.FilterContextNone,
-		nil,
-		nil,
 	)
 	if err != nil {
 		suite.FailNow(err.Error())
@@ -239,8 +235,6 @@ func (suite *FromClientAPITestSuite) conversationJSON(
 		ctx,
 		conversation,
 		requestingAccount,
-		nil,
-		nil,
 	)
 	if err != nil {
 		suite.FailNow(err.Error())
@@ -259,7 +253,7 @@ func (suite *FromClientAPITestSuite) TestProcessCreateStatusWithNotification() {
 	defer testrig.TearDownTestStructs(testStructs)
 
 	var (
-		ctx              = context.Background()
+		ctx              = suite.T().Context()
 		postingAccount   = suite.testAccounts["admin_account"]
 		receivingAccount = suite.testAccounts["local_account_1"]
 		testList         = suite.testLists["local_account_1_list_1"]
@@ -348,7 +342,7 @@ func (suite *FromClientAPITestSuite) TestProcessCreateStatusWithNotification() {
 		suite.FailNow("timed out waiting for new status notification")
 	}
 
-	apiNotif, err := testStructs.TypeConverter.NotificationToAPINotification(ctx, notif, nil, nil)
+	apiNotif, err := testStructs.TypeConverter.NotificationToAPINotification(ctx, notif)
 	if err != nil {
 		suite.FailNow(err.Error())
 	}
@@ -376,7 +370,7 @@ func (suite *FromClientAPITestSuite) TestProcessCreateBackfilledStatusWithNotifi
 	defer testrig.TearDownTestStructs(testStructs)
 
 	var (
-		ctx              = context.Background()
+		ctx              = suite.T().Context()
 		postingAccount   = suite.testAccounts["admin_account"]
 		receivingAccount = suite.testAccounts["local_account_1"]
 		testList         = suite.testLists["local_account_1_list_1"]
@@ -475,7 +469,7 @@ func (suite *FromClientAPITestSuite) TestProcessCreateBackfilledStatusWithRemote
 	defer testrig.TearDownTestStructs(testStructs)
 
 	var (
-		ctx              = context.Background()
+		ctx              = suite.T().Context()
 		postingAccount   = suite.testAccounts["local_account_1"]
 		receivingAccount = suite.testAccounts["remote_account_1"]
 
@@ -531,7 +525,7 @@ func (suite *FromClientAPITestSuite) TestProcessCreateStatusReply() {
 	defer testrig.TearDownTestStructs(testStructs)
 
 	var (
-		ctx              = context.Background()
+		ctx              = suite.T().Context()
 		postingAccount   = suite.testAccounts["admin_account"]
 		receivingAccount = suite.testAccounts["local_account_1"]
 		testList         = suite.testLists["local_account_1_list_1"]
@@ -602,7 +596,7 @@ func (suite *FromClientAPITestSuite) TestProcessCreateStatusReplyMuted() {
 	defer testrig.TearDownTestStructs(testStructs)
 
 	var (
-		ctx              = context.Background()
+		ctx              = suite.T().Context()
 		postingAccount   = suite.testAccounts["admin_account"]
 		receivingAccount = suite.testAccounts["local_account_1"]
 
@@ -666,7 +660,7 @@ func (suite *FromClientAPITestSuite) TestProcessCreateStatusBoostMuted() {
 	defer testrig.TearDownTestStructs(testStructs)
 
 	var (
-		ctx              = context.Background()
+		ctx              = suite.T().Context()
 		postingAccount   = suite.testAccounts["admin_account"]
 		receivingAccount = suite.testAccounts["local_account_1"]
 
@@ -734,7 +728,7 @@ func (suite *FromClientAPITestSuite) TestProcessCreateStatusListRepliesPolicyLis
 	*testList = *suite.testLists["local_account_1_list_1"]
 
 	var (
-		ctx              = context.Background()
+		ctx              = suite.T().Context()
 		postingAccount   = suite.testAccounts["admin_account"]
 		receivingAccount = suite.testAccounts["local_account_1"]
 		streams          = suite.openStreams(ctx, testStructs.Processor, receivingAccount, []string{testList.ID})
@@ -813,7 +807,7 @@ func (suite *FromClientAPITestSuite) TestProcessCreateStatusListRepliesPolicyLis
 	*testList = *suite.testLists["local_account_1_list_1"]
 
 	var (
-		ctx              = context.Background()
+		ctx              = suite.T().Context()
 		postingAccount   = suite.testAccounts["admin_account"]
 		receivingAccount = suite.testAccounts["local_account_1"]
 		streams          = suite.openStreams(ctx, testStructs.Processor, receivingAccount, []string{testList.ID})
@@ -898,7 +892,7 @@ func (suite *FromClientAPITestSuite) TestProcessCreateStatusReplyListRepliesPoli
 	*testList = *suite.testLists["local_account_1_list_1"]
 
 	var (
-		ctx              = context.Background()
+		ctx              = suite.T().Context()
 		postingAccount   = suite.testAccounts["admin_account"]
 		receivingAccount = suite.testAccounts["local_account_1"]
 		streams          = suite.openStreams(ctx, testStructs.Processor, receivingAccount, []string{testList.ID})
@@ -973,7 +967,7 @@ func (suite *FromClientAPITestSuite) TestProcessCreateStatusBoost() {
 	defer testrig.TearDownTestStructs(testStructs)
 
 	var (
-		ctx              = context.Background()
+		ctx              = suite.T().Context()
 		postingAccount   = suite.testAccounts["admin_account"]
 		receivingAccount = suite.testAccounts["local_account_1"]
 		testList         = suite.testLists["local_account_1_list_1"]
@@ -1040,7 +1034,7 @@ func (suite *FromClientAPITestSuite) TestProcessCreateStatusBoostNoReblogs() {
 	defer testrig.TearDownTestStructs(testStructs)
 
 	var (
-		ctx              = context.Background()
+		ctx              = suite.T().Context()
 		postingAccount   = suite.testAccounts["admin_account"]
 		receivingAccount = suite.testAccounts["local_account_1"]
 		testList         = suite.testLists["local_account_1_list_1"]
@@ -1107,7 +1101,7 @@ func (suite *FromClientAPITestSuite) TestProcessCreateStatusWhichBeginsConversat
 	defer testrig.TearDownTestStructs(testStructs)
 
 	var (
-		ctx              = context.Background()
+		ctx              = suite.T().Context()
 		postingAccount   = suite.testAccounts["local_account_2"]
 		receivingAccount = suite.testAccounts["local_account_1"]
 		streams          = suite.openStreams(ctx,
@@ -1196,7 +1190,7 @@ func (suite *FromClientAPITestSuite) TestProcessCreateStatusWhichShouldNotCreate
 	defer testrig.TearDownTestStructs(testStructs)
 
 	var (
-		ctx              = context.Background()
+		ctx              = suite.T().Context()
 		postingAccount   = suite.testAccounts["local_account_2"]
 		receivingAccount = suite.testAccounts["local_account_1"]
 		streams          = suite.openStreams(ctx,
@@ -1269,7 +1263,7 @@ func (suite *FromClientAPITestSuite) TestProcessCreateStatusWithFollowedHashtag(
 	defer testrig.TearDownTestStructs(testStructs)
 
 	var (
-		ctx              = context.Background()
+		ctx              = suite.T().Context()
 		postingAccount   = suite.testAccounts["admin_account"]
 		receivingAccount = suite.testAccounts["local_account_2"]
 		streams          = suite.openStreams(ctx,
@@ -1346,7 +1340,7 @@ func (suite *FromClientAPITestSuite) TestProcessCreateStatusWithFollowedHashtagA
 	defer testrig.TearDownTestStructs(testStructs)
 
 	var (
-		ctx              = context.Background()
+		ctx              = suite.T().Context()
 		postingAccount   = suite.testAccounts["remote_account_1"]
 		receivingAccount = suite.testAccounts["local_account_2"]
 		streams          = suite.openStreams(ctx,
@@ -1430,7 +1424,7 @@ func (suite *FromClientAPITestSuite) TestProcessCreateBoostWithFollowedHashtag()
 	defer testrig.TearDownTestStructs(testStructs)
 
 	var (
-		ctx              = context.Background()
+		ctx              = suite.T().Context()
 		postingAccount   = suite.testAccounts["remote_account_2"]
 		boostingAccount  = suite.testAccounts["admin_account"]
 		receivingAccount = suite.testAccounts["local_account_2"]
@@ -1536,7 +1530,7 @@ func (suite *FromClientAPITestSuite) TestProcessCreateBoostWithFollowedHashtagAn
 	defer testrig.TearDownTestStructs(testStructs)
 
 	var (
-		ctx              = context.Background()
+		ctx              = suite.T().Context()
 		postingAccount   = suite.testAccounts["remote_account_1"]
 		boostingAccount  = suite.testAccounts["admin_account"]
 		receivingAccount = suite.testAccounts["local_account_2"]
@@ -1649,7 +1643,7 @@ func (suite *FromClientAPITestSuite) TestProcessCreateBoostWithFollowedHashtagAn
 	defer testrig.TearDownTestStructs(testStructs)
 
 	var (
-		ctx              = context.Background()
+		ctx              = suite.T().Context()
 		postingAccount   = suite.testAccounts["admin_account"]
 		boostingAccount  = suite.testAccounts["remote_account_1"]
 		receivingAccount = suite.testAccounts["local_account_2"]
@@ -1760,7 +1754,7 @@ func (suite *FromClientAPITestSuite) TestProcessCreateStatusWithAuthorOnExclusiv
 	defer testrig.TearDownTestStructs(testStructs)
 
 	var (
-		ctx              = context.Background()
+		ctx              = suite.T().Context()
 		postingAccount   = suite.testAccounts["local_account_2"]
 		receivingAccount = suite.testAccounts["local_account_1"]
 		testList         = suite.testLists["local_account_1_list_1"]
@@ -1836,7 +1830,7 @@ func (suite *FromClientAPITestSuite) TestProcessCreateStatusWithAuthorOnExclusiv
 	defer testrig.TearDownTestStructs(testStructs)
 
 	var (
-		ctx               = context.Background()
+		ctx               = suite.T().Context()
 		postingAccount    = suite.testAccounts["local_account_2"]
 		receivingAccount  = suite.testAccounts["local_account_1"]
 		testInclusiveList = suite.testLists["local_account_1_list_1"]
@@ -1953,7 +1947,7 @@ func (suite *FromClientAPITestSuite) TestProcessCreateStatusWithAuthorOnExclusiv
 	defer testrig.TearDownTestStructs(testStructs)
 
 	var (
-		ctx              = context.Background()
+		ctx              = suite.T().Context()
 		postingAccount   = suite.testAccounts["local_account_2"]
 		receivingAccount = suite.testAccounts["local_account_1"]
 		testFollow       = suite.testFollows["local_account_1_local_account_2"]
@@ -2035,7 +2029,7 @@ func (suite *FromClientAPITestSuite) TestProcessCreateStatusWithAuthorOnExclusiv
 		suite.FailNow("timed out waiting for new status notification")
 	}
 
-	apiNotif, err := testStructs.TypeConverter.NotificationToAPINotification(ctx, notif, nil, nil)
+	apiNotif, err := testStructs.TypeConverter.NotificationToAPINotification(ctx, notif)
 	if err != nil {
 		suite.FailNow(err.Error())
 	}
@@ -2080,7 +2074,7 @@ func (suite *FromClientAPITestSuite) TestProcessUpdateStatusWithFollowedHashtag(
 	defer testrig.TearDownTestStructs(testStructs)
 
 	var (
-		ctx              = context.Background()
+		ctx              = suite.T().Context()
 		postingAccount   = suite.testAccounts["admin_account"]
 		receivingAccount = suite.testAccounts["local_account_2"]
 		streams          = suite.openStreams(ctx,
@@ -2156,7 +2150,7 @@ func (suite *FromClientAPITestSuite) TestProcessUpdateStatusInteractedWith() {
 	defer testrig.TearDownTestStructs(testStructs)
 
 	var (
-		ctx              = context.Background()
+		ctx              = suite.T().Context()
 		postingAccount   = suite.testAccounts["local_account_1"]
 		receivingAccount = suite.testAccounts["admin_account"]
 		streams          = suite.openStreams(ctx,
@@ -2220,7 +2214,7 @@ func (suite *FromClientAPITestSuite) TestProcessUpdateStatusInteractedWith() {
 		suite.FailNow("timed out waiting for edited status notification")
 	}
 
-	apiNotif, err := testStructs.TypeConverter.NotificationToAPINotification(ctx, notif, nil, nil)
+	apiNotif, err := testStructs.TypeConverter.NotificationToAPINotification(ctx, notif)
 	if err != nil {
 		suite.FailNow(err.Error())
 	}
@@ -2244,7 +2238,7 @@ func (suite *FromClientAPITestSuite) TestProcessStatusDelete() {
 	defer testrig.TearDownTestStructs(testStructs)
 
 	var (
-		ctx                  = context.Background()
+		ctx                  = suite.T().Context()
 		deletingAccount      = suite.testAccounts["local_account_1"]
 		receivingAccount     = suite.testAccounts["local_account_2"]
 		deletedStatus        = suite.testStatuses["local_account_1_status_1"]

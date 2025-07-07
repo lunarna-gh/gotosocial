@@ -41,8 +41,8 @@ var Defaults = Configuration{
 	Port:               8080,
 	TrustedProxies:     []string{"127.0.0.1/32", "::1"}, // localhost
 
-	DbType:                   "sqlite",
-	DbAddress:                "db.sqlite",
+	DbType:                   "",
+	DbAddress:                "",
 	DbPort:                   5432,
 	DbUser:                   "",
 	DbPassword:               "",
@@ -63,6 +63,7 @@ var Defaults = Configuration{
 	InstanceExposePeers:               false,
 	InstanceExposeBlocklist:           false,
 	InstanceExposeBlocklistWeb:        false,
+	InstanceExposeCustomEmojis:        false,
 	InstanceDeliverToSharedInboxes:    true,
 	InstanceLanguages:                 make(language.Languages, 0),
 	InstanceSubscriptionsProcessFrom:  "23:00",        // 11pm,
@@ -77,16 +78,19 @@ var Defaults = Configuration{
 	AccountsCustomCSSLength:          10000,
 	AccountsMaxProfileFields:         6,
 
-	MediaDescriptionMinChars: 0,
-	MediaDescriptionMaxChars: 1500,
-	MediaRemoteCacheDays:     7,
-	MediaLocalMaxSize:        40 * bytesize.MiB,
-	MediaRemoteMaxSize:       40 * bytesize.MiB,
-	MediaEmojiLocalMaxSize:   50 * bytesize.KiB,
-	MediaEmojiRemoteMaxSize:  100 * bytesize.KiB,
-	MediaCleanupFrom:         "00:00",        // Midnight.
-	MediaCleanupEvery:        24 * time.Hour, // 1/day.
-	MediaFfmpegPoolSize:      1,
+	Media: MediaConfiguration{
+		DescriptionMinChars: 0,
+		DescriptionMaxChars: 1500,
+		RemoteCacheDays:     7,
+		LocalMaxSize:        40 * bytesize.MiB,
+		RemoteMaxSize:       40 * bytesize.MiB,
+		EmojiLocalMaxSize:   50 * bytesize.KiB,
+		EmojiRemoteMaxSize:  100 * bytesize.KiB,
+		CleanupFrom:         "00:00",        // Midnight.
+		CleanupEvery:        24 * time.Hour, // 1/day.
+		FfmpegPoolSize:      1,
+		ThumbMaxPixels:      512,
+	},
 
 	StorageBackend:        "local",
 	StorageLocalBasePath:  "/gotosocial/storage",
@@ -149,7 +153,7 @@ var Defaults = Configuration{
 
 		ScraperDeterrence: ScraperDeterrenceConfig{
 			Enabled:    false,
-			Difficulty: 4,
+			Difficulty: 100000,
 		},
 	},
 
@@ -189,6 +193,7 @@ var Defaults = Configuration{
 		EmojiMemRatio:                         3,
 		EmojiCategoryMemRatio:                 0.1,
 		FilterMemRatio:                        0.5,
+		FilterIDsMemRatio:                     2,
 		FilterKeywordMemRatio:                 0.5,
 		FilterStatusMemRatio:                  0.5,
 		FollowMemRatio:                        2,
@@ -228,6 +233,8 @@ var Defaults = Configuration{
 		WebfingerMemRatio:                     0.1,
 		WebPushSubscriptionMemRatio:           1,
 		WebPushSubscriptionIDsMemRatio:        1,
+		MutesMemRatio:                         2,
+		StatusFilterMemRatio:                  7,
 		VisibilityMemRatio:                    2,
 	},
 

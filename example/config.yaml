@@ -141,7 +141,7 @@ trusted-proxies:
 
 # String. Database type.
 # Options: ["postgres","sqlite"]
-# Default: "sqlite"
+# Default: ""
 db-type: "sqlite"
 
 # String. Database address or parameters.
@@ -416,7 +416,7 @@ instance-expose-allowlist: false
 # including the public reason for each allow.
 # Options: [true, false]
 # Default: false
-instance-expose-blocklist-web: false
+instance-expose-allowlist-web: false
 
 # Bool. Allow unauthenticated users to make queries to /api/v1/timelines/public in order
 # to see a list of public posts on this server. Even if set to 'false', then authenticated
@@ -424,6 +424,21 @@ instance-expose-blocklist-web: false
 # Options: [true, false]
 # Default: false
 instance-expose-public-timeline: false
+
+# Bool. Allow unauthenticated access to /api/v1/custom_emojis, which
+# exposes the list of custom emojis available to users on this server.
+#
+# Setting this to 'true' may alleviate issues with clients that do not
+# provide an access token in their requests to the emojis endpoint, but
+# it also means that anyone can look at what emojis are installed on your
+# instance, which may present privacy / safety issues.
+#
+# Even if set to 'false', authenticated users (ie., instance members)
+# will still be able to query the endpoint using an access token.
+#
+# Options: [true, false]
+# Default: false
+instance-expose-custom-emojis: false
 
 # Bool. This flag tweaks whether GoToSocial will deliver ActivityPub messages
 # to the shared inbox of a recipient, if one is available, instead of delivering
@@ -613,6 +628,13 @@ media-video-size-hint: 40MiB
 # Examples: [2097152, 10485760, 40MB, 40MiB]
 # Default: 40MiB (41943040 bytes)
 media-remote-max-size: 40MiB
+
+# Int. Max size in pixels of any one dimension of
+# a thumbnail (as input media ratio is preserved).
+#
+# Examples: [256, 512, 1024]
+# Default: 512
+media-thumb-max-pixels: 512
 
 # Int. Minimum amount of characters required as an image or video description.
 # Examples: [500, 1000, 1500]
@@ -1113,6 +1135,15 @@ http-client:
   # Default: false
   tls-insecure-skip-verify: false
 
+  # Bool. Sets outgoing queries to webfinger, host-meta and nodeinfo to use
+  # HTTP instead of HTTPS.
+  #
+  # THIS SETTING SHOULD BE USED FOR TESTING ONLY! DO NOT CHANGE THIS SETTING
+  # UNLESS YOU KNOW EXACTLY WHAT YOU'RE DOING AND WHY YOU'RE DOING IT.
+  #
+  # Default: false
+  insecure-outgoing: false
+
 #############################
 ##### ADVANCED SETTINGS #####
 #############################
@@ -1307,10 +1338,9 @@ advanced-header-filter-mode: ""
 advanced-scraper-deterrence-enabled: false
 
 # Uint. Allows tweaking the difficulty of the proof-of-work algorithm
-# used in the scraper deterrence. This determines how many leading '0'
-# characters are required to be generated in each solution. Higher
-# values will on-average take longer to find solutions for, and the
-# inverse is also true.
+# used in the scraper deterrence. This determines roughly how many hash
+# encode rounds we require the client to complete to find a solution.
+# Higher values will take longer to find solutions for, and vice-versa.
 #
 # The downside is that if your deterrence takes too long to solve,
 # it may deter some users from viewing your web status / profile page.
@@ -1321,6 +1351,6 @@ advanced-scraper-deterrence-enabled: false
 # For more details please check the documentation at:
 # https://docs.gotosocial.org/en/latest/advanced/scraper_deterrence
 #
-# Examples: [3, 4, 5]
-# Default: 4
-advanced-scraper-deterrence-difficulty: 4
+# Examples: [50000, 100000, 500000]
+# Default: 100000
+advanced-scraper-deterrence-difficulty: 100000

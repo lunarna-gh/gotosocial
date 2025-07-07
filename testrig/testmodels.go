@@ -2154,6 +2154,7 @@ func NewTestStatuses() map[string]*gtsmodel.Status {
 			AccountID:                "01F8MH17FWEB39HZJ76B6VXSKF",
 			BoostOfID:                "01F8MHAMCHF6Y650WCRSCP4WMY",
 			BoostOfAccountID:         "01F8MH1H7YV1Z7D2C8K2730QBF",
+			ThreadID:                 "01JV7NMMYX2Y38ZP3Y9SYJWT36",
 			Visibility:               gtsmodel.VisibilityPublic,
 			Sensitive:                util.Ptr(false),
 			CreatedWithApplicationID: "01F8MGXQRHYF5QPMTMXP78QC2F",
@@ -2244,13 +2245,13 @@ func NewTestStatuses() map[string]*gtsmodel.Status {
 			CreatedWithApplicationID: "01F8MGY43H3N2C8EWPR2FPYEXG",
 			Federated:                util.Ptr(true),
 			InteractionPolicy: &gtsmodel.InteractionPolicy{
-				CanLike: gtsmodel.PolicyRules{
+				CanLike: &gtsmodel.PolicyRules{
 					AutomaticApproval: gtsmodel.PolicyValues{gtsmodel.PolicyValueAuthor},
 				},
-				CanReply: gtsmodel.PolicyRules{
+				CanReply: &gtsmodel.PolicyRules{
 					AutomaticApproval: gtsmodel.PolicyValues{gtsmodel.PolicyValueAuthor},
 				},
-				CanAnnounce: gtsmodel.PolicyRules{
+				CanAnnounce: &gtsmodel.PolicyRules{
 					AutomaticApproval: gtsmodel.PolicyValues{gtsmodel.PolicyValueAuthor},
 				},
 			},
@@ -2312,6 +2313,7 @@ func NewTestStatuses() map[string]*gtsmodel.Status {
 			Local:                    util.Ptr(true),
 			AccountURI:               "http://localhost:8080/users/the_mighty_zork",
 			AccountID:                "01F8MH1H7YV1Z7D2C8K2730QBF",
+			ThreadID:                 "01JV7PB3BPGFR13Q9B3XD4DJ5W",
 			Visibility:               gtsmodel.VisibilityFollowersOnly,
 			Sensitive:                util.Ptr(false),
 			Language:                 "en",
@@ -2378,6 +2380,7 @@ func NewTestStatuses() map[string]*gtsmodel.Status {
 			Local:                    util.Ptr(true),
 			AccountURI:               "http://localhost:8080/users/the_mighty_zork",
 			AccountID:                "01F8MH1H7YV1Z7D2C8K2730QBF",
+			ThreadID:                 "01JV7NT07NPSJQC703A4D0FK49",
 			EditIDs:                  []string{"01JDPZCZ2Y9KSGZW0R7ZG8T8Y2", "01JDPZDADMD1T9HKF94RECF7PP"},
 			Visibility:               gtsmodel.VisibilityPublic,
 			Sensitive:                util.Ptr(false),
@@ -2425,13 +2428,13 @@ func NewTestStatuses() map[string]*gtsmodel.Status {
 			CreatedWithApplicationID: "01F8MGYG9E893WRHW0TAEXR8GJ",
 			Federated:                util.Ptr(true),
 			InteractionPolicy: &gtsmodel.InteractionPolicy{
-				CanLike: gtsmodel.PolicyRules{
+				CanLike: &gtsmodel.PolicyRules{
 					AutomaticApproval: gtsmodel.PolicyValues{gtsmodel.PolicyValuePublic},
 				},
-				CanReply: gtsmodel.PolicyRules{
+				CanReply: &gtsmodel.PolicyRules{
 					AutomaticApproval: gtsmodel.PolicyValues{gtsmodel.PolicyValueAuthor},
 				},
-				CanAnnounce: gtsmodel.PolicyRules{
+				CanAnnounce: &gtsmodel.PolicyRules{
 					AutomaticApproval: gtsmodel.PolicyValues{gtsmodel.PolicyValuePublic},
 				},
 			},
@@ -2457,14 +2460,14 @@ func NewTestStatuses() map[string]*gtsmodel.Status {
 			CreatedWithApplicationID: "01F8MGYG9E893WRHW0TAEXR8GJ",
 			Federated:                util.Ptr(true),
 			InteractionPolicy: &gtsmodel.InteractionPolicy{
-				CanLike: gtsmodel.PolicyRules{
+				CanLike: &gtsmodel.PolicyRules{
 					AutomaticApproval: gtsmodel.PolicyValues{gtsmodel.PolicyValuePublic},
 				},
-				CanReply: gtsmodel.PolicyRules{
+				CanReply: &gtsmodel.PolicyRules{
 					AutomaticApproval: gtsmodel.PolicyValues{gtsmodel.PolicyValueAuthor},
 					ManualApproval:    gtsmodel.PolicyValues{gtsmodel.PolicyValuePublic},
 				},
-				CanAnnounce: gtsmodel.PolicyRules{
+				CanAnnounce: &gtsmodel.PolicyRules{
 					AutomaticApproval: gtsmodel.PolicyValues{gtsmodel.PolicyValuePublic},
 				},
 			},
@@ -2489,13 +2492,13 @@ func NewTestStatuses() map[string]*gtsmodel.Status {
 			CreatedWithApplicationID: "01F8MGYG9E893WRHW0TAEXR8GJ",
 			Federated:                util.Ptr(false),
 			InteractionPolicy: &gtsmodel.InteractionPolicy{
-				CanLike: gtsmodel.PolicyRules{
+				CanLike: &gtsmodel.PolicyRules{
 					AutomaticApproval: gtsmodel.PolicyValues{gtsmodel.PolicyValuePublic},
 				},
-				CanReply: gtsmodel.PolicyRules{
+				CanReply: &gtsmodel.PolicyRules{
 					AutomaticApproval: gtsmodel.PolicyValues{gtsmodel.PolicyValuePublic},
 				},
-				CanAnnounce: gtsmodel.PolicyRules{
+				CanAnnounce: &gtsmodel.PolicyRules{
 					AutomaticApproval: gtsmodel.PolicyValues{gtsmodel.PolicyValueAuthor},
 				},
 			},
@@ -2581,6 +2584,7 @@ func NewTestStatuses() map[string]*gtsmodel.Status {
 			Local:                    util.Ptr(true),
 			AccountURI:               "http://localhost:8080/users/1happyturtle",
 			AccountID:                "01F8MH5NBDF2MV7CTC4Q5128HF",
+			ThreadID:                 "01JV7NVEBG7Q27WM66SPMBN3Q5",
 			Visibility:               gtsmodel.VisibilityPublic,
 			Sensitive:                util.Ptr(false),
 			Language:                 "en",
@@ -2604,6 +2608,7 @@ func NewTestStatuses() map[string]*gtsmodel.Status {
 			Local:                    util.Ptr(true),
 			AccountURI:               "http://localhost:8080/users/the_mighty_zork",
 			AccountID:                "01F8MH5NBDF2MV7CTC4Q5128HF",
+			ThreadID:                 "01JV7NW0CD8Q8EWSF1RPC0AZXT",
 			EditIDs:                  []string{"01JDPZPBXAX0M02YSEPB21KX4R", "01JDPZPJHKP7E3M0YQXEXPS1YT", "01JDPZPY3F85Y7B78ETRXEMWD9"},
 			Visibility:               gtsmodel.VisibilityPublic,
 			Sensitive:                util.Ptr(false),
@@ -2629,6 +2634,7 @@ func NewTestStatuses() map[string]*gtsmodel.Status {
 			Local:                    util.Ptr(true),
 			AccountURI:               "http://localhost:8080/users/media_mogul",
 			AccountID:                "01JPCMD83Y4WR901094YES3QC5",
+			ThreadID:                 "01JV7NXDB7Z6YAFX8ZDKP9C20Y",
 			Visibility:               gtsmodel.VisibilityUnlocked,
 			Sensitive:                util.Ptr(false),
 			Language:                 "en",
@@ -2653,6 +2659,7 @@ func NewTestStatuses() map[string]*gtsmodel.Status {
 			Local:                    util.Ptr(true),
 			AccountURI:               "http://localhost:8080/users/media_mogul",
 			AccountID:                "01JPCMD83Y4WR901094YES3QC5",
+			ThreadID:                 "01JV7NXSGST4TYA3SAPADQ04JR",
 			Visibility:               gtsmodel.VisibilityUnlocked,
 			Sensitive:                util.Ptr(false),
 			Language:                 "en",
@@ -2670,6 +2677,7 @@ func NewTestStatuses() map[string]*gtsmodel.Status {
 			Local:               util.Ptr(false),
 			AccountURI:          "http://fossbros-anonymous.io/users/foss_satan",
 			AccountID:           "01F8MH5ZK5VRH73AKHQM6Y9VNX",
+			ThreadID:            "01JV7NY908EG95DQPJKTXKHCBW",
 			Visibility:          gtsmodel.VisibilityUnlocked,
 			Sensitive:           util.Ptr(false),
 			Language:            "en",
@@ -2687,6 +2695,7 @@ func NewTestStatuses() map[string]*gtsmodel.Status {
 			Local:               util.Ptr(false),
 			AccountURI:          "http://fossbros-anonymous.io/users/foss_satan",
 			AccountID:           "01F8MH5ZK5VRH73AKHQM6Y9VNX",
+			ThreadID:            "01JV7NYTCE3384MC1GRVC9V0K0",
 			Visibility:          gtsmodel.VisibilityUnlocked,
 			Sensitive:           util.Ptr(false),
 			Language:            "en",
@@ -2705,6 +2714,7 @@ func NewTestStatuses() map[string]*gtsmodel.Status {
 			Local:               util.Ptr(false),
 			AccountURI:          "http://fossbros-anonymous.io/users/foss_satan",
 			AccountID:           "01F8MH5ZK5VRH73AKHQM6Y9VNX",
+			ThreadID:            "01JV7NZ58GGQSVVZMK6P7EBADM",
 			Visibility:          gtsmodel.VisibilityUnlocked,
 			Sensitive:           util.Ptr(false),
 			Language:            "en",
@@ -2725,6 +2735,7 @@ func NewTestStatuses() map[string]*gtsmodel.Status {
 			Local:                    util.Ptr(false),
 			AccountURI:               "http://fossbros-anonymous.io/users/foss_satan",
 			AccountID:                "01F8MH5ZK5VRH73AKHQM6Y9VNX",
+			ThreadID:                 "01JV7NZWF1J2BVQ7SWMMRBYC58",
 			EditIDs:                  []string{"01JDQ07ZZ4FGP13YN8TF63P5A6", "01JDQ08AYQC0G6413VAHA51CV9"},
 			PollID:                   "01JDQ0EZ5HM9T4WXRQ5WSVD40J",
 			Visibility:               gtsmodel.VisibilityPublic,
@@ -2745,6 +2756,7 @@ func NewTestStatuses() map[string]*gtsmodel.Status {
 			AccountURI:          "http://example.org/users/Some_User",
 			MentionIDs:          []string{"01HE7XQNMKTVC8MNPCE1JGK4J3"},
 			AccountID:           "01FHMQX3GAABWSM0S2VZEC2SWC",
+			ThreadID:            "01HCWDF2Q4HV5QC161C4TGQ0M3",
 			InReplyToID:         "01F8MH75CBF9JFX4ZAD54N0W0R",
 			InReplyToAccountID:  "01F8MH17FWEB39HZJ76B6VXSKF",
 			InReplyToURI:        "http://localhost:8080/users/admin/statuses/01F8MH75CBF9JFX4ZAD54N0W0R",
@@ -2981,75 +2993,6 @@ func NewTestThreads() map[string]*gtsmodel.Thread {
 		},
 		"local_account_2_status_7": {
 			ID: "01HCWE7ZNC2SS4P05WA5QYED23",
-		},
-	}
-}
-
-func NewTestThreadToStatus() []*gtsmodel.ThreadToStatus {
-	return []*gtsmodel.ThreadToStatus{
-		{
-			ThreadID: "01HCWDF2Q4HV5QC161C4TGQ0M3",
-			StatusID: "01F8MH75CBF9JFX4ZAD54N0W0R",
-		},
-		{
-			ThreadID: "01HCWDQ1C7APSEY34B1HFVHVX7",
-			StatusID: "01F8MHAAY43M6RJ473VQFCVH37",
-		},
-		{
-			ThreadID: "01HCWDKKBWECZJQ93E262N36VN",
-			StatusID: "01FF25D5Q0DH7CHD57CTRS6WK0",
-		},
-		{
-			ThreadID: "01HCWDKKBWECZJQ93E262N36VN",
-			StatusID: "01F8MHAMCHF6Y650WCRSCP4WMY",
-		},
-		{
-			ThreadID: "01HCWDVTW3HQWSX66VJQ91Z1RH",
-			StatusID: "01F8MHAYFKS4KMXF8K5Y1C0KRN",
-		},
-		{
-			ThreadID: "01HCWDY9PDNHDBDBBFTJKJY8XE",
-			StatusID: "01F8MHBBN8120SYH7D5S050MGK",
-		},
-		{
-			ThreadID: "01HCWE0H2GKH794Q7GDPANH91Q",
-			StatusID: "01F8MH82FYRXD2RC6108DAJ5HB",
-		},
-		{
-			ThreadID: "01HCWE1ERQSMMVWDD0BE491E2P",
-			StatusID: "01FCTA44PW9H1TB328S9AQXKDS",
-		},
-		{
-			ThreadID: "01HCWE2Q24FWCZE41AS77SDFRZ",
-			StatusID: "01F8MHBQCBTDKN6X5VHGMMN4MA",
-		},
-		{
-			ThreadID: "01HCWE3P291Z3NJEJVFPW0K9ZQ",
-			StatusID: "01F8MHC0H0A7XHTVH5F596ZKBM",
-		},
-		{
-			ThreadID: "01HCWE4P0EW9HBA5WHW97D5YV0",
-			StatusID: "01F8MHC8VWDRBQR0N1BATDDEM5",
-		},
-		{
-			ThreadID: "01HCWDKKBWECZJQ93E262N36VN",
-			StatusID: "01FCQSQ667XHJ9AV9T27SJJSX5",
-		},
-		{
-			ThreadID: "01HCWDKKBWECZJQ93E262N36VN",
-			StatusID: "01J2M1HPFSS54S60Y0KYV23KJE",
-		},
-		{
-			ThreadID: "01HCWE71MGRRDSHBKXFD5DDSWR",
-			StatusID: "01FN3VJGFH10KR7S2PB0GFJZYG",
-		},
-		{
-			ThreadID: "01HCWE7ZNC2SS4P05WA5QYED23",
-			StatusID: "01G20ZM733MGN8J344T4ZDDFY1",
-		},
-		{
-			ThreadID: "01HCWE4P0EW9HBA5WHW97D5YV0",
-			StatusID: "01J5QVB9VC76NPPRQ207GG4DRZ",
 		},
 	}
 }
@@ -3635,6 +3578,12 @@ func NewTestFediPeople() map[string]vocab.ActivityStreamsPerson {
 	}
 	someUserPub := &someUserPriv.PublicKey
 
+	shrimpPriv, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		panic(err)
+	}
+	shrimpPub := &shrimpPriv.PublicKey
+
 	return map[string]vocab.ActivityStreamsPerson{
 		"https://unknown-instance.com/users/brand_new_person": newAPPerson(
 			URLMustParse("https://unknown-instance.com/users/brand_new_person"),
@@ -3656,7 +3605,9 @@ func NewTestFediPeople() map[string]vocab.ActivityStreamsPerson {
 			nil,
 			"image/jpeg",
 			nil,
+			nil,
 			"image/png",
+			nil,
 			false,
 		),
 		"https://turnip.farm/users/turniplover6969": newAPPerson(
@@ -3679,7 +3630,9 @@ func NewTestFediPeople() map[string]vocab.ActivityStreamsPerson {
 			nil,
 			"image/jpeg",
 			nil,
+			nil,
 			"image/png",
+			nil,
 			false,
 		),
 		"http://example.org/users/Some_User": newAPPerson(
@@ -3702,7 +3655,34 @@ func NewTestFediPeople() map[string]vocab.ActivityStreamsPerson {
 			nil,
 			"image/jpeg",
 			nil,
+			nil,
 			"image/png",
+			nil,
+			false,
+		),
+		"https://shrimpnet.example.org/users/shrimp": newAPPerson(
+			URLMustParse("https://shrimpnet.example.org/users/shrimp"),
+			URLMustParse("https://shrimpnet.example.org/users/shrimp/following"),
+			URLMustParse("https://shrimpnet.example.org/users/shrimp/followers"),
+			URLMustParse("https://shrimpnet.example.org/users/shrimp/inbox"),
+			URLMustParse("https://shrimpnet.example.org/inbox"),
+			URLMustParse("https://shrimpnet.example.org/users/shrimp/outbox"),
+			URLMustParse("https://shrimpnet.example.org/users/shrimp/collections/featured"),
+			nil,
+			nil,
+			"shrimp",
+			"Shrimp",
+			"",
+			URLMustParse("https://shrimpnet.example.org/@shrimp"),
+			true,
+			URLMustParse("https://shrimpnet.example.org/users/shrimp#main-key"),
+			shrimpPub,
+			URLMustParse("https://shrimpnet.example.org/files/public-1c8468b8-eb2d-485f-9967-f4238ded95e7.webp"),
+			"image/jpeg",
+			util.Ptr("me scrolling fedi on a laptop, there's a monster ultra white and another fedi user on my right."),
+			nil,
+			"image/png",
+			nil,
 			false,
 		),
 	}
@@ -4111,54 +4091,45 @@ func NewTestDereferenceRequests(accounts map[string]*gtsmodel.Account) map[strin
 func NewTestFilters() map[string]*gtsmodel.Filter {
 	return map[string]*gtsmodel.Filter{
 		"local_account_1_filter_1": {
-			ID:            "01HN26VM6KZTW1ANNRVSBMA461",
-			CreatedAt:     TimeMustParse("2024-01-25T12:20:03+02:00"),
-			UpdatedAt:     TimeMustParse("2024-01-25T12:20:03+02:00"),
-			AccountID:     "01F8MH1H7YV1Z7D2C8K2730QBF",
-			Title:         "fnord",
-			Action:        gtsmodel.FilterActionWarn,
-			ContextHome:   util.Ptr(true),
-			ContextPublic: util.Ptr(true),
+			ID:         "01HN26VM6KZTW1ANNRVSBMA461",
+			AccountID:  "01F8MH1H7YV1Z7D2C8K2730QBF",
+			Title:      "fnord",
+			Action:     gtsmodel.FilterActionWarn,
+			Contexts:   gtsmodel.FilterContexts(gtsmodel.FilterContextHome | gtsmodel.FilterContextPublic),
+			KeywordIDs: []string{"01HN272TAVWAXX72ZX4M8JZ0PS"},
 		},
 		"local_account_1_filter_2": {
-			ID:            "01HN277FSPQAWXZXK92QPPYF79",
-			CreatedAt:     TimeMustParse("2024-01-25T12:20:03+02:00"),
-			UpdatedAt:     TimeMustParse("2024-01-25T12:20:03+02:00"),
-			AccountID:     "01F8MH1H7YV1Z7D2C8K2730QBF",
-			Title:         "metasyntactic variables",
-			Action:        gtsmodel.FilterActionWarn,
-			ContextHome:   util.Ptr(true),
-			ContextPublic: util.Ptr(true),
+			ID:         "01HN277FSPQAWXZXK92QPPYF79",
+			AccountID:  "01F8MH1H7YV1Z7D2C8K2730QBF",
+			Title:      "metasyntactic variables",
+			Action:     gtsmodel.FilterActionWarn,
+			Contexts:   gtsmodel.FilterContexts(gtsmodel.FilterContextHome | gtsmodel.FilterContextPublic),
+			KeywordIDs: []string{"01HN277Y11ENG4EC1ERMAC9FH4", "01HN278494N88BA2FY4DZ5JTNS", "01HXATJTGYT4BTG2YASE5M7GSD"},
 		},
 		"local_account_1_filter_3": {
-			ID:            "01HWXQDXE4QX4R9EGMG729Y76C",
-			CreatedAt:     TimeMustParse("2024-01-25T12:20:03+02:00"),
-			UpdatedAt:     TimeMustParse("2024-01-25T12:20:03+02:00"),
-			AccountID:     "01F8MH1H7YV1Z7D2C8K2730QBF",
-			Title:         "puppies",
-			Action:        gtsmodel.FilterActionWarn,
-			ContextHome:   util.Ptr(true),
-			ContextPublic: util.Ptr(true),
+			ID:        "01HWXQDXE4QX4R9EGMG729Y76C",
+			AccountID: "01F8MH1H7YV1Z7D2C8K2730QBF",
+			Title:     "puppies",
+			Action:    gtsmodel.FilterActionWarn,
+			Contexts:  gtsmodel.FilterContexts(gtsmodel.FilterContextHome | gtsmodel.FilterContextPublic),
+			StatusIDs: []string{"01HWXQDY8EE182AWQKS45JV50W"},
 		},
 		"local_account_1_filter_4": {
-			ID:            "01HZ55WWWP82WYP2A1BKWK8Y9Q",
-			CreatedAt:     TimeMustParse("2024-01-25T12:20:03+02:00"),
-			UpdatedAt:     TimeMustParse("2024-01-25T12:20:03+02:00"),
-			AccountID:     "01F8MH1H7YV1Z7D2C8K2730QBF",
-			Title:         "empty filter with no keywords or statuses",
-			Action:        gtsmodel.FilterActionWarn,
-			ContextHome:   util.Ptr(true),
-			ContextPublic: util.Ptr(true),
+			ID:         "01HZ55WWWP82WYP2A1BKWK8Y9Q",
+			AccountID:  "01F8MH1H7YV1Z7D2C8K2730QBF",
+			Title:      "empty filter with no keywords or statuses",
+			Action:     gtsmodel.FilterActionWarn,
+			Contexts:   gtsmodel.FilterContexts(gtsmodel.FilterContextHome | gtsmodel.FilterContextPublic),
+			KeywordIDs: []string{},
 		},
 		"local_account_2_filter_1": {
-			ID:            "01HNGFYJBED9FS0VWRVMY4TKXH",
-			CreatedAt:     TimeMustParse("2024-01-25T12:20:03+02:00"),
-			UpdatedAt:     TimeMustParse("2024-01-25T12:20:03+02:00"),
-			AccountID:     "01F8MH1VYJAE00TVVGMM5JNJ8X",
-			Title:         "gamer words",
-			Action:        gtsmodel.FilterActionWarn,
-			ContextHome:   util.Ptr(true),
-			ContextPublic: util.Ptr(true),
+			ID:         "01HNGFYJBED9FS0VWRVMY4TKXH",
+			AccountID:  "01F8MH1VYJAE00TVVGMM5JNJ8X",
+			Title:      "gamer words",
+			Action:     gtsmodel.FilterActionWarn,
+			Contexts:   gtsmodel.FilterContexts(gtsmodel.FilterContextHome | gtsmodel.FilterContextPublic),
+			KeywordIDs: []string{"01HNGG51HV2JT67XQ5MQ7RA1WE"},
+			StatusIDs:  []string{"01HX9WXVEH05E78ABR81FZFFFY"},
 		},
 	}
 }
@@ -4167,45 +4138,30 @@ func NewTestFilterKeywords() map[string]*gtsmodel.FilterKeyword {
 	return map[string]*gtsmodel.FilterKeyword{
 		"local_account_1_filter_1_keyword_1": {
 			ID:        "01HN272TAVWAXX72ZX4M8JZ0PS",
-			CreatedAt: TimeMustParse("2024-01-25T12:20:03+02:00"),
-			UpdatedAt: TimeMustParse("2024-01-25T12:20:03+02:00"),
-			AccountID: "01F8MH1H7YV1Z7D2C8K2730QBF",
 			FilterID:  "01HN26VM6KZTW1ANNRVSBMA461",
 			Keyword:   "fnord",
 			WholeWord: util.Ptr(true),
 		},
 		"local_account_1_filter_2_keyword_1": {
 			ID:        "01HN277Y11ENG4EC1ERMAC9FH4",
-			CreatedAt: TimeMustParse("2024-01-25T12:20:03+02:00"),
-			UpdatedAt: TimeMustParse("2024-01-25T12:20:03+02:00"),
-			AccountID: "01F8MH1H7YV1Z7D2C8K2730QBF",
 			FilterID:  "01HN277FSPQAWXZXK92QPPYF79",
 			Keyword:   "foo",
 			WholeWord: util.Ptr(true),
 		},
 		"local_account_1_filter_2_keyword_2": {
 			ID:        "01HN278494N88BA2FY4DZ5JTNS",
-			CreatedAt: TimeMustParse("2024-01-25T12:20:03+02:00"),
-			UpdatedAt: TimeMustParse("2024-01-25T12:20:03+02:00"),
-			AccountID: "01F8MH1H7YV1Z7D2C8K2730QBF",
 			FilterID:  "01HN277FSPQAWXZXK92QPPYF79",
 			Keyword:   "bar",
 			WholeWord: util.Ptr(true),
 		},
 		"local_account_1_filter_2_keyword_3": {
 			ID:        "01HXATJTGYT4BTG2YASE5M7GSD",
-			CreatedAt: TimeMustParse("2024-01-25T12:20:03+02:00"),
-			UpdatedAt: TimeMustParse("2024-01-25T12:20:03+02:00"),
-			AccountID: "01F8MH1H7YV1Z7D2C8K2730QBF",
 			FilterID:  "01HN277FSPQAWXZXK92QPPYF79",
 			Keyword:   "quux",
 			WholeWord: util.Ptr(true),
 		},
 		"local_account_2_filter_1_keyword_1": {
 			ID:        "01HNGG51HV2JT67XQ5MQ7RA1WE",
-			CreatedAt: TimeMustParse("2024-01-25T12:20:03+02:00"),
-			UpdatedAt: TimeMustParse("2024-01-25T12:20:03+02:00"),
-			AccountID: "01F8MH1VYJAE00TVVGMM5JNJ8X",
 			FilterID:  "01HNGFYJBED9FS0VWRVMY4TKXH",
 			Keyword:   "Virtual Boy",
 			WholeWord: util.Ptr(true),
@@ -4216,20 +4172,14 @@ func NewTestFilterKeywords() map[string]*gtsmodel.FilterKeyword {
 func NewTestFilterStatuses() map[string]*gtsmodel.FilterStatus {
 	return map[string]*gtsmodel.FilterStatus{
 		"local_account_1_filter_3_status_1": {
-			ID:        "01HWXQDY8EE182AWQKS45JV50W",
-			CreatedAt: time.Time{},
-			UpdatedAt: time.Time{},
-			AccountID: "01F8MH1H7YV1Z7D2C8K2730QBF",
-			FilterID:  "01HWXQDXE4QX4R9EGMG729Y76C",
-			StatusID:  "01F8MHAAY43M6RJ473VQFCVH37",
+			ID:       "01HWXQDY8EE182AWQKS45JV50W",
+			FilterID: "01HWXQDXE4QX4R9EGMG729Y76C",
+			StatusID: "01F8MHAAY43M6RJ473VQFCVH37",
 		},
 		"local_account_2_filter_1_status_1": {
-			ID:        "01HX9WXVEH05E78ABR81FZFFFY",
-			CreatedAt: time.Time{},
-			UpdatedAt: time.Time{},
-			AccountID: "01F8MH1VYJAE00TVVGMM5JNJ8X",
-			FilterID:  "01HNGFYJBED9FS0VWRVMY4TKXH",
-			StatusID:  "01FVW7JHQFSFK166WWKR8CBA6M",
+			ID:       "01HX9WXVEH05E78ABR81FZFFFY",
+			FilterID: "01HNGFYJBED9FS0VWRVMY4TKXH",
+			StatusID: "01FVW7JHQFSFK166WWKR8CBA6M",
 		},
 	}
 }
@@ -4455,8 +4405,10 @@ func newAPPerson(
 	pkey *rsa.PublicKey,
 	avatarURL *url.URL,
 	avatarContentType string,
+	avatarDescription *string,
 	headerURL *url.URL,
 	headerContentType string,
+	headerDescription *string,
 	manuallyApprovesFollowers bool,
 ) vocab.ActivityStreamsPerson {
 	person := streams.NewActivityStreamsPerson()
@@ -4621,6 +4573,11 @@ func newAPPerson(
 	avatarURLProperty := streams.NewActivityStreamsUrlProperty()
 	avatarURLProperty.AppendIRI(avatarURL)
 	iconImage.SetActivityStreamsUrl(avatarURLProperty)
+	if avatarDescription != nil {
+		nameProp := streams.NewActivityStreamsNameProperty()
+		nameProp.AppendXMLSchemaString(*avatarDescription)
+		iconImage.SetActivityStreamsName(nameProp)
+	}
 	iconProperty.AppendActivityStreamsImage(iconImage)
 	person.SetActivityStreamsIcon(iconProperty)
 
@@ -4634,6 +4591,11 @@ func newAPPerson(
 	headerURLProperty := streams.NewActivityStreamsUrlProperty()
 	headerURLProperty.AppendIRI(headerURL)
 	headerImage.SetActivityStreamsUrl(headerURLProperty)
+	if headerDescription != nil {
+		nameProp := streams.NewActivityStreamsNameProperty()
+		nameProp.AppendXMLSchemaString(*headerDescription)
+		headerImage.SetActivityStreamsName(nameProp)
+	}
 	headerProperty.AppendActivityStreamsImage(headerImage)
 	person.SetActivityStreamsImage(headerProperty)
 

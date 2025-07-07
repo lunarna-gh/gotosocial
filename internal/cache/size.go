@@ -19,11 +19,13 @@ package cache
 
 import (
 	"crypto/rsa"
+	"regexp"
 	"strings"
 	"time"
 	"unsafe"
 
 	"code.superseriousbusiness.org/gotosocial/internal/ap"
+	apimodel "code.superseriousbusiness.org/gotosocial/internal/api/model"
 	"code.superseriousbusiness.org/gotosocial/internal/config"
 	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
 	"code.superseriousbusiness.org/gotosocial/internal/id"
@@ -150,7 +152,7 @@ func calculateCacheMax(keySz, valSz uintptr, ratio float64) int {
 
 	// The inputted memory ratio does not take into account the
 	// total of all ratios, so divide it here to get perc. ratio.
-	totalRatio := ratio / totalOfRatios()
+	totalRatio := ratio / config.GetTotalOfMemRatios()
 
 	// TODO: we should also further weight this ratio depending
 	// on the combined keySz + valSz as a ratio of all available
@@ -170,65 +172,6 @@ func calculateCacheMax(keySz, valSz uintptr, ratio float64) int {
 	// Calculated using the internal cache map size:
 	// (($keysz + $valsz) * $len) + ($len * $allOverheads) = $memSz
 	return int(fMaxMem / (fKeySz + fValSz + emptyBucketOverhead + float64(cacheElemOverhead)))
-}
-
-// totalOfRatios returns the total of all cache ratios added together.
-func totalOfRatios() float64 {
-
-	// NOTE: this is not performant calculating
-	// this every damn time (mainly the mutex unlocks
-	// required to access each config var). fortunately
-	// we only do this on init so fuck it :D
-	return 0 +
-		config.GetCacheAccountMemRatio() +
-		config.GetCacheAccountNoteMemRatio() +
-		config.GetCacheAccountSettingsMemRatio() +
-		config.GetCacheAccountStatsMemRatio() +
-		config.GetCacheApplicationMemRatio() +
-		config.GetCacheBlockMemRatio() +
-		config.GetCacheBlockIDsMemRatio() +
-		config.GetCacheBoostOfIDsMemRatio() +
-		config.GetCacheClientMemRatio() +
-		config.GetCacheEmojiMemRatio() +
-		config.GetCacheEmojiCategoryMemRatio() +
-		config.GetCacheFilterMemRatio() +
-		config.GetCacheFilterKeywordMemRatio() +
-		config.GetCacheFilterStatusMemRatio() +
-		config.GetCacheFollowMemRatio() +
-		config.GetCacheFollowIDsMemRatio() +
-		config.GetCacheFollowRequestMemRatio() +
-		config.GetCacheFollowRequestIDsMemRatio() +
-		config.GetCacheFollowingTagIDsMemRatio() +
-		config.GetCacheInReplyToIDsMemRatio() +
-		config.GetCacheInstanceMemRatio() +
-		config.GetCacheInteractionRequestMemRatio() +
-		config.GetCacheListMemRatio() +
-		config.GetCacheListIDsMemRatio() +
-		config.GetCacheListedIDsMemRatio() +
-		config.GetCacheMarkerMemRatio() +
-		config.GetCacheMediaMemRatio() +
-		config.GetCacheMentionMemRatio() +
-		config.GetCacheMoveMemRatio() +
-		config.GetCacheNotificationMemRatio() +
-		config.GetCachePollMemRatio() +
-		config.GetCachePollVoteMemRatio() +
-		config.GetCachePollVoteIDsMemRatio() +
-		config.GetCacheReportMemRatio() +
-		config.GetCacheSinBinStatusMemRatio() +
-		config.GetCacheStatusMemRatio() +
-		config.GetCacheStatusBookmarkMemRatio() +
-		config.GetCacheStatusBookmarkIDsMemRatio() +
-		config.GetCacheStatusFaveMemRatio() +
-		config.GetCacheStatusFaveIDsMemRatio() +
-		config.GetCacheTagMemRatio() +
-		config.GetCacheThreadMuteMemRatio() +
-		config.GetCacheTokenMemRatio() +
-		config.GetCacheTombstoneMemRatio() +
-		config.GetCacheUserMemRatio() +
-		config.GetCacheUserMuteMemRatio() +
-		config.GetCacheUserMuteIDsMemRatio() +
-		config.GetCacheWebfingerMemRatio() +
-		config.GetCacheVisibilityMemRatio()
 }
 
 func sizeofAccount() uintptr {
@@ -407,8 +350,6 @@ func sizeofEmojiCategory() uintptr {
 func sizeofFilter() uintptr {
 	return uintptr(size.Of(&gtsmodel.Filter{
 		ID:        exampleID,
-		CreatedAt: exampleTime,
-		UpdatedAt: exampleTime,
 		ExpiresAt: exampleTime,
 		AccountID: exampleID,
 		Title:     exampleTextSmall,
@@ -418,21 +359,18 @@ func sizeofFilter() uintptr {
 
 func sizeofFilterKeyword() uintptr {
 	return uintptr(size.Of(&gtsmodel.FilterKeyword{
-		ID:        exampleID,
-		CreatedAt: exampleTime,
-		UpdatedAt: exampleTime,
-		FilterID:  exampleID,
-		Keyword:   exampleTextSmall,
+		ID:       exampleID,
+		FilterID: exampleID,
+		Keyword:  exampleTextSmall,
+		Regexp:   regexp.MustCompile("^match (this)? .*"),
 	}))
 }
 
 func sizeofFilterStatus() uintptr {
 	return uintptr(size.Of(&gtsmodel.FilterStatus{
-		ID:        exampleID,
-		CreatedAt: exampleTime,
-		UpdatedAt: exampleTime,
-		FilterID:  exampleID,
-		StatusID:  exampleID,
+		ID:       exampleID,
+		FilterID: exampleID,
+		StatusID: exampleID,
 	}))
 }
 
@@ -716,6 +654,20 @@ func sizeofStatusFave() uintptr {
 	}))
 }
 
+func sizeofStatusFilterResults() uintptr {
+	return uintptr(size.Of(&CachedStatusFilterResults{
+		StatusID:    exampleID,
+		RequesterID: exampleID,
+		Results: [5][]StatusFilterResult{
+			{{Result: &apimodel.FilterResult{KeywordMatches: []string{"key", "word"}}}, {Result: &apimodel.FilterResult{StatusMatches: []string{exampleID, exampleID}}}, {}},
+			{{Result: &apimodel.FilterResult{KeywordMatches: []string{"key", "word"}}}, {Result: &apimodel.FilterResult{StatusMatches: []string{exampleID, exampleID}}}, {}},
+			{{Result: &apimodel.FilterResult{KeywordMatches: []string{"key", "word"}}}, {Result: &apimodel.FilterResult{StatusMatches: []string{exampleID, exampleID}}}, {}},
+			{{Result: &apimodel.FilterResult{KeywordMatches: []string{"key", "word"}}}, {Result: &apimodel.FilterResult{StatusMatches: []string{exampleID, exampleID}}}, {}},
+			{{Result: &apimodel.FilterResult{KeywordMatches: []string{"key", "word"}}}, {Result: &apimodel.FilterResult{StatusMatches: []string{exampleID, exampleID}}}, {}},
+		},
+	}))
+}
+
 func sizeofTag() uintptr {
 	return uintptr(size.Of(&gtsmodel.Tag{
 		ID:        exampleID,
@@ -766,6 +718,18 @@ func sizeofTombstone() uintptr {
 		UpdatedAt: exampleTime,
 		Domain:    exampleUsername,
 		URI:       exampleURI,
+	}))
+}
+
+func sizeofMute() uintptr {
+	return uintptr(size.Of(&CachedMute{
+		StatusID:           exampleID,
+		ThreadID:           exampleID,
+		RequesterID:        exampleID,
+		Mute:               true,
+		MuteExpiry:         exampleTime,
+		Notifications:      true,
+		NotificationExpiry: exampleTime,
 	}))
 }
 

@@ -41,7 +41,9 @@ import (
 	"code.superseriousbusiness.org/gotosocial/internal/federation"
 	"code.superseriousbusiness.org/gotosocial/internal/federation/federatingdb"
 	"code.superseriousbusiness.org/gotosocial/internal/filter/interaction"
+	"code.superseriousbusiness.org/gotosocial/internal/filter/mutes"
 	"code.superseriousbusiness.org/gotosocial/internal/filter/spam"
+	"code.superseriousbusiness.org/gotosocial/internal/filter/status"
 	"code.superseriousbusiness.org/gotosocial/internal/filter/visibility"
 	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
 	"code.superseriousbusiness.org/gotosocial/internal/httpclient"
@@ -268,7 +270,9 @@ var Start action.GTSAction = func(ctx context.Context) error {
 	)
 	typeConverter := typeutils.NewConverter(state)
 	visFilter := visibility.NewFilter(state)
+	muteFilter := mutes.NewFilter(state)
 	intFilter := interaction.NewFilter(state)
+	statusFilter := status.NewFilter(state)
 	spamFilter := spam.NewFilter(state)
 	federatingDB := federatingdb.New(state, typeConverter, visFilter, intFilter, spamFilter)
 	transportController := transport.NewController(state, federatingDB, client)
@@ -348,7 +352,9 @@ var Start action.GTSAction = func(ctx context.Context) error {
 		emailSender,
 		webPushSender,
 		visFilter,
+		muteFilter,
 		intFilter,
+		statusFilter,
 	)
 
 	// Schedule background cleaning tasks.
@@ -617,14 +623,14 @@ func parseClientRanges() (
 
 	allowIPs := config.GetHTTPClientAllowIPs()
 	allowRanges := make([]netip.Prefix, len(allowIPs))
-	allowFlag := config.HTTPClientAllowIPsFlag()
+	allowFlag := config.HTTPClientAllowIPsFlag
 	if err := parseF(allowIPs, allowRanges, allowFlag); err != nil {
 		return nil, err
 	}
 
 	blockIPs := config.GetHTTPClientBlockIPs()
 	blockRanges := make([]netip.Prefix, len(blockIPs))
-	blockFlag := config.HTTPClientBlockIPsFlag()
+	blockFlag := config.HTTPClientBlockIPsFlag
 	if err := parseF(blockIPs, blockRanges, blockFlag); err != nil {
 		return nil, err
 	}

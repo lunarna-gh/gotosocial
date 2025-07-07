@@ -65,7 +65,7 @@ type Configuration struct {
 	LandingPageUser            string        `name:"landing-page-user" usage:"the user that should be shown on the instance's landing page"`
 	Host                       string        `name:"host" usage:"Hostname to use for the server (eg., example.org, gotosocial.whatever.com). DO NOT change this on a server that's already run!"`
 	AccountDomain              string        `name:"account-domain" usage:"Domain to use in account names (eg., example.org, whatever.com). If not set, will default to the setting for host. DO NOT change this on a server that's already run!"`
-	Protocol                   string        `name:"protocol" usage:"Protocol to use for the REST api of the server (only use http if you are debugging or behind a reverse proxy!)"`
+	Protocol                   string        `name:"protocol" usage:"Protocol to use for the REST api of the server (only use http if you are debugging; https should be used even if running behind a reverse proxy!)"`
 	BindAddress                string        `name:"bind-address" usage:"Bind address to use for the GoToSocial server (eg., 0.0.0.0, 172.138.0.9, [::], localhost). For ipv6, enclose the address in square brackets, eg [2001:db8::fed1]. Default binds to all interfaces."`
 	Port                       int           `name:"port" usage:"Port to use for GoToSocial. Change this to 443 if you're running the binary directly on the host machine."`
 	TrustedProxies             []string      `name:"trusted-proxies" usage:"Proxies to trust when parsing x-forwarded headers into real IPs."`
@@ -96,6 +96,7 @@ type Configuration struct {
 	InstanceExposeAllowlist           bool               `name:"instance-expose-allowlist" usage:"Expose list of allowed domains via web UI, and allow unauthenticated users to query /api/v1/instance/peers?filter=allowed and /api/v1/instance/domain_allows"`
 	InstanceExposeAllowlistWeb        bool               `name:"instance-expose-allowlist-web" usage:"Expose list of explicitly allowed domains as webpage on /about/domain_allows"`
 	InstanceExposePublicTimeline      bool               `name:"instance-expose-public-timeline" usage:"Allow unauthenticated users to query /api/v1/timelines/public"`
+	InstanceExposeCustomEmojis        bool               `name:"instance-expose-custom-emojis" usage:"Allow unauthenticated access to /api/v1/custom_emojis"`
 	InstanceDeliverToSharedInboxes    bool               `name:"instance-deliver-to-shared-inboxes" usage:"Deliver federated messages to shared inboxes, if they're available."`
 	InstanceInjectMastodonVersion     bool               `name:"instance-inject-mastodon-version" usage:"This injects a Mastodon compatible version in /api/v1/instance to help Mastodon clients that use that version for feature detection"`
 	InstanceLanguages                 language.Languages `name:"instance-languages" usage:"BCP47 language tags for the instance. Used to indicate the preferred languages of instance residents (in order from most-preferred to least-preferred)."`
@@ -112,19 +113,6 @@ type Configuration struct {
 	AccountsCustomCSSLength          int  `name:"accounts-custom-css-length" usage:"Maximum permitted length (characters) of custom CSS for accounts."`
 	AccountsMaxProfileFields         int  `name:"accounts-max-profile-fields" usage:"Maximum number of profile fields allowed for each account."`
 
-	MediaDescriptionMinChars int           `name:"media-description-min-chars" usage:"Min required chars for an image description"`
-	MediaDescriptionMaxChars int           `name:"media-description-max-chars" usage:"Max permitted chars for an image description"`
-	MediaRemoteCacheDays     int           `name:"media-remote-cache-days" usage:"Number of days to locally cache media from remote instances. If set to 0, remote media will be kept indefinitely."`
-	MediaEmojiLocalMaxSize   bytesize.Size `name:"media-emoji-local-max-size" usage:"Max size in bytes of emojis uploaded to this instance via the admin API."`
-	MediaEmojiRemoteMaxSize  bytesize.Size `name:"media-emoji-remote-max-size" usage:"Max size in bytes of emojis to download from other instances."`
-	MediaImageSizeHint       bytesize.Size `name:"media-image-size-hint" usage:"Size in bytes of max image size referred to on /api/v_/instance endpoints (else, local max size)"`
-	MediaVideoSizeHint       bytesize.Size `name:"media-video-size-hint" usage:"Size in bytes of max video size referred to on /api/v_/instance endpoints (else, local max size)"`
-	MediaLocalMaxSize        bytesize.Size `name:"media-local-max-size" usage:"Max size in bytes of media uploaded to this instance via API"`
-	MediaRemoteMaxSize       bytesize.Size `name:"media-remote-max-size" usage:"Max size in bytes of media to download from other instances"`
-	MediaCleanupFrom         string        `name:"media-cleanup-from" usage:"Time of day from which to start running media cleanup/prune jobs. Should be in the format 'hh:mm:ss', eg., '15:04:05'."`
-	MediaCleanupEvery        time.Duration `name:"media-cleanup-every" usage:"Period to elapse between cleanups, starting from media-cleanup-at."`
-	MediaFfmpegPoolSize      int           `name:"media-ffmpeg-pool-size" usage:"Number of instances of the embedded ffmpeg WASM binary to add to the media processing pool. 0 or less uses GOMAXPROCS."`
-
 	StorageBackend        string `name:"storage-backend" usage:"Storage backend to use for media attachments"`
 	StorageLocalBasePath  string `name:"storage-local-base-path" usage:"Full path to an already-created directory where gts should store/retrieve media files. Subfolders will be created within this dir."`
 	StorageS3Endpoint     string `name:"storage-s3-endpoint" usage:"S3 Endpoint URL (e.g 'minio.example.org:9000')"`
@@ -135,6 +123,7 @@ type Configuration struct {
 	StorageS3Proxy        bool   `name:"storage-s3-proxy" usage:"Proxy S3 contents through GoToSocial instead of redirecting to a presigned URL"`
 	StorageS3RedirectURL  string `name:"storage-s3-redirect-url" usage:"Custom URL to use for redirecting S3 media links. If set, this will be used instead of the S3 bucket URL."`
 	StorageS3BucketLookup string `name:"storage-s3-bucket-lookup" usage:"S3 bucket lookup type to use. Can be 'auto', 'dns' or 'path'. Defaults to 'auto'."`
+	StorageS3KeyPrefix    string `name:"storage-s3-key-prefix" usage:"Prefix to use for S3 keys. This is useful for separating multiple instances sharing the same S3 bucket."`
 
 	StatusesMaxChars           int `name:"statuses-max-chars" usage:"Max permitted characters for posted statuses, including content warning"`
 	StatusesPollMaxOptions     int `name:"statuses-poll-max-options" usage:"Max amount of options permitted on a poll"`
@@ -179,6 +168,9 @@ type Configuration struct {
 	// HTTPClient configuration vars.
 	HTTPClient HTTPClientConfiguration `name:"http-client"`
 
+	// Media configuration vars.
+	Media MediaConfiguration `name:"media"`
+
 	// Cache configuration vars.
 	Cache CacheConfiguration `name:"cache"`
 
@@ -197,6 +189,23 @@ type HTTPClientConfiguration struct {
 	BlockIPs              []string      `name:"block-ips"`
 	Timeout               time.Duration `name:"timeout"`
 	TLSInsecureSkipVerify bool          `name:"tls-insecure-skip-verify"`
+	InsecureOutgoing      bool          `name:"insecure-outgoing"`
+}
+
+type MediaConfiguration struct {
+	DescriptionMinChars int           `name:"description-min-chars" usage:"Min required chars for an image description"`
+	DescriptionMaxChars int           `name:"description-max-chars" usage:"Max permitted chars for an image description"`
+	RemoteCacheDays     int           `name:"remote-cache-days" usage:"Number of days to locally cache media from remote instances. If set to 0, remote media will be kept indefinitely."`
+	EmojiLocalMaxSize   bytesize.Size `name:"emoji-local-max-size" usage:"Max size in bytes of emojis uploaded to this instance via the admin API."`
+	EmojiRemoteMaxSize  bytesize.Size `name:"emoji-remote-max-size" usage:"Max size in bytes of emojis to download from other instances."`
+	ImageSizeHint       bytesize.Size `name:"image-size-hint" usage:"Size in bytes of max image size referred to on /api/v_/instance endpoints (else, local max size)"`
+	VideoSizeHint       bytesize.Size `name:"video-size-hint" usage:"Size in bytes of max video size referred to on /api/v_/instance endpoints (else, local max size)"`
+	LocalMaxSize        bytesize.Size `name:"local-max-size" usage:"Max size in bytes of media uploaded to this instance via API"`
+	RemoteMaxSize       bytesize.Size `name:"remote-max-size" usage:"Max size in bytes of media to download from other instances"`
+	CleanupFrom         string        `name:"cleanup-from" usage:"Time of day from which to start running media cleanup/prune jobs. Should be in the format 'hh:mm:ss', eg., '15:04:05'."`
+	CleanupEvery        time.Duration `name:"cleanup-every" usage:"Period to elapse between cleanups, starting from media-cleanup-at."`
+	FfmpegPoolSize      int           `name:"ffmpeg-pool-size" usage:"Number of instances of the embedded ffmpeg WASM binary to add to the media processing pool. 0 or less uses GOMAXPROCS."`
+	ThumbMaxPixels      int           `name:"thumb-max-pixels" usage:"Max size in pixels of any one dimension of a thumbnail (as input media ratio is preserved)."`
 }
 
 type CacheConfiguration struct {
@@ -217,6 +226,7 @@ type CacheConfiguration struct {
 	EmojiMemRatio                         float64       `name:"emoji-mem-ratio"`
 	EmojiCategoryMemRatio                 float64       `name:"emoji-category-mem-ratio"`
 	FilterMemRatio                        float64       `name:"filter-mem-ratio"`
+	FilterIDsMemRatio                     float64       `name:"filter-ids-mem-ratio"`
 	FilterKeywordMemRatio                 float64       `name:"filter-keyword-mem-ratio"`
 	FilterStatusMemRatio                  float64       `name:"filter-status-mem-ratio"`
 	FollowMemRatio                        float64       `name:"follow-mem-ratio"`
@@ -256,6 +266,8 @@ type CacheConfiguration struct {
 	WebfingerMemRatio                     float64       `name:"webfinger-mem-ratio"`
 	WebPushSubscriptionMemRatio           float64       `name:"web-push-subscription-mem-ratio"`
 	WebPushSubscriptionIDsMemRatio        float64       `name:"web-push-subscription-ids-mem-ratio"`
+	MutesMemRatio                         float64       `name:"mutes-mem-ratio"`
+	StatusFilterMemRatio                  float64       `name:"status-filter-mem-ratio"`
 	VisibilityMemRatio                    float64       `name:"visibility-mem-ratio"`
 }
 
@@ -280,6 +292,6 @@ type ThrottlingConfig struct {
 }
 
 type ScraperDeterrenceConfig struct {
-	Enabled    bool  `name:"enabled"    usage:"Enable proof-of-work based scraper deterrence on profile / status pages"`
-	Difficulty uint8 `name:"difficulty" usage:"The proof-of-work difficulty, which determines how many leading zeros to try solve in hash solutions."`
+	Enabled    bool   `name:"enabled"    usage:"Enable proof-of-work based scraper deterrence on profile / status pages"`
+	Difficulty uint32 `name:"difficulty" usage:"The proof-of-work difficulty, which determines roughly how many hash-encode rounds required of each client."`
 }

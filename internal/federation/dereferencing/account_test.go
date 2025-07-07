@@ -28,6 +28,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 	"testing"
 	"time"
 
@@ -51,7 +52,7 @@ func (suite *AccountTestSuite) TestDereferenceGroup() {
 
 	groupURL := testrig.URLMustParse("https://unknown-instance.com/groups/some_group")
 	group, _, err := suite.dereferencer.GetAccountByURI(
-		context.Background(),
+		suite.T().Context(),
 		fetchingAccount.Username,
 		groupURL,
 		false,
@@ -65,7 +66,7 @@ func (suite *AccountTestSuite) TestDereferenceGroup() {
 	suite.WithinDuration(time.Now(), group.FetchedAt, 5*time.Second)
 
 	// group should be in the database
-	dbGroup, err := suite.db.GetAccountByURI(context.Background(), group.URI)
+	dbGroup, err := suite.db.GetAccountByURI(suite.T().Context(), group.URI)
 	suite.NoError(err)
 	suite.Equal(group.ID, dbGroup.ID)
 	suite.Equal(ap.ActorGroup, dbGroup.ActorType.String())
@@ -76,7 +77,7 @@ func (suite *AccountTestSuite) TestDereferenceService() {
 
 	serviceURL := testrig.URLMustParse("https://owncast.example.org/federation/user/rgh")
 	service, _, err := suite.dereferencer.GetAccountByURI(
-		context.Background(),
+		suite.T().Context(),
 		fetchingAccount.Username,
 		serviceURL,
 		false,
@@ -90,7 +91,7 @@ func (suite *AccountTestSuite) TestDereferenceService() {
 	suite.WithinDuration(time.Now(), service.FetchedAt, 5*time.Second)
 
 	// service should be in the database
-	dbService, err := suite.db.GetAccountByURI(context.Background(), service.URI)
+	dbService, err := suite.db.GetAccountByURI(suite.T().Context(), service.URI)
 	suite.NoError(err)
 	suite.Equal(service.ID, dbService.ID)
 	suite.Equal(ap.ActorService, dbService.ActorType.String())
@@ -109,7 +110,7 @@ func (suite *AccountTestSuite) TestDereferenceLocalAccountAsRemoteURL() {
 	targetAccount := suite.testAccounts["local_account_2"]
 
 	fetchedAccount, _, err := suite.dereferencer.GetAccountByURI(
-		context.Background(),
+		suite.T().Context(),
 		fetchingAccount.Username,
 		testrig.URLMustParse(targetAccount.URI),
 		false,
@@ -124,12 +125,12 @@ func (suite *AccountTestSuite) TestDereferenceLocalAccountAsRemoteURLNoSharedInb
 	targetAccount := suite.testAccounts["local_account_2"]
 
 	targetAccount.SharedInboxURI = nil
-	if err := suite.db.UpdateAccount(context.Background(), targetAccount); err != nil {
+	if err := suite.db.UpdateAccount(suite.T().Context(), targetAccount); err != nil {
 		suite.FailNow(err.Error())
 	}
 
 	fetchedAccount, _, err := suite.dereferencer.GetAccountByURI(
-		context.Background(),
+		suite.T().Context(),
 		fetchingAccount.Username,
 		testrig.URLMustParse(targetAccount.URI),
 		false,
@@ -144,7 +145,7 @@ func (suite *AccountTestSuite) TestDereferenceLocalAccountAsUsername() {
 	targetAccount := suite.testAccounts["local_account_2"]
 
 	fetchedAccount, _, err := suite.dereferencer.GetAccountByURI(
-		context.Background(),
+		suite.T().Context(),
 		fetchingAccount.Username,
 		testrig.URLMustParse(targetAccount.URI),
 		false,
@@ -159,7 +160,7 @@ func (suite *AccountTestSuite) TestDereferenceLocalAccountAsUsernameDomain() {
 	targetAccount := suite.testAccounts["local_account_2"]
 
 	fetchedAccount, _, err := suite.dereferencer.GetAccountByURI(
-		context.Background(),
+		suite.T().Context(),
 		fetchingAccount.Username,
 		testrig.URLMustParse(targetAccount.URI),
 		false,
@@ -174,7 +175,7 @@ func (suite *AccountTestSuite) TestDereferenceLocalAccountAsUsernameDomainAndURL
 	targetAccount := suite.testAccounts["local_account_2"]
 
 	fetchedAccount, _, err := suite.dereferencer.GetAccountByUsernameDomain(
-		context.Background(),
+		suite.T().Context(),
 		fetchingAccount.Username,
 		targetAccount.Username,
 		config.GetHost(),
@@ -188,7 +189,7 @@ func (suite *AccountTestSuite) TestDereferenceLocalAccountWithUnknownUsername() 
 	fetchingAccount := suite.testAccounts["local_account_1"]
 
 	fetchedAccount, _, err := suite.dereferencer.GetAccountByUsernameDomain(
-		context.Background(),
+		suite.T().Context(),
 		fetchingAccount.Username,
 		"thisaccountdoesnotexist",
 		config.GetHost(),
@@ -202,7 +203,7 @@ func (suite *AccountTestSuite) TestDereferenceLocalAccountWithUnknownUsernameDom
 	fetchingAccount := suite.testAccounts["local_account_1"]
 
 	fetchedAccount, _, err := suite.dereferencer.GetAccountByUsernameDomain(
-		context.Background(),
+		suite.T().Context(),
 		fetchingAccount.Username,
 		"thisaccountdoesnotexist",
 		"localhost:8080",
@@ -216,7 +217,7 @@ func (suite *AccountTestSuite) TestDereferenceLocalAccountWithUnknownUserURI() {
 	fetchingAccount := suite.testAccounts["local_account_1"]
 
 	fetchedAccount, _, err := suite.dereferencer.GetAccountByURI(
-		context.Background(),
+		suite.T().Context(),
 		fetchingAccount.Username,
 		testrig.URLMustParse("http://localhost:8080/users/thisaccountdoesnotexist"),
 		false,
@@ -227,7 +228,7 @@ func (suite *AccountTestSuite) TestDereferenceLocalAccountWithUnknownUserURI() {
 }
 
 func (suite *AccountTestSuite) TestDereferenceLocalAccountByRedirect() {
-	ctx, cncl := context.WithCancel(context.Background())
+	ctx, cncl := context.WithCancel(suite.T().Context())
 	defer cncl()
 
 	fetchingAccount := suite.testAccounts["local_account_1"]
@@ -280,7 +281,7 @@ func (suite *AccountTestSuite) TestDereferenceLocalAccountByRedirect() {
 }
 
 func (suite *AccountTestSuite) TestDereferenceMasqueradingLocalAccount() {
-	ctx, cncl := context.WithCancel(context.Background())
+	ctx, cncl := context.WithCancel(suite.T().Context())
 	defer cncl()
 
 	fetchingAccount := suite.testAccounts["local_account_1"]
@@ -345,7 +346,7 @@ func (suite *AccountTestSuite) TestDereferenceRemoteAccountWithNonMatchingURI() 
 
 	// Attempt to fetch account at alternative URI, it should fail!
 	fetchedAccount, _, err := suite.dereferencer.GetAccountByURI(
-		context.Background(),
+		suite.T().Context(),
 		fetchingAccount.Username,
 		testrig.URLMustParse(remoteAltURI),
 		false,
@@ -355,7 +356,7 @@ func (suite *AccountTestSuite) TestDereferenceRemoteAccountWithNonMatchingURI() 
 }
 
 func (suite *AccountTestSuite) TestDereferenceRemoteAccountWithUnexpectedKeyChange() {
-	ctx, cncl := context.WithCancel(context.Background())
+	ctx, cncl := context.WithCancel(suite.T().Context())
 	defer cncl()
 
 	fetchingAcc := suite.testAccounts["local_account_1"]
@@ -394,7 +395,7 @@ func (suite *AccountTestSuite) TestDereferenceRemoteAccountWithUnexpectedKeyChan
 }
 
 func (suite *AccountTestSuite) TestDereferenceRemoteAccountWithExpectedKeyChange() {
-	ctx, cncl := context.WithCancel(context.Background())
+	ctx, cncl := context.WithCancel(suite.T().Context())
 	defer cncl()
 
 	fetchingAcc := suite.testAccounts["local_account_1"]
@@ -436,7 +437,7 @@ func (suite *AccountTestSuite) TestDereferenceRemoteAccountWithExpectedKeyChange
 }
 
 func (suite *AccountTestSuite) TestRefreshFederatedRemoteAccountWithKeyChange() {
-	ctx, cncl := context.WithCancel(context.Background())
+	ctx, cncl := context.WithCancel(suite.T().Context())
 	defer cncl()
 
 	fetchingAcc := suite.testAccounts["local_account_1"]
@@ -471,6 +472,49 @@ func (suite *AccountTestSuite) TestRefreshFederatedRemoteAccountWithKeyChange() 
 	suite.NoError(err)
 	suite.NotNil(apAcc)
 	suite.True(updatedAcc.PublicKey.Equal(fetchingAcc.PublicKey))
+}
+
+func (suite *AccountTestSuite) TestDereferenceRemoteAccountWithAvatarDescription() {
+	ctx, cncl := context.WithCancel(suite.T().Context())
+	defer cncl()
+
+	fetchingAcc := suite.testAccounts["local_account_1"]
+	remoteURI := "https://shrimpnet.example.org/users/shrimp"
+	description := "me scrolling fedi on a laptop, there's a monster ultra white and another fedi user on my right."
+
+	// Fetch the remote account to load into the database.
+	remoteAcc, _, err := suite.dereferencer.GetAccountByURI(ctx,
+		fetchingAcc.Username,
+		testrig.URLMustParse(remoteURI),
+		false,
+	)
+	suite.NoError(err)
+	suite.NotNil(remoteAcc)
+
+	suite.Equal(remoteAcc.AvatarMediaAttachment.Description, description)
+
+	remotePerson := suite.client.TestRemotePeople[remoteURI]
+
+	description = strings.TrimSuffix(description, ".")
+
+	icon := remotePerson.GetActivityStreamsIcon()
+	image := icon.Begin().GetActivityStreamsImage()
+	nameProp := streams.NewActivityStreamsNameProperty()
+	nameProp.AppendXMLSchemaString(description)
+	image.SetActivityStreamsName(nameProp)
+	icon.SetActivityStreamsImage(0, image)
+	remotePerson.SetActivityStreamsIcon(icon)
+
+	updatedAcc, apAcc, err := suite.dereferencer.RefreshAccount(ctx,
+		fetchingAcc.Username,
+		remoteAcc,
+		remotePerson,
+		nil,
+	)
+
+	suite.NoError(err)
+	suite.NotNil(apAcc)
+	suite.Equal(updatedAcc.AvatarMediaAttachment.Description, description)
 }
 
 func TestAccountTestSuite(t *testing.T) {

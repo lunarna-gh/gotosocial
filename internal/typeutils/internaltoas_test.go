@@ -18,7 +18,6 @@
 package typeutils_test
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"testing"
@@ -38,7 +37,7 @@ func (suite *InternalToASTestSuite) TestAccountToAS() {
 	testAccount := &gtsmodel.Account{}
 	*testAccount = *suite.testAccounts["local_account_1"] // take zork for this test
 
-	accountable, err := suite.typeconverter.AccountToAS(context.Background(), testAccount)
+	accountable, err := suite.typeconverter.AccountToAS(suite.T().Context(), testAccount)
 	suite.NoError(err)
 
 	ser, err := ap.Serialize(accountable)
@@ -67,12 +66,14 @@ func (suite *InternalToASTestSuite) TestAccountToAS() {
   "following": "http://localhost:8080/users/the_mighty_zork/following",
   "icon": {
     "mediaType": "image/jpeg",
+    "name": "a green goblin looking nasty",
     "type": "Image",
     "url": "http://localhost:8080/fileserver/01F8MH1H7YV1Z7D2C8K2730QBF/avatar/original/01F8MH58A357CV5K7R7TJMSH6S.jpg"
   },
   "id": "http://localhost:8080/users/the_mighty_zork",
   "image": {
     "mediaType": "image/jpeg",
+    "name": "A very old-school screenshot of the original team fortress mod for quake",
     "type": "Image",
     "url": "http://localhost:8080/fileserver/01F8MH1H7YV1Z7D2C8K2730QBF/header/original/01PFPMWK2FF0D9WMHEJHR07C3Q.jpg"
   },
@@ -100,11 +101,11 @@ func (suite *InternalToASTestSuite) TestAccountToASBot() {
 
 	// Update zork to be a bot.
 	testAccount.ActorType = gtsmodel.AccountActorTypeApplication
-	if err := suite.state.DB.UpdateAccount(context.Background(), testAccount); err != nil {
+	if err := suite.state.DB.UpdateAccount(suite.T().Context(), testAccount); err != nil {
 		suite.FailNow(err.Error())
 	}
 
-	accountable, err := suite.typeconverter.AccountToAS(context.Background(), testAccount)
+	accountable, err := suite.typeconverter.AccountToAS(suite.T().Context(), testAccount)
 	suite.NoError(err)
 
 	ser, err := ap.Serialize(accountable)
@@ -133,12 +134,14 @@ func (suite *InternalToASTestSuite) TestAccountToASBot() {
   "following": "http://localhost:8080/users/the_mighty_zork/following",
   "icon": {
     "mediaType": "image/jpeg",
+    "name": "a green goblin looking nasty",
     "type": "Image",
     "url": "http://localhost:8080/fileserver/01F8MH1H7YV1Z7D2C8K2730QBF/avatar/original/01F8MH58A357CV5K7R7TJMSH6S.jpg"
   },
   "id": "http://localhost:8080/users/the_mighty_zork",
   "image": {
     "mediaType": "image/jpeg",
+    "name": "A very old-school screenshot of the original team fortress mod for quake",
     "type": "Image",
     "url": "http://localhost:8080/fileserver/01F8MH1H7YV1Z7D2C8K2730QBF/header/original/01PFPMWK2FF0D9WMHEJHR07C3Q.jpg"
   },
@@ -164,7 +167,7 @@ func (suite *InternalToASTestSuite) TestAccountToASWithFields() {
 	testAccount := &gtsmodel.Account{}
 	*testAccount = *suite.testAccounts["local_account_2"]
 
-	accountable, err := suite.typeconverter.AccountToAS(context.Background(), testAccount)
+	accountable, err := suite.typeconverter.AccountToAS(suite.T().Context(), testAccount)
 	suite.NoError(err)
 
 	ser, err := ap.Serialize(accountable)
@@ -229,7 +232,7 @@ func (suite *InternalToASTestSuite) TestAccountToASAliasedAndMoved() {
 	testAccount := &gtsmodel.Account{}
 	*testAccount = *suite.testAccounts["local_account_1"] // take zork for this test
 
-	ctx := context.Background()
+	ctx := suite.T().Context()
 
 	// Suppose zork has moved account to turtle.
 	testAccount.AlsoKnownAsURIs = []string{"http://localhost:8080/users/1happyturtle"}
@@ -242,7 +245,7 @@ func (suite *InternalToASTestSuite) TestAccountToASAliasedAndMoved() {
 		suite.FailNow(err.Error())
 	}
 
-	accountable, err := suite.typeconverter.AccountToAS(context.Background(), testAccount)
+	accountable, err := suite.typeconverter.AccountToAS(suite.T().Context(), testAccount)
 	suite.NoError(err)
 
 	ser, err := ap.Serialize(accountable)
@@ -256,7 +259,6 @@ func (suite *InternalToASTestSuite) TestAccountToASAliasedAndMoved() {
     "https://w3id.org/security/v1",
     "https://www.w3.org/ns/activitystreams",
     {
-      "alsoKnownAs": "as:alsoKnownAs",
       "discoverable": "toot:discoverable",
       "featured": {
         "@id": "toot:featured",
@@ -279,12 +281,14 @@ func (suite *InternalToASTestSuite) TestAccountToASAliasedAndMoved() {
   "following": "http://localhost:8080/users/the_mighty_zork/following",
   "icon": {
     "mediaType": "image/jpeg",
+    "name": "a green goblin looking nasty",
     "type": "Image",
     "url": "http://localhost:8080/fileserver/01F8MH1H7YV1Z7D2C8K2730QBF/avatar/original/01F8MH58A357CV5K7R7TJMSH6S.jpg"
   },
   "id": "http://localhost:8080/users/the_mighty_zork",
   "image": {
     "mediaType": "image/jpeg",
+    "name": "A very old-school screenshot of the original team fortress mod for quake",
     "type": "Image",
     "url": "http://localhost:8080/fileserver/01F8MH1H7YV1Z7D2C8K2730QBF/header/original/01PFPMWK2FF0D9WMHEJHR07C3Q.jpg"
   },
@@ -312,7 +316,7 @@ func (suite *InternalToASTestSuite) TestAccountToASWithOneField() {
 	*testAccount = *suite.testAccounts["local_account_2"]
 	testAccount.Fields = testAccount.Fields[0:1] // Take only one field.
 
-	accountable, err := suite.typeconverter.AccountToAS(context.Background(), testAccount)
+	accountable, err := suite.typeconverter.AccountToAS(suite.T().Context(), testAccount)
 	suite.NoError(err)
 
 	ser, err := ap.Serialize(accountable)
@@ -374,7 +378,7 @@ func (suite *InternalToASTestSuite) TestAccountToASWithEmoji() {
 	*testAccount = *suite.testAccounts["local_account_1"] // take zork for this test
 	testAccount.Emojis = []*gtsmodel.Emoji{suite.testEmojis["rainbow"]}
 
-	accountable, err := suite.typeconverter.AccountToAS(context.Background(), testAccount)
+	accountable, err := suite.typeconverter.AccountToAS(suite.T().Context(), testAccount)
 	suite.NoError(err)
 
 	ser, err := ap.Serialize(accountable)
@@ -404,12 +408,14 @@ func (suite *InternalToASTestSuite) TestAccountToASWithEmoji() {
   "following": "http://localhost:8080/users/the_mighty_zork/following",
   "icon": {
     "mediaType": "image/jpeg",
+    "name": "a green goblin looking nasty",
     "type": "Image",
     "url": "http://localhost:8080/fileserver/01F8MH1H7YV1Z7D2C8K2730QBF/avatar/original/01F8MH58A357CV5K7R7TJMSH6S.jpg"
   },
   "id": "http://localhost:8080/users/the_mighty_zork",
   "image": {
     "mediaType": "image/jpeg",
+    "name": "A very old-school screenshot of the original team fortress mod for quake",
     "type": "Image",
     "url": "http://localhost:8080/fileserver/01F8MH1H7YV1Z7D2C8K2730QBF/header/original/01PFPMWK2FF0D9WMHEJHR07C3Q.jpg"
   },
@@ -447,7 +453,7 @@ func (suite *InternalToASTestSuite) TestAccountToASWithSharedInbox() {
 	sharedInbox := "http://localhost:8080/sharedInbox"
 	testAccount.SharedInboxURI = &sharedInbox
 
-	accountable, err := suite.typeconverter.AccountToAS(context.Background(), testAccount)
+	accountable, err := suite.typeconverter.AccountToAS(suite.T().Context(), testAccount)
 	suite.NoError(err)
 
 	ser, err := ap.Serialize(accountable)
@@ -479,12 +485,14 @@ func (suite *InternalToASTestSuite) TestAccountToASWithSharedInbox() {
   "following": "http://localhost:8080/users/the_mighty_zork/following",
   "icon": {
     "mediaType": "image/jpeg",
+    "name": "a green goblin looking nasty",
     "type": "Image",
     "url": "http://localhost:8080/fileserver/01F8MH1H7YV1Z7D2C8K2730QBF/avatar/original/01F8MH58A357CV5K7R7TJMSH6S.jpg"
   },
   "id": "http://localhost:8080/users/the_mighty_zork",
   "image": {
     "mediaType": "image/jpeg",
+    "name": "A very old-school screenshot of the original team fortress mod for quake",
     "type": "Image",
     "url": "http://localhost:8080/fileserver/01F8MH1H7YV1Z7D2C8K2730QBF/header/original/01PFPMWK2FF0D9WMHEJHR07C3Q.jpg"
   },
@@ -508,7 +516,7 @@ func (suite *InternalToASTestSuite) TestAccountToASWithSharedInbox() {
 
 func (suite *InternalToASTestSuite) TestStatusToAS() {
 	testStatus := suite.testStatuses["local_account_1_status_1"]
-	ctx := context.Background()
+	ctx := suite.T().Context()
 
 	asStatus, err := suite.typeconverter.StatusToAS(ctx, testStatus)
 	suite.NoError(err)
@@ -590,7 +598,7 @@ func (suite *InternalToASTestSuite) TestStatusToAS() {
 func (suite *InternalToASTestSuite) TestStatusWithTagsToASWithIDs() {
 	// use the status with just IDs of attachments and emojis pinned on it
 	testStatus := suite.testStatuses["admin_account_status_1"]
-	ctx := context.Background()
+	ctx := suite.T().Context()
 
 	asStatus, err := suite.typeconverter.StatusToAS(ctx, testStatus)
 	suite.NoError(err)
@@ -707,7 +715,7 @@ func (suite *InternalToASTestSuite) TestStatusWithTagsToASWithIDs() {
 }
 
 func (suite *InternalToASTestSuite) TestStatusWithTagsToASFromDB() {
-	ctx := context.Background()
+	ctx := suite.T().Context()
 	// get the entire status with all tags
 	testStatus, err := suite.db.GetStatusByID(ctx, suite.testStatuses["admin_account_status_1"].ID)
 	suite.NoError(err)
@@ -828,7 +836,7 @@ func (suite *InternalToASTestSuite) TestStatusWithTagsToASFromDB() {
 
 func (suite *InternalToASTestSuite) TestStatusToASWithMentions() {
 	testStatusID := suite.testStatuses["admin_account_status_3"].ID
-	ctx := context.Background()
+	ctx := suite.T().Context()
 
 	testStatus, err := suite.db.GetStatusByID(ctx, testStatusID)
 	suite.NoError(err)
@@ -920,7 +928,7 @@ func (suite *InternalToASTestSuite) TestStatusToASWithMentions() {
 
 func (suite *InternalToASTestSuite) TestStatusToASDeletePublicReply() {
 	testStatus := suite.testStatuses["admin_account_status_3"]
-	ctx := context.Background()
+	ctx := suite.T().Context()
 
 	asDelete, err := suite.typeconverter.StatusToASDelete(ctx, testStatus)
 	suite.NoError(err)
@@ -946,7 +954,7 @@ func (suite *InternalToASTestSuite) TestStatusToASDeletePublicReply() {
 
 func (suite *InternalToASTestSuite) TestStatusToASDeletePublicReplyOriginalDeleted() {
 	testStatus := suite.testStatuses["admin_account_status_3"]
-	ctx := context.Background()
+	ctx := suite.T().Context()
 
 	// Delete the status this replies to.
 	if err := suite.db.DeleteStatusByID(ctx, testStatus.ID); err != nil {
@@ -984,7 +992,7 @@ func (suite *InternalToASTestSuite) TestStatusToASDeletePublicReplyOriginalDelet
 
 func (suite *InternalToASTestSuite) TestStatusToASDeletePublic() {
 	testStatus := suite.testStatuses["admin_account_status_1"]
-	ctx := context.Background()
+	ctx := suite.T().Context()
 
 	asDelete, err := suite.typeconverter.StatusToASDelete(ctx, testStatus)
 	suite.NoError(err)
@@ -1007,7 +1015,7 @@ func (suite *InternalToASTestSuite) TestStatusToASDeletePublic() {
 
 func (suite *InternalToASTestSuite) TestStatusToASDeleteDirectMessage() {
 	testStatus := suite.testStatuses["local_account_2_status_6"]
-	ctx := context.Background()
+	ctx := suite.T().Context()
 
 	asDelete, err := suite.typeconverter.StatusToASDelete(ctx, testStatus)
 	suite.NoError(err)
@@ -1030,7 +1038,7 @@ func (suite *InternalToASTestSuite) TestStatusToASDeleteDirectMessage() {
 
 func (suite *InternalToASTestSuite) TestStatusesToASOutboxPage() {
 	testAccount := suite.testAccounts["admin_account"]
-	ctx := context.Background()
+	ctx := suite.T().Context()
 
 	// get public statuses from testaccount
 	statuses, err := suite.db.GetAccountStatuses(ctx, testAccount.ID, 30, true, true, "", "", false, true)
@@ -1076,7 +1084,7 @@ func (suite *InternalToASTestSuite) TestStatusesToASOutboxPage() {
 }
 
 func (suite *InternalToASTestSuite) TestSelfBoostFollowersOnlyToAS() {
-	ctx := context.Background()
+	ctx := suite.T().Context()
 
 	testStatus := suite.testStatuses["local_account_1_status_5"]
 	testAccount := suite.testAccounts["local_account_1"]
@@ -1112,7 +1120,7 @@ func (suite *InternalToASTestSuite) TestSelfBoostFollowersOnlyToAS() {
 }
 
 func (suite *InternalToASTestSuite) TestReportToAS() {
-	ctx := context.Background()
+	ctx := suite.T().Context()
 
 	testReport := suite.testReports["local_account_2_report_remote_account_1"]
 	account := suite.testAccounts["local_account_2"]
@@ -1146,7 +1154,7 @@ func (suite *InternalToASTestSuite) TestReportToAS() {
 }
 
 func (suite *InternalToASTestSuite) TestPinnedStatusesToASSomeItems() {
-	ctx := context.Background()
+	ctx := suite.T().Context()
 
 	testAccount := suite.testAccounts["admin_account"]
 	statuses, err := suite.db.GetAccountPinnedStatuses(ctx, testAccount.ID)
@@ -1178,7 +1186,7 @@ func (suite *InternalToASTestSuite) TestPinnedStatusesToASSomeItems() {
 }
 
 func (suite *InternalToASTestSuite) TestPinnedStatusesToASNoItems() {
-	ctx := context.Background()
+	ctx := suite.T().Context()
 
 	testAccount := suite.testAccounts["local_account_1"]
 	statuses, err := suite.db.GetAccountPinnedStatuses(ctx, testAccount.ID)
@@ -1207,7 +1215,7 @@ func (suite *InternalToASTestSuite) TestPinnedStatusesToASNoItems() {
 }
 
 func (suite *InternalToASTestSuite) TestPinnedStatusesToASOneItem() {
-	ctx := context.Background()
+	ctx := suite.T().Context()
 
 	testAccount := suite.testAccounts["local_account_2"]
 	statuses, err := suite.db.GetAccountPinnedStatuses(ctx, testAccount.ID)
@@ -1240,7 +1248,7 @@ func (suite *InternalToASTestSuite) TestPinnedStatusesToASOneItem() {
 func (suite *InternalToASTestSuite) TestPollVoteToASCreate() {
 	vote := suite.testPollVotes["remote_account_1_status_2_poll_vote_local_account_1"]
 
-	creates, err := suite.typeconverter.PollVoteToASCreates(context.Background(), vote)
+	creates, err := suite.typeconverter.PollVoteToASCreates(suite.T().Context(), vote)
 	suite.NoError(err)
 	suite.Len(creates, 2)
 
@@ -1311,7 +1319,7 @@ func (suite *InternalToASTestSuite) TestInteractionReqToASAcceptAnnounce() {
 	}
 
 	accept, err := suite.typeconverter.InteractionReqToASAccept(
-		context.Background(),
+		suite.T().Context(),
 		req,
 	)
 	if err != nil {
@@ -1363,7 +1371,7 @@ func (suite *InternalToASTestSuite) TestInteractionReqToASAcceptLike() {
 	}
 
 	accept, err := suite.typeconverter.InteractionReqToASAccept(
-		context.Background(),
+		suite.T().Context(),
 		req,
 	)
 	if err != nil {

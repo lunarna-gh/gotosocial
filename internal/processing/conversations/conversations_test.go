@@ -27,6 +27,8 @@ import (
 	dbtest "code.superseriousbusiness.org/gotosocial/internal/db/test"
 	"code.superseriousbusiness.org/gotosocial/internal/email"
 	"code.superseriousbusiness.org/gotosocial/internal/federation"
+	"code.superseriousbusiness.org/gotosocial/internal/filter/mutes"
+	"code.superseriousbusiness.org/gotosocial/internal/filter/status"
 	"code.superseriousbusiness.org/gotosocial/internal/filter/visibility"
 	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
 	"code.superseriousbusiness.org/gotosocial/internal/log"
@@ -53,7 +55,8 @@ type ConversationsTestSuite struct {
 	federator           *federation.Federator
 	emailSender         email.Sender
 	sentEmails          map[string]string
-	filter              *visibility.Filter
+	visFilter           *visibility.Filter
+	muteFilter          *mutes.Filter
 
 	// standard suite models
 	testTokens       map[string]*gtsmodel.Token
@@ -75,7 +78,7 @@ type ConversationsTestSuite struct {
 }
 
 func (suite *ConversationsTestSuite) getClientMsg(timeout time.Duration) (*messages.FromClientAPI, bool) {
-	ctx := context.Background()
+	ctx := suite.T().Context()
 	ctx, cncl := context.WithTimeout(ctx, timeout)
 	defer cncl()
 	return suite.state.Workers.Client.Queue.PopCtx(ctx)
@@ -104,7 +107,8 @@ func (suite *ConversationsTestSuite) SetupTest() {
 	suite.state.DB = suite.db
 	suite.state.AdminActions = admin.New(suite.state.DB, &suite.state.Workers)
 	suite.tc = typeutils.NewConverter(&suite.state)
-	suite.filter = visibility.NewFilter(&suite.state)
+	suite.visFilter = visibility.NewFilter(&suite.state)
+	suite.muteFilter = mutes.NewFilter(&suite.state)
 
 	suite.storage = testrig.NewInMemoryStorage()
 	suite.state.Storage = suite.storage
@@ -115,7 +119,7 @@ func (suite *ConversationsTestSuite) SetupTest() {
 	suite.sentEmails = make(map[string]string)
 	suite.emailSender = testrig.NewEmailSender("../../../web/template/", suite.sentEmails)
 
-	suite.conversationsProcessor = conversations.New(&suite.state, suite.tc, suite.filter)
+	suite.conversationsProcessor = conversations.New(&suite.state, suite.tc, suite.visFilter, suite.muteFilter, status.NewFilter(&suite.state))
 	testrig.StandardDBSetup(suite.db, nil)
 	testrig.StandardStorageSetup(suite.storage, "../../../testrig/media")
 
@@ -130,8 +134,8 @@ func (suite *ConversationsTestSuite) TearDownTest() {
 		(*gtsmodel.ConversationToStatus)(nil),
 	}
 	for _, model := range conversationModels {
-		if err := suite.db.DropTable(context.Background(), model); err != nil {
-			log.Error(context.Background(), err)
+		if err := suite.db.DropTable(suite.T().Context(), model); err != nil {
+			log.Error(suite.T().Context(), err)
 		}
 	}
 

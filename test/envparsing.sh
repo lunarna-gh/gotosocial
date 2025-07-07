@@ -20,7 +20,7 @@ EXPECT=$(cat << "EOF"
         "127.0.0.1/32"
     ],
     "advanced-rate-limit-requests": 6969,
-    "advanced-scraper-deterrence-difficulty": 5,
+    "advanced-scraper-deterrence-difficulty": 500000,
     "advanced-scraper-deterrence-enabled": true,
     "advanced-sender-multiplier": -1,
     "advanced-throttling-multiplier": -1,
@@ -42,6 +42,7 @@ EXPECT=$(cat << "EOF"
     "cache-domain-permission-subscription-mem-ratio": 0.5,
     "cache-emoji-category-mem-ratio": 0.1,
     "cache-emoji-mem-ratio": 3,
+    "cache-filter-ids-mem-ratio": 2,
     "cache-filter-keyword-mem-ratio": 0.5,
     "cache-filter-mem-ratio": 0.5,
     "cache-filter-status-mem-ratio": 0.5,
@@ -61,6 +62,7 @@ EXPECT=$(cat << "EOF"
     "cache-memory-target": "100MiB",
     "cache-mention-mem-ratio": 2,
     "cache-move-mem-ratio": 0.1,
+    "cache-mutes-mem-ratio": 2,
     "cache-notification-mem-ratio": 2,
     "cache-poll-mem-ratio": 1,
     "cache-poll-vote-ids-mem-ratio": 2,
@@ -72,6 +74,7 @@ EXPECT=$(cat << "EOF"
     "cache-status-edit-mem-ratio": 2,
     "cache-status-fave-ids-mem-ratio": 3,
     "cache-status-fave-mem-ratio": 2,
+    "cache-status-filter-mem-ratio": 7,
     "cache-status-mem-ratio": 5,
     "cache-tag-mem-ratio": 2,
     "cache-thread-mute-mem-ratio": 0.2,
@@ -104,6 +107,7 @@ EXPECT=$(cat << "EOF"
     "host": "example.com",
     "http-client-allow-ips": [],
     "http-client-block-ips": [],
+    "http-client-insecure-outgoing": false,
     "http-client-timeout": 30000000000,
     "http-client-tls-insecure-skip-verify": false,
     "instance-allow-backdating-statuses": true,
@@ -112,6 +116,7 @@ EXPECT=$(cat << "EOF"
     "instance-expose-allowlist-web": true,
     "instance-expose-blocklist": true,
     "instance-expose-blocklist-web": true,
+    "instance-expose-custom-emojis": true,
     "instance-expose-peers": true,
     "instance-expose-public-timeline": true,
     "instance-federation-mode": "allowlist",
@@ -145,6 +150,7 @@ EXPECT=$(cat << "EOF"
     "media-local-max-size": "420B",
     "media-remote-cache-days": 30,
     "media-remote-max-size": "420B",
+    "media-thumb-max-pixels": 42069,
     "media-video-size-hint": "40.0MiB",
     "metrics-enabled": false,
     "oidc-admin-groups": [
@@ -187,6 +193,7 @@ EXPECT=$(cat << "EOF"
     "storage-s3-bucket": "gts",
     "storage-s3-bucket-lookup": "auto",
     "storage-s3-endpoint": "localhost:9000",
+    "storage-s3-key-prefix": "",
     "storage-s3-proxy": true,
     "storage-s3-redirect-url": "",
     "storage-s3-secret-key": "miniostorage",
@@ -208,7 +215,7 @@ EXPECT=$(cat << "EOF"
 EOF
 )
 
-# Set all the environment variables to 
+# Set all the environment variables to
 # ensure that these are parsed without panic
 OUTPUT=$(GTS_LOG_LEVEL='info' \
 GTS_LOG_TIMESTAMP_FORMAT="banana" \
@@ -243,6 +250,7 @@ GTS_INSTANCE_EXPOSE_BLOCKLIST=true \
 GTS_INSTANCE_EXPOSE_BLOCKLIST_WEB=true \
 GTS_INSTANCE_EXPOSE_ALLOWLIST=true \
 GTS_INSTANCE_EXPOSE_ALLOWLIST_WEB=true \
+GTS_INSTANCE_EXPOSE_CUSTOM_EMOJIS=true \
 GTS_INSTANCE_EXPOSE_PUBLIC_TIMELINE=true \
 GTS_INSTANCE_FEDERATION_MODE='allowlist' \
 GTS_INSTANCE_FEDERATION_SPAM_FILTER=true \
@@ -267,6 +275,7 @@ GTS_MEDIA_EMOJI_LOCAL_MAX_SIZE=420 \
 GTS_MEDIA_EMOJI_REMOTE_MAX_SIZE=420 \
 GTS_MEDIA_FFMPEG_POOL_SIZE=8 \
 GTS_MEDIA_VIDEO_SIZE_HINT='40MiB' \
+GTS_MEDIA_THUMB_MAX_PIXELS=42069 \
 GTS_METRICS_ENABLED=false \
 GTS_STORAGE_BACKEND='local' \
 GTS_STORAGE_LOCAL_BASE_PATH='/root/store' \
@@ -309,7 +318,7 @@ GTS_SYSLOG_ADDRESS='127.0.0.1:6969' \
 GTS_ADVANCED_COOKIES_SAMESITE='strict' \
 GTS_ADVANCED_RATE_LIMIT_EXCEPTIONS="192.0.2.0/24,127.0.0.1/32" \
 GTS_ADVANCED_RATE_LIMIT_REQUESTS=6969 \
-GTS_ADVANCED_SCRAPER_DETERRENCE_DIFFICULTY=5 \
+GTS_ADVANCED_SCRAPER_DETERRENCE_DIFFICULTY=500000 \
 GTS_ADVANCED_SCRAPER_DETERRENCE_ENABLED=true \
 GTS_ADVANCED_SENDER_MULTIPLIER=-1 \
 GTS_ADVANCED_THROTTLING_MULTIPLIER=-1 \

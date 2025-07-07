@@ -24,15 +24,12 @@ import (
 	"fmt"
 	"math"
 	"slices"
-	"strconv"
 	"strings"
 	"time"
 
 	apimodel "code.superseriousbusiness.org/gotosocial/internal/api/model"
 	"code.superseriousbusiness.org/gotosocial/internal/config"
 	"code.superseriousbusiness.org/gotosocial/internal/db"
-	statusfilter "code.superseriousbusiness.org/gotosocial/internal/filter/status"
-	"code.superseriousbusiness.org/gotosocial/internal/filter/usermute"
 	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
 	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
 	"code.superseriousbusiness.org/gotosocial/internal/id"
@@ -849,17 +846,11 @@ func (c *Converter) StatusToAPIStatus(
 	ctx context.Context,
 	status *gtsmodel.Status,
 	requestingAccount *gtsmodel.Account,
-	filterContext statusfilter.FilterContext,
-	filters []*gtsmodel.Filter,
-	mutes *usermute.CompiledUserMuteList,
 ) (*apimodel.Status, error) {
 	return c.statusToAPIStatus(
 		ctx,
 		status,
 		requestingAccount,
-		filterContext,
-		filters,
-		mutes,
 		true,
 		true,
 	)
@@ -873,9 +864,6 @@ func (c *Converter) statusToAPIStatus(
 	ctx context.Context,
 	status *gtsmodel.Status,
 	requestingAccount *gtsmodel.Account,
-	filterContext statusfilter.FilterContext,
-	filters []*gtsmodel.Filter,
-	mutes *usermute.CompiledUserMuteList,
 	placeholdAttachments bool,
 	addPendingNote bool,
 ) (*apimodel.Status, error) {
@@ -883,9 +871,6 @@ func (c *Converter) statusToAPIStatus(
 		ctx,
 		status,
 		requestingAccount, // Can be nil.
-		filterContext,     // Can be empty.
-		filters,
-		mutes,
 	)
 	if err != nil {
 		return nil, err
@@ -943,181 +928,6 @@ func (c *Converter) statusToAPIStatus(
 	return apiStatus, nil
 }
 
-// statusToAPIFilterResults applies filters and mutes to a status and returns an API filter result object.
-// The result may be nil if no filters matched.
-// If the status should not be returned at all, it returns the ErrHideStatus error.
-func (c *Converter) statusToAPIFilterResults(
-	ctx context.Context,
-	s *gtsmodel.Status,
-	requestingAccount *gtsmodel.Account,
-	filterContext statusfilter.FilterContext,
-	filters []*gtsmodel.Filter,
-	mutes *usermute.CompiledUserMuteList,
-) ([]apimodel.FilterResult, error) {
-	// If there are no filters or mutes, we're done.
-	// We never hide statuses authored by the requesting account,
-	// since not being able to see your own posts is confusing.
-	if filterContext == "" || (len(filters) == 0 && mutes.Len() == 0) || s.AccountID == requestingAccount.ID {
-		return nil, nil
-	}
-
-	// Both mutes and filters can expire.
-	now := time.Now()
-
-	// If requesting account mutes the author (taking boosts into account), hide the status.
-	if (s.BoostOfAccountID != "" && mutes.Matches(s.BoostOfAccountID, filterContext, now)) ||
-		mutes.Matches(s.AccountID, filterContext, now) {
-		return nil, statusfilter.ErrHideStatus
-	}
-
-	// If this status is part of a multi-account discussion,
-	// and all of the accounts replied to or mentioned are invisible to the requesting account
-	// (due to blocks, domain blocks, moderation, etc.),
-	// or are muted, hide the status.
-	// First, collect the accounts we have to check.
-	otherAccounts := make([]*gtsmodel.Account, 0, 1+len(s.Mentions))
-	if s.InReplyToAccount != nil {
-		otherAccounts = append(otherAccounts, s.InReplyToAccount)
-	}
-	for _, mention := range s.Mentions {
-		otherAccounts = append(otherAccounts, mention.TargetAccount)
-	}
-
-	// If there are no other accounts, skip this check.
-	if len(otherAccounts) > 0 {
-		// Start by assuming that they're all invisible or muted.
-		allOtherAccountsInvisibleOrMuted := true
-
-		for _, account := range otherAccounts {
-			// Is this account visible?
-			visible, err := c.visFilter.AccountVisible(ctx, requestingAccount, account)
-			if err != nil {
-				return nil, err
-			}
-			if !visible {
-				// It's invisible. Check the next account.
-				continue
-			}
-
-			// If visible, is it muted?
-			if mutes.Matches(account.ID, filterContext, now) {
-				// It's muted. Check the next account.
-				continue
-			}
-
-			// If we get here, the account is visible and not muted.
-			// We should show this status, and don't have to check any more accounts.
-			allOtherAccountsInvisibleOrMuted = false
-			break
-		}
-
-		// If we didn't find any visible non-muted accounts, hide the status.
-		if allOtherAccountsInvisibleOrMuted {
-			return nil, statusfilter.ErrHideStatus
-		}
-	}
-
-	// At this point, the status isn't muted, but might still be filtered.
-	if len(filters) == 0 {
-		// If it can't be filtered because there are no filters, we're done.
-		return nil, nil
-	}
-
-	// Key this status based on ID + last updated time,
-	// to ensure we always filter on latest version.
-	statusKey := s.ID + strconv.FormatInt(s.UpdatedAt().Unix(), 10)
-
-	// Check if we have filterable fields cached for this status.
-	cache := c.state.Caches.StatusesFilterableFields
-	fields, stored := cache.Get(statusKey)
-	if !stored {
-		// We don't have filterable fields
-		// cached, calculate + cache now.
-		fields = filterableFields(s)
-		cache.Set(statusKey, fields)
-	}
-
-	// Record all matching warn filters and the reasons they matched.
-	filterResults := make([]apimodel.FilterResult, 0, len(filters))
-	for _, filter := range filters {
-		if !filterAppliesInContext(filter, filterContext) {
-			// Filter doesn't apply
-			// to this context.
-			continue
-		}
-
-		if filter.Expired(now) {
-			// Filter doesn't
-			// apply anymore.
-			continue
-		}
-
-		// Assemble matching keywords (if any) from this filter.
-		keywordMatches := make([]string, 0, len(filter.Keywords))
-		for _, keyword := range filter.Keywords {
-			// Check if at least one filterable field
-			// in the status matches on this filter.
-			if slices.ContainsFunc(
-				fields,
-				func(field string) bool {
-					return keyword.Regexp.MatchString(field)
-				},
-			) {
-				// At least one field matched on this filter.
-				keywordMatches = append(keywordMatches, keyword.Keyword)
-			}
-		}
-
-		// A status has only one ID. Not clear why this is a list in the Mastodon API.
-		statusMatches := make([]string, 0, 1)
-		for _, filterStatus := range filter.Statuses {
-			if s.ID == filterStatus.StatusID {
-				statusMatches = append(statusMatches, filterStatus.StatusID)
-				break
-			}
-		}
-
-		if len(keywordMatches) > 0 || len(statusMatches) > 0 {
-			switch filter.Action {
-			case gtsmodel.FilterActionWarn:
-				// Record what matched.
-				apiFilter, err := c.FilterToAPIFilterV2(ctx, filter)
-				if err != nil {
-					return nil, err
-				}
-				filterResults = append(filterResults, apimodel.FilterResult{
-					Filter:         *apiFilter,
-					KeywordMatches: keywordMatches,
-					StatusMatches:  statusMatches,
-				})
-
-			case gtsmodel.FilterActionHide:
-				// Don't show this status. Immediate return.
-				return nil, statusfilter.ErrHideStatus
-			}
-		}
-	}
-
-	return filterResults, nil
-}
-
-// filterAppliesInContext returns whether a given filter applies in a given context.
-func filterAppliesInContext(filter *gtsmodel.Filter, filterContext statusfilter.FilterContext) bool {
-	switch filterContext {
-	case statusfilter.FilterContextHome:
-		return util.PtrOrValue(filter.ContextHome, false)
-	case statusfilter.FilterContextNotifications:
-		return util.PtrOrValue(filter.ContextNotifications, false)
-	case statusfilter.FilterContextPublic:
-		return util.PtrOrValue(filter.ContextPublic, false)
-	case statusfilter.FilterContextThread:
-		return util.PtrOrValue(filter.ContextThread, false)
-	case statusfilter.FilterContextAccount:
-		return util.PtrOrValue(filter.ContextAccount, false)
-	}
-	return false
-}
-
 // StatusToWebStatus converts a gts model status into an
 // api representation suitable for serving into a web template.
 //
@@ -1127,10 +937,7 @@ func (c *Converter) StatusToWebStatus(
 	s *gtsmodel.Status,
 ) (*apimodel.WebStatus, error) {
 	apiStatus, err := c.statusToFrontend(ctx, s,
-		nil,                            // No authed requester.
-		statusfilter.FilterContextNone, // No filters.
-		nil,                            // No filters.
-		nil,                            // No mutes.
+		nil, // No authed requester.
 	)
 	if err != nil {
 		return nil, err
@@ -1299,9 +1106,6 @@ func (c *Converter) statusToFrontend(
 	ctx context.Context,
 	status *gtsmodel.Status,
 	requestingAccount *gtsmodel.Account,
-	filterContext statusfilter.FilterContext,
-	filters []*gtsmodel.Filter,
-	mutes *usermute.CompiledUserMuteList,
 ) (
 	*apimodel.Status,
 	error,
@@ -1309,9 +1113,6 @@ func (c *Converter) statusToFrontend(
 	apiStatus, err := c.baseStatusToFrontend(ctx,
 		status,
 		requestingAccount,
-		filterContext,
-		filters,
-		mutes,
 	)
 	if err != nil {
 		return nil, err
@@ -1321,14 +1122,8 @@ func (c *Converter) statusToFrontend(
 		reblog, err := c.baseStatusToFrontend(ctx,
 			status.BoostOf,
 			requestingAccount,
-			filterContext,
-			filters,
-			mutes,
 		)
-		if errors.Is(err, statusfilter.ErrHideStatus) {
-			// If we'd hide the original status, hide the boost.
-			return nil, err
-		} else if err != nil {
+		if err != nil {
 			return nil, gtserror.Newf("error converting boosted status: %w", err)
 		}
 
@@ -1353,11 +1148,8 @@ func (c *Converter) statusToFrontend(
 // account to api/web model -- the caller must do that.
 func (c *Converter) baseStatusToFrontend(
 	ctx context.Context,
-	s *gtsmodel.Status,
-	requestingAccount *gtsmodel.Account,
-	filterContext statusfilter.FilterContext,
-	filters []*gtsmodel.Filter,
-	mutes *usermute.CompiledUserMuteList,
+	status *gtsmodel.Status,
+	requester *gtsmodel.Account,
 ) (
 	*apimodel.Status,
 	error,
@@ -1365,12 +1157,12 @@ func (c *Converter) baseStatusToFrontend(
 	// Try to populate status struct pointer fields.
 	// We can continue in many cases of partial failure,
 	// but there are some fields we actually need.
-	if err := c.state.DB.PopulateStatus(ctx, s); err != nil {
+	if err := c.state.DB.PopulateStatus(ctx, status); err != nil {
 		switch {
-		case s.Account == nil:
+		case status.Account == nil:
 			return nil, gtserror.Newf("error(s) populating status, required account not set: %w", err)
 
-		case s.BoostOfID != "" && s.BoostOf == nil:
+		case status.BoostOfID != "" && status.BoostOf == nil:
 			return nil, gtserror.Newf("error(s) populating status, required boost not set: %w", err)
 
 		default:
@@ -1378,37 +1170,37 @@ func (c *Converter) baseStatusToFrontend(
 		}
 	}
 
-	repliesCount, err := c.state.DB.CountStatusReplies(ctx, s.ID)
+	repliesCount, err := c.state.DB.CountStatusReplies(ctx, status.ID)
 	if err != nil {
 		return nil, gtserror.Newf("error counting replies: %w", err)
 	}
 
-	reblogsCount, err := c.state.DB.CountStatusBoosts(ctx, s.ID)
+	reblogsCount, err := c.state.DB.CountStatusBoosts(ctx, status.ID)
 	if err != nil {
 		return nil, gtserror.Newf("error counting reblogs: %w", err)
 	}
 
-	favesCount, err := c.state.DB.CountStatusFaves(ctx, s.ID)
+	favesCount, err := c.state.DB.CountStatusFaves(ctx, status.ID)
 	if err != nil {
 		return nil, gtserror.Newf("error counting faves: %w", err)
 	}
 
-	apiAttachments, err := c.convertAttachmentsToAPIAttachments(ctx, s.Attachments, s.AttachmentIDs)
+	apiAttachments, err := c.convertAttachmentsToAPIAttachments(ctx, status.Attachments, status.AttachmentIDs)
 	if err != nil {
 		log.Errorf(ctx, "error converting status attachments: %v", err)
 	}
 
-	apiMentions, err := c.convertMentionsToAPIMentions(ctx, s.Mentions, s.MentionIDs)
+	apiMentions, err := c.convertMentionsToAPIMentions(ctx, status.Mentions, status.MentionIDs)
 	if err != nil {
 		log.Errorf(ctx, "error converting status mentions: %v", err)
 	}
 
-	apiTags, err := c.convertTagsToAPITags(ctx, s.Tags, s.TagIDs)
+	apiTags, err := c.convertTagsToAPITags(ctx, status.Tags, status.TagIDs)
 	if err != nil {
 		log.Errorf(ctx, "error converting status tags: %v", err)
 	}
 
-	apiEmojis, err := c.convertEmojisToAPIEmojis(ctx, s.Emojis, s.EmojiIDs)
+	apiEmojis, err := c.convertEmojisToAPIEmojis(ctx, status.Emojis, status.EmojiIDs)
 	if err != nil {
 		log.Errorf(ctx, "error converting status emojis: %v", err)
 	}
@@ -1416,32 +1208,30 @@ func (c *Converter) baseStatusToFrontend(
 	// Take status's interaction policy, or
 	// fall back to default for its visibility.
 	var p *gtsmodel.InteractionPolicy
-	if s.InteractionPolicy != nil {
-		p = s.InteractionPolicy
-	} else {
-		p = gtsmodel.DefaultInteractionPolicyFor(s.Visibility)
+	if p = status.InteractionPolicy; p == nil {
+		p = gtsmodel.DefaultInteractionPolicyFor(status.Visibility)
 	}
 
-	apiInteractionPolicy, err := c.InteractionPolicyToAPIInteractionPolicy(ctx, p, s, requestingAccount)
+	apiInteractionPolicy, err := c.InteractionPolicyToAPIInteractionPolicy(ctx, p, status, requester)
 	if err != nil {
 		return nil, gtserror.Newf("error converting interaction policy: %w", err)
 	}
 
 	apiStatus := &apimodel.Status{
-		ID:                 s.ID,
-		CreatedAt:          util.FormatISO8601(s.CreatedAt),
+		ID:                 status.ID,
+		CreatedAt:          util.FormatISO8601(status.CreatedAt),
 		InReplyToID:        nil, // Set below.
 		InReplyToAccountID: nil, // Set below.
-		Sensitive:          *s.Sensitive,
-		Visibility:         VisToAPIVis(s.Visibility),
-		LocalOnly:          s.IsLocalOnly(),
+		Sensitive:          *status.Sensitive,
+		Visibility:         VisToAPIVis(status.Visibility),
+		LocalOnly:          status.IsLocalOnly(),
 		Language:           nil, // Set below.
-		URI:                s.URI,
-		URL:                s.URL,
+		URI:                status.URI,
+		URL:                status.URL,
 		RepliesCount:       repliesCount,
 		ReblogsCount:       reblogsCount,
 		FavouritesCount:    favesCount,
-		Content:            s.Content,
+		Content:            status.Content,
 		Reblog:             nil, // Set below.
 		Application:        nil, // Set below.
 		Account:            nil, // Caller must do this.
@@ -1450,37 +1240,37 @@ func (c *Converter) baseStatusToFrontend(
 		Tags:               apiTags,
 		Emojis:             apiEmojis,
 		Card:               nil, // TODO: implement cards
-		Text:               s.Text,
-		ContentType:        ContentTypeToAPIContentType(s.ContentType),
+		Text:               status.Text,
+		ContentType:        ContentTypeToAPIContentType(status.ContentType),
 		InteractionPolicy:  *apiInteractionPolicy,
 
 		// Mastodon API says spoiler_text should be *text*, not HTML, so
 		// parse any HTML back to plaintext when serializing via the API,
 		// attempting to preserve semantic intent to keep it readable.
-		SpoilerText: text.ParseHTMLToPlain(s.ContentWarning),
+		SpoilerText: text.ParseHTMLToPlain(status.ContentWarning),
 	}
 
-	if at := s.EditedAt; !at.IsZero() {
+	if at := status.EditedAt; !at.IsZero() {
 		timestamp := util.FormatISO8601(at)
 		apiStatus.EditedAt = util.Ptr(timestamp)
 	}
 
-	apiStatus.InReplyToID = util.PtrIf(s.InReplyToID)
-	apiStatus.InReplyToAccountID = util.PtrIf(s.InReplyToAccountID)
-	apiStatus.Language = util.PtrIf(s.Language)
+	apiStatus.InReplyToID = util.PtrIf(status.InReplyToID)
+	apiStatus.InReplyToAccountID = util.PtrIf(status.InReplyToAccountID)
+	apiStatus.Language = util.PtrIf(status.Language)
 
 	switch {
-	case s.CreatedWithApplication != nil:
+	case status.CreatedWithApplication != nil:
 		// App exists for this status and is set.
-		apiStatus.Application, err = c.AppToAPIAppPublic(ctx, s.CreatedWithApplication)
+		apiStatus.Application, err = c.AppToAPIAppPublic(ctx, status.CreatedWithApplication)
 		if err != nil {
 			return nil, gtserror.Newf(
 				"error converting application %s: %w",
-				s.CreatedWithApplicationID, err,
+				status.CreatedWithApplicationID, err,
 			)
 		}
 
-	case s.CreatedWithApplicationID != "":
+	case status.CreatedWithApplicationID != "":
 		// App existed for this status but not
 		// anymore, it's probably been cleaned up.
 		// Set a dummy application.
@@ -1493,13 +1283,13 @@ func (c *Converter) baseStatusToFrontend(
 		// status, so nothing to do (app is optional).
 	}
 
-	if s.Poll != nil {
+	if status.Poll != nil {
 		// Set originating
 		// status on the poll.
-		poll := s.Poll
-		poll.Status = s
+		poll := status.Poll
+		poll.Status = status
 
-		apiStatus.Poll, err = c.PollToAPIPoll(ctx, requestingAccount, poll)
+		apiStatus.Poll, err = c.PollToAPIPoll(ctx, requester, poll)
 		if err != nil {
 			return nil, fmt.Errorf("error converting poll: %w", err)
 		}
@@ -1507,15 +1297,15 @@ func (c *Converter) baseStatusToFrontend(
 
 	// Status interactions.
 	//
-	if s.BoostOf != nil { //nolint
+	if status.BoostOf != nil { //nolint
 		// populated *outside* this
 		// function to prevent recursion.
 	} else {
-		interacts, err := c.interactionsWithStatusForAccount(ctx, s, requestingAccount)
+		interacts, err := c.interactionsWithStatusForAccount(ctx, status, requester)
 		if err != nil {
 			log.Errorf(ctx,
 				"error getting interactions for status %s for account %s: %v",
-				s.ID, requestingAccount.ID, err,
+				status.URI, requester.URI, err,
 			)
 
 			// Ensure non-nil object.
@@ -1530,20 +1320,9 @@ func (c *Converter) baseStatusToFrontend(
 
 	// If web URL is empty for whatever
 	// reason, provide AP URI as fallback.
-	if s.URL == "" {
-		s.URL = s.URI
+	if apiStatus.URL == "" {
+		apiStatus.URL = apiStatus.URI
 	}
-
-	// Apply filters.
-	filterResults, err := c.statusToAPIFilterResults(ctx, s, requestingAccount, filterContext, filters, mutes)
-	if err != nil {
-		if errors.Is(err, statusfilter.ErrHideStatus) {
-			return nil, err
-		}
-		return nil, fmt.Errorf("error applying filters: %w", err)
-	}
-
-	apiStatus.Filtered = filterResults
 
 	return apiStatus, nil
 }
@@ -1958,8 +1737,12 @@ func (c *Converter) InstanceToAPIV2Instance(ctx context.Context, i *gtsmodel.Ins
 
 	instance.Thumbnail = thumbnail
 
+	termsOfService := config.GetProtocol() + "://" + i.Domain + "/about#rules"
+
 	// configuration
 	instance.Configuration.URLs.Streaming = "wss://" + i.Domain
+	instance.Configuration.URLs.About = config.GetProtocol() + "://" + i.Domain + "/about"
+	instance.Configuration.URLs.TermsOfService = &termsOfService
 	instance.Configuration.Statuses.MaxCharacters = config.GetStatusesMaxChars()
 	instance.Configuration.Statuses.MaxMediaAttachments = config.GetStatusesMediaMaxFiles()
 	instance.Configuration.Statuses.CharactersReservedPerURL = instanceStatusesCharactersReservedPerURL
@@ -2005,6 +1788,8 @@ func (c *Converter) InstanceToAPIV2Instance(ctx context.Context, i *gtsmodel.Ins
 	instance.Registrations.Enabled = config.GetAccountsRegistrationOpen()
 	instance.Registrations.ApprovalRequired = true // always required
 	instance.Registrations.Message = nil           // todo: not implemented
+	instance.Registrations.MinAge = nil            // not implemented
+	instance.Registrations.ReasonRequired = config.GetAccountsReasonRequired()
 
 	// contact
 	instance.Contact.Email = i.ContactEmail
@@ -2050,38 +1835,28 @@ func (c *Converter) RelationshipToAPIRelationship(ctx context.Context, r *gtsmod
 // NotificationToAPINotification converts a gts notification into a api notification
 func (c *Converter) NotificationToAPINotification(
 	ctx context.Context,
-	n *gtsmodel.Notification,
-	filters []*gtsmodel.Filter,
-	mutes *usermute.CompiledUserMuteList,
+	notif *gtsmodel.Notification,
 ) (*apimodel.Notification, error) {
 	// Ensure notif populated.
-	if err := c.state.DB.PopulateNotification(ctx, n); err != nil {
+	if err := c.state.DB.PopulateNotification(ctx, notif); err != nil {
 		return nil, gtserror.Newf("error populating notification: %w", err)
 	}
 
 	// Get account that triggered this notif.
-	apiAccount, err := c.AccountToAPIAccountPublic(ctx, n.OriginAccount)
+	apiAccount, err := c.AccountToAPIAccountPublic(ctx, notif.OriginAccount)
 	if err != nil {
 		return nil, gtserror.Newf("error converting account to api: %w", err)
 	}
 
 	// Get status that triggered this notif, if set.
 	var apiStatus *apimodel.Status
-	if n.Status != nil {
-		apiStatus, err = c.StatusToAPIStatus(
-			ctx, n.Status,
-			n.TargetAccount,
-			statusfilter.FilterContextNotifications,
-			filters, mutes,
+	if notif.Status != nil {
+		apiStatus, err = c.StatusToAPIStatus(ctx,
+			notif.Status,
+			notif.TargetAccount,
 		)
-		if err != nil && !errors.Is(err, statusfilter.ErrHideStatus) {
+		if err != nil {
 			return nil, gtserror.Newf("error converting status to api: %w", err)
-		}
-
-		if apiStatus == nil {
-			// Notif filtered for this
-			// status, nothing to do.
-			return nil, err
 		}
 
 		if apiStatus.Reblog != nil {
@@ -2092,9 +1867,9 @@ func (c *Converter) NotificationToAPINotification(
 	}
 
 	return &apimodel.Notification{
-		ID:        n.ID,
-		Type:      n.NotificationType.String(),
-		CreatedAt: util.FormatISO8601(n.CreatedAt),
+		ID:        notif.ID,
+		Type:      notif.NotificationType.String(),
+		CreatedAt: util.FormatISO8601(notif.CreatedAt),
 		Account:   apiAccount,
 		Status:    apiStatus,
 	}, nil
@@ -2107,8 +1882,6 @@ func (c *Converter) ConversationToAPIConversation(
 	ctx context.Context,
 	conversation *gtsmodel.Conversation,
 	requester *gtsmodel.Account,
-	filters []*gtsmodel.Filter,
-	mutes *usermute.CompiledUserMuteList,
 ) (*apimodel.Conversation, error) {
 	apiConversation := &apimodel.Conversation{
 		ID:     conversation.ID,
@@ -2123,11 +1896,8 @@ func (c *Converter) ConversationToAPIConversation(
 			ctx,
 			conversation.LastStatus,
 			requester,
-			statusfilter.FilterContextNotifications,
-			filters,
-			mutes,
 		)
-		if err != nil && !errors.Is(err, statusfilter.ErrHideStatus) {
+		if err != nil {
 			return nil, gtserror.Newf(
 				"error converting status %s to API representation: %w",
 				conversation.LastStatus.ID,
@@ -2278,6 +2048,7 @@ func (c *Converter) DomainPermSubToAPIDomainPermSub(
 		PermissionType:        d.PermissionType.String(),
 		AsDraft:               *d.AsDraft,
 		AdoptOrphans:          *d.AdoptOrphans,
+		RemoveRetracted:       *d.RemoveRetracted,
 		CreatedBy:             d.CreatedByAccountID,
 		CreatedAt:             util.FormatISO8601(createdAt),
 		URI:                   uri,
@@ -2392,9 +2163,6 @@ func (c *Converter) ReportToAdminAPIReport(ctx context.Context, r *gtsmodel.Repo
 			ctx,
 			s,
 			requestingAccount,
-			statusfilter.FilterContextNone,
-			nil,  // No filters.
-			nil,  // No mutes.
 			true, // Placehold unknown attachments.
 
 			// Don't add note about
@@ -2624,48 +2392,53 @@ func (c *Converter) convertAttachmentsToAPIAttachments(ctx context.Context, atta
 }
 
 // FilterToAPIFiltersV1 converts one GTS model filter into an API v1 filter list
-func (c *Converter) FilterToAPIFiltersV1(ctx context.Context, filter *gtsmodel.Filter) ([]*apimodel.FilterV1, error) {
+func FilterToAPIFiltersV1(filter *gtsmodel.Filter) []*apimodel.FilterV1 {
 	apiFilters := make([]*apimodel.FilterV1, 0, len(filter.Keywords))
 	for _, filterKeyword := range filter.Keywords {
-		apiFilter, err := c.FilterKeywordToAPIFilterV1(ctx, filterKeyword)
-		if err != nil {
-			return nil, err
-		}
+		apiFilter := FilterKeywordToAPIFilterV1(filter, filterKeyword)
 		apiFilters = append(apiFilters, apiFilter)
 	}
-	return apiFilters, nil
+	return apiFilters
 }
 
 // FilterKeywordToAPIFilterV1 converts one GTS model filter and filter keyword into an API v1 filter
-func (c *Converter) FilterKeywordToAPIFilterV1(ctx context.Context, filterKeyword *gtsmodel.FilterKeyword) (*apimodel.FilterV1, error) {
-	if filterKeyword.Filter == nil {
-		return nil, gtserror.New("FilterKeyword model's Filter field isn't populated, but needs to be")
-	}
-	filter := filterKeyword.Filter
-
+func FilterKeywordToAPIFilterV1(filter *gtsmodel.Filter, keyword *gtsmodel.FilterKeyword) *apimodel.FilterV1 {
 	return &apimodel.FilterV1{
 		// v1 filters have a single keyword each, so we use the filter keyword ID as the v1 filter ID.
-		ID:           filterKeyword.ID,
-		Phrase:       filterKeyword.Keyword,
+		ID:           keyword.ID,
+		Phrase:       keyword.Keyword,
 		Context:      filterToAPIFilterContexts(filter),
-		WholeWord:    util.PtrOrValue(filterKeyword.WholeWord, false),
+		WholeWord:    util.PtrOrValue(keyword.WholeWord, false),
 		ExpiresAt:    filterExpiresAtToAPIFilterExpiresAt(filter.ExpiresAt),
 		Irreversible: filter.Action == gtsmodel.FilterActionHide,
-	}, nil
+	}
 }
 
 // FilterToAPIFilterV2 converts one GTS model filter into an API v2 filter.
-func (c *Converter) FilterToAPIFilterV2(ctx context.Context, filter *gtsmodel.Filter) (*apimodel.FilterV2, error) {
-	apiFilterKeywords := make([]apimodel.FilterKeyword, 0, len(filter.Keywords))
-	for _, filterKeyword := range filter.Keywords {
-		apiFilterKeywords = append(apiFilterKeywords, *c.FilterKeywordToAPIFilterKeyword(ctx, filterKeyword))
+func FilterToAPIFilterV2(filter *gtsmodel.Filter) *apimodel.FilterV2 {
+	apiFilterKeywords := make([]apimodel.FilterKeyword, len(filter.Keywords))
+	if len(apiFilterKeywords) != len(filter.Keywords) {
+		// bound check eliminiation compiler-hint
+		panic(gtserror.New("BCE"))
 	}
-
-	apiFilterStatuses := make([]apimodel.FilterStatus, 0, len(filter.Keywords))
-	for _, filterStatus := range filter.Statuses {
-		apiFilterStatuses = append(apiFilterStatuses, *c.FilterStatusToAPIFilterStatus(ctx, filterStatus))
+	for i, filterKeyword := range filter.Keywords {
+		apiFilterKeywords[i] = apimodel.FilterKeyword{
+			ID:        filterKeyword.ID,
+			Keyword:   filterKeyword.Keyword,
+			WholeWord: util.PtrOrValue(filterKeyword.WholeWord, false),
+		}
 	}
-
+	apiFilterStatuses := make([]apimodel.FilterStatus, len(filter.Statuses))
+	if len(apiFilterStatuses) != len(filter.Statuses) {
+		// bound check eliminiation compiler-hint
+		panic(gtserror.New("BCE"))
+	}
+	for i, filterStatus := range filter.Statuses {
+		apiFilterStatuses[i] = apimodel.FilterStatus{
+			ID:       filterStatus.ID,
+			StatusID: filterStatus.StatusID,
+		}
+	}
 	return &apimodel.FilterV2{
 		ID:           filter.ID,
 		Title:        filter.Title,
@@ -2674,7 +2447,7 @@ func (c *Converter) FilterToAPIFilterV2(ctx context.Context, filter *gtsmodel.Fi
 		FilterAction: filterActionToAPIFilterAction(filter.Action),
 		Keywords:     apiFilterKeywords,
 		Statuses:     apiFilterStatuses,
-	}, nil
+	}
 }
 
 func filterExpiresAtToAPIFilterExpiresAt(expiresAt time.Time) *string {
@@ -2686,19 +2459,19 @@ func filterExpiresAtToAPIFilterExpiresAt(expiresAt time.Time) *string {
 
 func filterToAPIFilterContexts(filter *gtsmodel.Filter) []apimodel.FilterContext {
 	apiContexts := make([]apimodel.FilterContext, 0, apimodel.FilterContextNumValues)
-	if util.PtrOrValue(filter.ContextHome, false) {
+	if filter.Contexts.Home() {
 		apiContexts = append(apiContexts, apimodel.FilterContextHome)
 	}
-	if util.PtrOrValue(filter.ContextNotifications, false) {
+	if filter.Contexts.Notifications() {
 		apiContexts = append(apiContexts, apimodel.FilterContextNotifications)
 	}
-	if util.PtrOrValue(filter.ContextPublic, false) {
+	if filter.Contexts.Public() {
 		apiContexts = append(apiContexts, apimodel.FilterContextPublic)
 	}
-	if util.PtrOrValue(filter.ContextThread, false) {
+	if filter.Contexts.Thread() {
 		apiContexts = append(apiContexts, apimodel.FilterContextThread)
 	}
-	if util.PtrOrValue(filter.ContextAccount, false) {
+	if filter.Contexts.Account() {
 		apiContexts = append(apiContexts, apimodel.FilterContextAccount)
 	}
 	return apiContexts
@@ -2715,7 +2488,7 @@ func filterActionToAPIFilterAction(m gtsmodel.FilterAction) apimodel.FilterActio
 }
 
 // FilterKeywordToAPIFilterKeyword converts a GTS model filter status into an API filter status.
-func (c *Converter) FilterKeywordToAPIFilterKeyword(ctx context.Context, filterKeyword *gtsmodel.FilterKeyword) *apimodel.FilterKeyword {
+func FilterKeywordToAPIFilterKeyword(filterKeyword *gtsmodel.FilterKeyword) *apimodel.FilterKeyword {
 	return &apimodel.FilterKeyword{
 		ID:        filterKeyword.ID,
 		Keyword:   filterKeyword.Keyword,
@@ -2724,7 +2497,7 @@ func (c *Converter) FilterKeywordToAPIFilterKeyword(ctx context.Context, filterK
 }
 
 // FilterStatusToAPIFilterStatus converts a GTS model filter status into an API filter status.
-func (c *Converter) FilterStatusToAPIFilterStatus(ctx context.Context, filterStatus *gtsmodel.FilterStatus) *apimodel.FilterStatus {
+func FilterStatusToAPIFilterStatus(filterStatus *gtsmodel.FilterStatus) *apimodel.FilterStatus {
 	return &apimodel.FilterStatus{
 		ID:       filterStatus.ID,
 		StatusID: filterStatus.StatusID,
@@ -2849,7 +2622,10 @@ func (c *Converter) ThemesToAPIThemes(themes []*gtsmodel.Theme) []apimodel.Theme
 // into an apimodel interaction policy.
 //
 // Provided status can be nil to convert a
-// policy without a particular status in mind.
+// policy without a particular status in mind,
+// but ***if status is nil then sub-policies
+// CanLike, CanReply, and CanAnnounce on
+// the given policy must *not* be nil.***
 //
 // RequestingAccount can also be nil for
 // unauthorized requests (web, public api etc).
@@ -2859,19 +2635,54 @@ func (c *Converter) InteractionPolicyToAPIInteractionPolicy(
 	status *gtsmodel.Status,
 	requester *gtsmodel.Account,
 ) (*apimodel.InteractionPolicy, error) {
-	apiPolicy := &apimodel.InteractionPolicy{
-		CanFavourite: apimodel.PolicyRules{
+	apiPolicy := new(apimodel.InteractionPolicy)
+
+	// gtsmodel CanLike -> apimodel CanFavourite
+	if policy.CanLike != nil {
+		// Use the set CanLike value.
+		apiPolicy.CanFavourite = apimodel.PolicyRules{
 			AutomaticApproval: policyValsToAPIPolicyVals(policy.CanLike.AutomaticApproval),
 			ManualApproval:    policyValsToAPIPolicyVals(policy.CanLike.ManualApproval),
-		},
-		CanReply: apimodel.PolicyRules{
+		}
+	} else {
+		// Use default CanLike value for this vis.
+		pCanLike := gtsmodel.DefaultCanLikeFor(status.Visibility)
+		apiPolicy.CanFavourite = apimodel.PolicyRules{
+			AutomaticApproval: policyValsToAPIPolicyVals(pCanLike.AutomaticApproval),
+			ManualApproval:    policyValsToAPIPolicyVals(pCanLike.ManualApproval),
+		}
+	}
+
+	// gtsmodel CanReply -> apimodel CanReply
+	if policy.CanReply != nil {
+		// Use the set CanReply value.
+		apiPolicy.CanReply = apimodel.PolicyRules{
 			AutomaticApproval: policyValsToAPIPolicyVals(policy.CanReply.AutomaticApproval),
 			ManualApproval:    policyValsToAPIPolicyVals(policy.CanReply.ManualApproval),
-		},
-		CanReblog: apimodel.PolicyRules{
+		}
+	} else {
+		// Use default CanReply value for this vis.
+		pCanReply := gtsmodel.DefaultCanReplyFor(status.Visibility)
+		apiPolicy.CanReply = apimodel.PolicyRules{
+			AutomaticApproval: policyValsToAPIPolicyVals(pCanReply.AutomaticApproval),
+			ManualApproval:    policyValsToAPIPolicyVals(pCanReply.ManualApproval),
+		}
+	}
+
+	// gtsmodel CanAnnounce -> apimodel CanReblog
+	if policy.CanAnnounce != nil {
+		// Use the set CanAnnounce value.
+		apiPolicy.CanReblog = apimodel.PolicyRules{
 			AutomaticApproval: policyValsToAPIPolicyVals(policy.CanAnnounce.AutomaticApproval),
 			ManualApproval:    policyValsToAPIPolicyVals(policy.CanAnnounce.ManualApproval),
-		},
+		}
+	} else {
+		// Use default CanAnnounce value for this vis.
+		pCanAnnounce := gtsmodel.DefaultCanAnnounceFor(status.Visibility)
+		apiPolicy.CanReblog = apimodel.PolicyRules{
+			AutomaticApproval: policyValsToAPIPolicyVals(pCanAnnounce.AutomaticApproval),
+			ManualApproval:    policyValsToAPIPolicyVals(pCanAnnounce.ManualApproval),
+		}
 	}
 
 	defer func() {
@@ -3055,9 +2866,6 @@ func (c *Converter) InteractionReqToAPIInteractionReq(
 		ctx,
 		req.Status,
 		requestingAcct,
-		statusfilter.FilterContextNone,
-		nil, // No filters.
-		nil, // No mutes.
 	)
 	if err != nil {
 		err := gtserror.Newf("error converting interacted status: %w", err)
@@ -3070,9 +2878,6 @@ func (c *Converter) InteractionReqToAPIInteractionReq(
 			ctx,
 			req.Reply,
 			requestingAcct,
-			statusfilter.FilterContextNone,
-			nil,  // No filters.
-			nil,  // No mutes.
 			true, // Placehold unknown attachments.
 
 			// Don't add note about pending;
