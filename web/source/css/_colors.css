@@ -133,8 +133,6 @@ $plyr-video-controls-background: $bg-accent;
 $plyr-badge-text-color: $fg;
 $plyr-badge-border-radius: $br;
 $plyr-video-progress-buffered-background: $gray8;
-<<<<<<< HEAD
-=======
 
 /* Light mode */
 
@@ -172,4 +170,3 @@ $white: #fafaff; /* we still use white for something */
 		$info-bg: $blue1;
 	}
 }
->>>>>>> ce7ba8f4986845d39dfae284f156f14af677a7b4
