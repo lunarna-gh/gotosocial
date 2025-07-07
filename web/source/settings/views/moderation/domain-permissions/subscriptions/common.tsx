@@ -109,20 +109,29 @@ export function SubscriptionListEntry({ permSub, linkTo, backLocation }: Subscri
 		successfullyFetchedAtStr = new Date(successfullyFetchedAt).toDateString();
 	}
 
+	const onClick = (e) => {
+		e.preventDefault();
+		// When clicking on a subscription, direct
+		// to the detail view for that subscription.
+		setLocation(linkTo, {
+			// Store the back location in history so
+			// the detail view can use it to return to
+			// this page (including query parameters).
+			state: { backLocation: backLocation }
+		});
+	};
+
 	return (
 		<span
 			className={`pseudolink domain-permission-subscription entry`}
 			aria-label={ariaLabel}
 			title={ariaLabel}
-			onClick={() => {
-				// When clicking on a subscription, direct
-				// to the detail view for that subscription.
-				setLocation(linkTo, {
-					// Store the back location in history so
-					// the detail view can use it to return to
-					// this page (including query parameters).
-					state: { backLocation: backLocation }
-				});
+			onClick={onClick}
+			onKeyDown={(e) => {
+				if (e.key === "Enter") {
+					e.preventDefault();
+					onClick(e);
+				}
 			}}
 			role="link"
 			tabIndex={0}

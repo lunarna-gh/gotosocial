@@ -26,17 +26,17 @@ import (
 	"strings"
 	"time"
 
-	"github.com/superseriousbusiness/gotosocial/internal/config"
-	"github.com/superseriousbusiness/gotosocial/internal/db"
-	"github.com/superseriousbusiness/gotosocial/internal/gtscontext"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/id"
-	"github.com/superseriousbusiness/gotosocial/internal/log"
-	"github.com/superseriousbusiness/gotosocial/internal/paging"
-	"github.com/superseriousbusiness/gotosocial/internal/state"
-	"github.com/superseriousbusiness/gotosocial/internal/util"
-	"github.com/superseriousbusiness/gotosocial/internal/util/xslices"
+	"code.superseriousbusiness.org/gotosocial/internal/config"
+	"code.superseriousbusiness.org/gotosocial/internal/db"
+	"code.superseriousbusiness.org/gotosocial/internal/gtscontext"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/id"
+	"code.superseriousbusiness.org/gotosocial/internal/log"
+	"code.superseriousbusiness.org/gotosocial/internal/paging"
+	"code.superseriousbusiness.org/gotosocial/internal/state"
+	"code.superseriousbusiness.org/gotosocial/internal/util"
+	"code.superseriousbusiness.org/gotosocial/internal/util/xslices"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect"
 )
@@ -121,18 +121,46 @@ func (a *accountDB) GetAccountByURI(ctx context.Context, uri string) (*gtsmodel.
 	)
 }
 
-func (a *accountDB) GetAccountByURL(ctx context.Context, url string) (*gtsmodel.Account, error) {
-	return a.getAccount(
-		ctx,
-		"URL",
-		func(account *gtsmodel.Account) error {
-			return a.db.NewSelect().
-				Model(account).
-				Where("? = ?", bun.Ident("account.url"), url).
-				Scan(ctx)
-		},
-		url,
-	)
+func (a *accountDB) GetOneAccountByURL(ctx context.Context, url string) (*gtsmodel.Account, error) {
+	// Select IDs of all
+	// accounts with this url.
+	var ids []string
+	if err := a.db.NewSelect().
+		TableExpr("? AS ?", bun.Ident("accounts"), bun.Ident("account")).
+		Column("account.id").
+		Where("? = ?", bun.Ident("account.url"), url).
+		Scan(ctx, &ids); err != nil {
+		return nil, err
+	}
+
+	// Ensure exactly one account.
+	if len(ids) == 0 {
+		return nil, db.ErrNoEntries
+	}
+	if len(ids) > 1 {
+		return nil, db.ErrMultipleEntries
+	}
+
+	return a.GetAccountByID(ctx, ids[0])
+}
+
+func (a *accountDB) GetAccountsByURL(ctx context.Context, url string) ([]*gtsmodel.Account, error) {
+	// Select IDs of all
+	// accounts with this url.
+	var ids []string
+	if err := a.db.NewSelect().
+		TableExpr("? AS ?", bun.Ident("accounts"), bun.Ident("account")).
+		Column("account.id").
+		Where("? = ?", bun.Ident("account.url"), url).
+		Scan(ctx, &ids); err != nil {
+		return nil, err
+	}
+
+	if len(ids) == 0 {
+		return nil, db.ErrNoEntries
+	}
+
+	return a.GetAccountsByIDs(ctx, ids)
 }
 
 func (a *accountDB) GetAccountByUsernameDomain(ctx context.Context, username string, domain string) (*gtsmodel.Account, error) {
@@ -184,60 +212,50 @@ func (a *accountDB) GetAccountByPubkeyID(ctx context.Context, id string) (*gtsmo
 	)
 }
 
-func (a *accountDB) GetAccountByInboxURI(ctx context.Context, uri string) (*gtsmodel.Account, error) {
-	return a.getAccount(
-		ctx,
-		"InboxURI",
-		func(account *gtsmodel.Account) error {
-			return a.db.NewSelect().
-				Model(account).
-				Where("? = ?", bun.Ident("account.inbox_uri"), uri).
-				Scan(ctx)
-		},
-		uri,
-	)
+func (a *accountDB) GetOneAccountByInboxURI(ctx context.Context, inboxURI string) (*gtsmodel.Account, error) {
+	// Select IDs of all accounts
+	// with this inbox_uri.
+	var ids []string
+	if err := a.db.NewSelect().
+		TableExpr("? AS ?", bun.Ident("accounts"), bun.Ident("account")).
+		Column("account.id").
+		Where("? = ?", bun.Ident("account.inbox_uri"), inboxURI).
+		Scan(ctx, &ids); err != nil {
+		return nil, err
+	}
+
+	// Ensure exactly one account.
+	if len(ids) == 0 {
+		return nil, db.ErrNoEntries
+	}
+	if len(ids) > 1 {
+		return nil, db.ErrMultipleEntries
+	}
+
+	return a.GetAccountByID(ctx, ids[0])
 }
 
-func (a *accountDB) GetAccountByOutboxURI(ctx context.Context, uri string) (*gtsmodel.Account, error) {
-	return a.getAccount(
-		ctx,
-		"OutboxURI",
-		func(account *gtsmodel.Account) error {
-			return a.db.NewSelect().
-				Model(account).
-				Where("? = ?", bun.Ident("account.outbox_uri"), uri).
-				Scan(ctx)
-		},
-		uri,
-	)
-}
+func (a *accountDB) GetOneAccountByOutboxURI(ctx context.Context, outboxURI string) (*gtsmodel.Account, error) {
+	// Select IDs of all accounts
+	// with this outbox_uri.
+	var ids []string
+	if err := a.db.NewSelect().
+		TableExpr("? AS ?", bun.Ident("accounts"), bun.Ident("account")).
+		Column("account.id").
+		Where("? = ?", bun.Ident("account.outbox_uri"), outboxURI).
+		Scan(ctx, &ids); err != nil {
+		return nil, err
+	}
 
-func (a *accountDB) GetAccountByFollowersURI(ctx context.Context, uri string) (*gtsmodel.Account, error) {
-	return a.getAccount(
-		ctx,
-		"FollowersURI",
-		func(account *gtsmodel.Account) error {
-			return a.db.NewSelect().
-				Model(account).
-				Where("? = ?", bun.Ident("account.followers_uri"), uri).
-				Scan(ctx)
-		},
-		uri,
-	)
-}
+	// Ensure exactly one account.
+	if len(ids) == 0 {
+		return nil, db.ErrNoEntries
+	}
+	if len(ids) > 1 {
+		return nil, db.ErrMultipleEntries
+	}
 
-func (a *accountDB) GetAccountByFollowingURI(ctx context.Context, uri string) (*gtsmodel.Account, error) {
-	return a.getAccount(
-		ctx,
-		"FollowingURI",
-		func(account *gtsmodel.Account) error {
-			return a.db.NewSelect().
-				Model(account).
-				Where("? = ?", bun.Ident("account.following_uri"), uri).
-				Scan(ctx)
-		},
-		uri,
-	)
+	return a.GetAccountByID(ctx, ids[0])
 }
 
 func (a *accountDB) GetInstanceAccount(ctx context.Context, domain string) (*gtsmodel.Account, error) {
@@ -587,7 +605,11 @@ func (a *accountDB) GetAccounts(
 	return a.state.DB.GetAccountsByIDs(ctx, accountIDs)
 }
 
-func (a *accountDB) getAccount(ctx context.Context, lookup string, dbQuery func(*gtsmodel.Account) error, keyParts ...any) (*gtsmodel.Account, error) {
+func (a *accountDB) getAccount(
+	ctx context.Context,
+	lookup string,
+	dbQuery func(*gtsmodel.Account) error, keyParts ...any,
+) (*gtsmodel.Account, error) {
 	// Fetch account from database cache with loader callback
 	account, err := a.state.Caches.DB.Account.LoadOne(lookup, func() (*gtsmodel.Account, error) {
 		var account gtsmodel.Account
@@ -878,6 +900,29 @@ func (a *accountDB) GetAccountFaves(ctx context.Context, accountID string) ([]*g
 	return *faves, nil
 }
 
+func qMediaOnly(q *bun.SelectQuery) *bun.SelectQuery {
+	// Attachments are stored as a json object; this
+	// implementation differs between SQLite and Postgres,
+	// so we have to be thorough to cover all eventualities
+	return q.WhereGroup(" AND ", func(q *bun.SelectQuery) *bun.SelectQuery {
+		switch d := q.Dialect().Name(); d {
+		case dialect.PG:
+			return q.
+				Where("? IS NOT NULL", bun.Ident("status.attachments")).
+				Where("? != '{}'", bun.Ident("status.attachments"))
+
+		case dialect.SQLite:
+			return q.
+				Where("? IS NOT NULL", bun.Ident("status.attachments")).
+				Where("? != 'null'", bun.Ident("status.attachments")).
+				Where("? != '[]'", bun.Ident("status.attachments"))
+
+		default:
+			panic("dialect " + d.String() + " was neither pg nor sqlite")
+		}
+	})
+}
+
 func (a *accountDB) GetAccountStatuses(ctx context.Context, accountID string, limit int, excludeReplies bool, excludeReblogs bool, maxID string, minID string, mediaOnly bool, publicOnly bool) ([]*gtsmodel.Status, error) {
 	// Ensure reasonable
 	if limit < 0 {
@@ -918,28 +963,9 @@ func (a *accountDB) GetAccountStatuses(ctx context.Context, accountID string, li
 		q = q.Where("? IS NULL", bun.Ident("status.boost_of_id"))
 	}
 
+	// Respect media-only preference.
 	if mediaOnly {
-		// Attachments are stored as a json object; this
-		// implementation differs between SQLite and Postgres,
-		// so we have to be thorough to cover all eventualities
-		q = q.WhereGroup(" AND ", func(q *bun.SelectQuery) *bun.SelectQuery {
-			switch a.db.Dialect().Name() {
-			case dialect.PG:
-				return q.
-					Where("? IS NOT NULL", bun.Ident("status.attachments")).
-					Where("? != '{}'", bun.Ident("status.attachments"))
-			case dialect.SQLite:
-				return q.
-					Where("? IS NOT NULL", bun.Ident("status.attachments")).
-					Where("? != ''", bun.Ident("status.attachments")).
-					Where("? != 'null'", bun.Ident("status.attachments")).
-					Where("? != '{}'", bun.Ident("status.attachments")).
-					Where("? != '[]'", bun.Ident("status.attachments"))
-			default:
-				log.Panic(ctx, "db dialect was neither pg nor sqlite")
-				return q
-			}
-		})
+		q = qMediaOnly(q)
 	}
 
 	if publicOnly {
@@ -1018,9 +1044,16 @@ func (a *accountDB) GetAccountPinnedStatuses(ctx context.Context, accountID stri
 func (a *accountDB) GetAccountWebStatuses(
 	ctx context.Context,
 	account *gtsmodel.Account,
+	mediaOnly bool,
 	limit int,
 	maxID string,
 ) ([]*gtsmodel.Status, error) {
+	if account.Username == config.GetHost() {
+		// Instance account
+		// doesn't post statuses.
+		return nil, nil
+	}
+
 	// Check for an easy case: account exposes no statuses via the web.
 	webVisibility := account.Settings.WebVisibility
 	if webVisibility == gtsmodel.VisibilityNone {
@@ -1040,10 +1073,7 @@ func (a *accountDB) GetAccountWebStatuses(
 		TableExpr("? AS ?", bun.Ident("statuses"), bun.Ident("status")).
 		// Select only IDs from table
 		Column("status.id").
-		Where("? = ?", bun.Ident("status.account_id"), account.ID).
-		// Don't show replies or boosts.
-		Where("? IS NULL", bun.Ident("status.in_reply_to_uri")).
-		Where("? IS NULL", bun.Ident("status.boost_of_id"))
+		Where("? = ?", bun.Ident("status.account_id"), account.ID)
 
 	// Select statuses for this account according
 	// to their web visibility preference.
@@ -1068,10 +1098,19 @@ func (a *accountDB) GetAccountWebStatuses(
 		)
 	}
 
-	// Don't show local-only statuses on the web view.
-	q = q.Where("? = ?", bun.Ident("status.federated"), true)
+	// Don't show replies, boosts, or
+	// local-only statuses on the web view.
+	q = q.
+		Where("? IS NULL", bun.Ident("status.in_reply_to_uri")).
+		Where("? IS NULL", bun.Ident("status.boost_of_id")).
+		Where("? = ?", bun.Ident("status.federated"), true)
 
-	// return only statuses LOWER (ie., older) than maxID
+	// Respect media-only preference.
+	if mediaOnly {
+		q = qMediaOnly(q)
+	}
+
+	// Return only statuses LOWER (ie., older) than maxID
 	if maxID == "" {
 		maxID = id.Highest
 	}

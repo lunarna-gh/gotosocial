@@ -186,20 +186,29 @@ function ExcludeListEntry({ permExclude, linkTo, backLocation }: ExcludeEntryPro
 		return <ErrorC error={new Error("id was undefined")} />;
 	}
 
+	const onClick = (e) => {
+		e.preventDefault();
+		// When clicking on a exclude, direct
+		// to the detail view for that exclude.
+		setLocation(linkTo, {
+			// Store the back location in history so
+			// the detail view can use it to return to
+			// this page (including query parameters).
+			state: { backLocation: backLocation }
+		});
+	};
+
 	return (
 		<span
 			className={`pseudolink domain-permission-exclude entry`}
 			aria-label={`Exclude ${domain}`}
 			title={`Exclude ${domain}`}
-			onClick={() => {
-				// When clicking on a exclude, direct
-				// to the detail view for that exclude.
-				setLocation(linkTo, {
-					// Store the back location in history so
-					// the detail view can use it to return to
-					// this page (including query parameters).
-					state: { backLocation: backLocation }
-				});
+			onClick={onClick}
+			onKeyDown={(e) => {
+				if (e.key === "Enter") {
+					e.preventDefault();
+					onClick(e);
+				}
 			}}
 			role="link"
 			tabIndex={0}

@@ -22,13 +22,13 @@ import (
 	"errors"
 	"slices"
 
-	"github.com/superseriousbusiness/gotosocial/internal/db"
-	"github.com/superseriousbusiness/gotosocial/internal/gtscontext"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/log"
-	"github.com/superseriousbusiness/gotosocial/internal/state"
-	"github.com/superseriousbusiness/gotosocial/internal/util/xslices"
+	"code.superseriousbusiness.org/gotosocial/internal/db"
+	"code.superseriousbusiness.org/gotosocial/internal/gtscontext"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/log"
+	"code.superseriousbusiness.org/gotosocial/internal/state"
+	"code.superseriousbusiness.org/gotosocial/internal/util/xslices"
 	"github.com/uptrace/bun"
 )
 
@@ -299,11 +299,12 @@ func (s *statusDB) PopulateStatus(ctx context.Context, status *gtsmodel.Status) 
 
 	if status.CreatedWithApplicationID != "" && status.CreatedWithApplication == nil {
 		// Populate the status' expected CreatedWithApplication (not always set).
+		// Don't error on ErrNoEntries, as the application may have been cleaned up.
 		status.CreatedWithApplication, err = s.state.DB.GetApplicationByID(
 			gtscontext.SetBarebones(ctx),
 			status.CreatedWithApplicationID,
 		)
-		if err != nil {
+		if err != nil && !errors.Is(err, db.ErrNoEntries) {
 			errs.Appendf("error populating status application: %w", err)
 		}
 	}
@@ -730,4 +731,106 @@ func (s *statusDB) GetDirectStatusIDsBatch(ctx context.Context, minID string, ma
 		return nil, err
 	}
 	return statusIDs, nil
+}
+
+func (s *statusDB) GetStatusInteractions(
+	ctx context.Context,
+	statusID string,
+	localOnly bool,
+) ([]gtsmodel.Interaction, error) {
+	// Prepare to get interactions.
+	interactions := []gtsmodel.Interaction{}
+
+	// Gather faves.
+	faves, err := s.state.DB.GetStatusFaves(ctx, statusID)
+	if err != nil && !errors.Is(err, db.ErrNoEntries) {
+		return nil, err
+	}
+
+	for _, fave := range faves {
+		// Get account at least.
+		if fave.Account == nil {
+			fave.Account, err = s.state.DB.GetAccountByID(ctx, fave.AccountID)
+			if err != nil {
+				log.Errorf(ctx, "error getting account for fave: %v", err)
+				continue
+			}
+		}
+
+		if localOnly && !fave.Account.IsLocal() {
+			// Skip not local.
+			continue
+		}
+
+		interactions = append(interactions, fave)
+	}
+
+	// Gather replies.
+	replies, err := s.state.DB.GetStatusReplies(ctx, statusID)
+	if err != nil && !errors.Is(err, db.ErrNoEntries) {
+		return nil, err
+	}
+
+	for _, reply := range replies {
+		// Get account at least.
+		if reply.Account == nil {
+			reply.Account, err = s.state.DB.GetAccountByID(ctx, reply.AccountID)
+			if err != nil {
+				log.Errorf(ctx, "error getting account for reply: %v", err)
+				continue
+			}
+		}
+
+		if localOnly && !reply.Account.IsLocal() {
+			// Skip not local.
+			continue
+		}
+
+		interactions = append(interactions, reply)
+	}
+
+	// Gather boosts.
+	boosts, err := s.state.DB.GetStatusBoosts(ctx, statusID)
+	if err != nil && !errors.Is(err, db.ErrNoEntries) {
+		return nil, err
+	}
+
+	for _, boost := range boosts {
+		// Get account at least.
+		if boost.Account == nil {
+			boost.Account, err = s.state.DB.GetAccountByID(ctx, boost.AccountID)
+			if err != nil {
+				log.Errorf(ctx, "error getting account for boost: %v", err)
+				continue
+			}
+		}
+
+		if localOnly && !boost.Account.IsLocal() {
+			// Skip not local.
+			continue
+		}
+
+		interactions = append(interactions, boost)
+	}
+
+	if len(interactions) == 0 {
+		return nil, db.ErrNoEntries
+	}
+
+	return interactions, nil
+}
+
+func (s *statusDB) GetStatusByEditID(
+	ctx context.Context,
+	editID string,
+) (*gtsmodel.Status, error) {
+	edit, err := s.state.DB.GetStatusEditByID(
+		gtscontext.SetBarebones(ctx),
+		editID,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.GetStatusByID(ctx, edit.StatusID)
 }

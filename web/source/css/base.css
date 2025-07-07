@@ -22,27 +22,8 @@
 ****************************************/
 
 @import "modern-normalize/modern-normalize.css";
-@import "./prism.css";
-
-/* noto-sans-regular - latin */
-@font-face {
-	font-family: "Noto Sans";
-	font-weight: 400;
-	font-display: swap;
-	font-style: normal;
-	src: url('../fonts/noto-sans-v27-latin-regular.woff2') format('woff2'),
-		 url('../fonts/noto-sans-v27-latin-regular.woff') format('woff');
-}
-
-/* noto-sans-700 - latin */
-@font-face {
-	font-family: "Noto Sans";
-	font-weight: 700;
-	font-display: swap;
-	font-style: normal;
-	src: url('../fonts/noto-sans-v27-latin-700.woff2') format('woff2'),
-		 url('../fonts/noto-sans-v27-latin-700.woff') format('woff');
-}
+@import "./_prism.css";
+@import "./_fonts.css";
 
 /*************************************
 ***** SECTION 1: HANDY VARIABLES *****
@@ -68,6 +49,40 @@ $br-inner: 1.2rem;
 */
 $fa-fw: 1.28571429em;
 
+/*
+	Outline to give links when they're
+	focused (ie., by clicking or tabbing to them).
+*/
+$link-focus-outline: 0.25rem dotted $link-fg;
+
+/*
+	Outline to give buttons when they're
+	focused (ie., by clicking or tabbing to them).
+*/
+$button-focus-outline: 0.25rem dashed $button-focus-border;
+
+/*
+	Outline to give input elements like radio buttons
+	and checkboxes when they're focused (ie., by clicking
+	or tabbing to them).
+*/
+$input-clickable-focus-outline: 0.25rem dashed $input-focus-border;
+
+/*
+	Outline to give summary elements when they're
+	focused (ie., by clicking or tabbing to them).
+*/
+$summary-focus-outline: 0.25rem dotted $link-fg;
+
+/*
+	Outline to give <pre> elements when they're
+	focused (ie., by clicking or tabbing to them).
+
+	This is used when we've got a preformatted
+	code block with a scroll bar inside of it.
+*/
+$pre-focus-outline: 0.25rem dashed $link-fg;
+
 /******************************************
 ***** SECTION 2: BASIC GLOBAL STYLING *****
 *******************************************/
@@ -88,6 +103,9 @@ body {
 
 a {
 	color: $link-fg;
+	&:focus-visible {
+		outline: $link-focus-outline;
+	}
 }
 
 /*
@@ -144,6 +162,14 @@ main {
 	&:hover {
 		background: $button-hover-bg;
 	}
+
+	&:focus-visible {
+		outline: $button-focus-outline;
+	}
+}
+
+summary:focus-visible {
+	outline: $summary-focus-outline;
 }
 
 /*
@@ -162,6 +188,11 @@ input, select, textarea, .input {
 
 	&:focus, &:active {
 		border-color: $input-focus-border;
+	}
+
+	&[type=checkbox]:focus-visible,
+	&[type=radio]:focus-visible {
+		outline: $input-clickable-focus-outline;
 	}
 
 	&:invalid, .invalid & {
@@ -288,11 +319,12 @@ label {
 }
 
 /*
-	Set our own nice background for
-	monospace code and pre blocks.
+	Set our own nice background and
+	font for monospace code and pre blocks.
 */
 pre, pre[class*="language-"],
 code, code[class*="language-"] {
+	font-family: "Noto Sans Mono", monospace;
 	background-color: $gray2;
 }
 
@@ -341,6 +373,10 @@ pre, pre[class*="language-"] {
 	padding: 0.5rem;
 	white-space: pre;
 	overflow-x: auto;
+
+	&:focus {
+		outline: $pre-focus-outline;
+	}
 
 	/* 
 		Code inside a pre block, ie.,
@@ -458,9 +494,8 @@ section.with-form {
 			gap: 0.4rem;
 
 			& > input {
-				height: 100%;
-				width: 5%;
-				min-width: 1.2rem;
+				height: 1rem;
+				width: 1rem;
 				align-self: center;
 			}
 		}
@@ -565,7 +600,7 @@ section.oob-token {
 	}
 }
 
-.domain-blocklist {
+.domain-perm-list {
 	box-shadow: $boxshadow;
 
 	.entry {
@@ -598,7 +633,7 @@ section.oob-token {
 }
 
 @media screen and (max-width: 30rem) {
-	.domain-blocklist .entry {
+	.domain-perm-list .entry {
 		grid-template-columns: 1fr;
 		gap: 0;
 	}

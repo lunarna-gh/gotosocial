@@ -17,7 +17,7 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { useLogoutMutation, useVerifyCredentialsQuery } from "../../lib/query/oauth";
+import { useLogoutMutation, useVerifyCredentialsQuery } from "../../lib/query/login";
 import { store } from "../../redux/store";
 import React, { ReactNode } from "react";
 
@@ -27,8 +27,8 @@ import { Error } from "../error";
 import { NoArg } from "../../lib/types/query";
 
 export function Authorization({ App }) {
-	const { loginState, expectingRedirect } = store.getState().oauth;
-	const skip = (loginState == "none" || loginState == "logout" || expectingRedirect);
+	const { current: loginState, expectingRedirect } = store.getState().login;
+	const skip = (loginState == "none" || loginState == "loggedout" || expectingRedirect);
 	const [ logoutQuery ] = useLogoutMutation();
 
 	const {
@@ -46,9 +46,9 @@ export function Authorization({ App }) {
 		showLogin = false;
 
 		let loadingInfo = "";
-		if (loginState == "callback") {
+		if (loginState == "awaitingcallback") {
 			loadingInfo = "Processing OAUTH callback.";
-		} else if (loginState == "login") {
+		} else if (loginState == "loggedin") {
 			loadingInfo = "Verifying stored login.";
 		}
 
@@ -58,13 +58,9 @@ export function Authorization({ App }) {
 			</div>
 		);
 	} else if (error !== undefined) {
-		if ("status" in error && error.status === 401) {
-			// 401 unauthorized was received.
-			// That means the token or app we
-			// were using is no longer valid,
-			// so just log the user out.
-			logoutQuery(NoArg);
-		}
+		// Something went wrong,
+		// log the user out.
+		logoutQuery(NoArg);
 
 		content = (
 			<div>
@@ -74,7 +70,7 @@ export function Authorization({ App }) {
 		);
 	}
 
-	if (loginState == "login" && isSuccess) {
+	if (loginState == "loggedin" && isSuccess) {
 		return <App account={account} />;
 	} else {
 		return (

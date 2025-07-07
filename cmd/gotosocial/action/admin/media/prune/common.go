@@ -21,13 +21,13 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/superseriousbusiness/gotosocial/internal/cleaner"
-	"github.com/superseriousbusiness/gotosocial/internal/db"
-	"github.com/superseriousbusiness/gotosocial/internal/db/bundb"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/media"
-	"github.com/superseriousbusiness/gotosocial/internal/state"
-	gtsstorage "github.com/superseriousbusiness/gotosocial/internal/storage"
+	"code.superseriousbusiness.org/gotosocial/internal/cleaner"
+	"code.superseriousbusiness.org/gotosocial/internal/db"
+	"code.superseriousbusiness.org/gotosocial/internal/db/bundb"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/media"
+	"code.superseriousbusiness.org/gotosocial/internal/state"
+	gtsstorage "code.superseriousbusiness.org/gotosocial/internal/storage"
 )
 
 type prune struct {
@@ -42,7 +42,9 @@ func setupPrune(ctx context.Context) (*prune, error) {
 	var state state.State
 
 	state.Caches.Init()
-	state.Caches.Start()
+	if err := state.Caches.Start(); err != nil {
+		return nil, fmt.Errorf("error starting caches: %w", err)
+	}
 
 	// Scheduler is required for the
 	// cleaner, but no other workers

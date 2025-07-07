@@ -27,11 +27,11 @@ import (
 	"strings"
 	"testing"
 
+	"code.superseriousbusiness.org/gotosocial/internal/api/client/statuses"
+	"code.superseriousbusiness.org/gotosocial/internal/oauth"
+	"code.superseriousbusiness.org/gotosocial/testrig"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/suite"
-	"github.com/superseriousbusiness/gotosocial/internal/api/client/statuses"
-	"github.com/superseriousbusiness/gotosocial/internal/oauth"
-	"github.com/superseriousbusiness/gotosocial/testrig"
 )
 
 type StatusSourceTestSuite struct {
@@ -92,7 +92,8 @@ func (suite *StatusSourceTestSuite) TestGetSource() {
 	suite.Equal(`{
   "id": "01F8MHAMCHF6Y650WCRSCP4WMY",
   "text": "hello everyone!",
-  "spoiler_text": "introduction post"
+  "spoiler_text": "introduction post",
+  "content_type": "text/plain"
 }`, dst.String())
 }
 

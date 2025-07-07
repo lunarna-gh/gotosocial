@@ -24,10 +24,10 @@ import (
 	"net/http"
 	"strings"
 
+	apimodel "code.superseriousbusiness.org/gotosocial/internal/api/model"
+	apiutil "code.superseriousbusiness.org/gotosocial/internal/api/util"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
 	"github.com/gin-gonic/gin"
-	apimodel "github.com/superseriousbusiness/gotosocial/internal/api/model"
-	apiutil "github.com/superseriousbusiness/gotosocial/internal/api/util"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
 )
 
 func (m *Module) threadGETHandler(c *gin.Context) {
@@ -146,7 +146,17 @@ func (m *Module) threadGETHandler(c *gin.Context) {
 		Instance:    instance,
 		OGMeta:      apiutil.OGBase(instance).WithStatus(context.Status),
 		Stylesheets: stylesheets,
-		Javascript:  []string{jsFrontend},
+		Javascript: []apiutil.JavascriptEntry{
+			{
+				Src:   jsFrontend,
+				Async: true,
+				Defer: true,
+			},
+			{
+				Bottom: true,
+				Src:    jsFrontendPrerender,
+			},
+		},
 		Extra: map[string]any{
 			"context": context,
 		},

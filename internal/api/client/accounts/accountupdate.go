@@ -24,13 +24,12 @@ import (
 	"slices"
 	"strconv"
 
+	apimodel "code.superseriousbusiness.org/gotosocial/internal/api/model"
+	apiutil "code.superseriousbusiness.org/gotosocial/internal/api/util"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/form/v4"
-	apimodel "github.com/superseriousbusiness/gotosocial/internal/api/model"
-	apiutil "github.com/superseriousbusiness/gotosocial/internal/api/util"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/oauth"
 )
 
 // AccountUpdateCredentialsPATCHHandler swagger:operation PATCH /api/v1/accounts/update_credentials accountUpdate
@@ -154,6 +153,14 @@ import (
 //			"none": show no posts on the web, not even Public ones.
 //		type: string
 //	-
+//		name: web_layout
+//		in: formData
+//		description: |-
+//			Layout to use for the web view of the account.
+//			"microblog": default, classic microblog layout.
+//			"gallery": gallery layout with media only.
+//		type: string
+//	-
 //		name: fields_attributes[0][name]
 //		in: formData
 //		description: Name of 1st profile field to be added to this account's profile.
@@ -236,9 +243,12 @@ import (
 //		'500':
 //			description: internal server error
 func (m *Module) AccountUpdateCredentialsPATCHHandler(c *gin.Context) {
-	authed, err := oauth.Authed(c, true, true, true, true)
-	if err != nil {
-		apiutil.ErrorHandler(c, gtserror.NewErrorUnauthorized(err, err.Error()), m.processor.InstanceGetV1)
+	authed, errWithCode := apiutil.TokenAuth(c,
+		true, true, true, true,
+		apiutil.ScopeWriteAccounts,
+	)
+	if errWithCode != nil {
+		apiutil.ErrorHandler(c, errWithCode, m.processor.InstanceGetV1)
 		return
 	}
 
@@ -349,7 +359,8 @@ func parseUpdateAccountForm(c *gin.Context) (*apimodel.UpdateCredentialsRequest,
 			form.CustomCSS == nil &&
 			form.EnableRSS == nil &&
 			form.HideCollections == nil &&
-			form.WebVisibility == nil) {
+			form.WebVisibility == nil &&
+			form.WebLayout == nil) {
 		return nil, errors.New("empty form submitted")
 	}
 

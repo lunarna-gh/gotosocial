@@ -18,13 +18,12 @@
 package config
 
 import (
-	"net/netip"
 	"reflect"
+	"strings"
 	"time"
 
+	"code.superseriousbusiness.org/gotosocial/internal/language"
 	"codeberg.org/gruf/go-bytesize"
-	"github.com/mitchellh/mapstructure"
-	"github.com/superseriousbusiness/gotosocial/internal/language"
 )
 
 // cfgtype is the reflected type information of Configuration{}.
@@ -33,9 +32,15 @@ var cfgtype = reflect.TypeOf(Configuration{})
 // fieldtag will fetch the string value for the given tag name
 // on the given field name in the Configuration{} struct.
 func fieldtag(field, tag string) string {
-	sfield, ok := cfgtype.FieldByName(field)
-	if !ok {
-		panic("unknown struct field")
+	nextType := cfgtype
+	var sfield reflect.StructField
+	for _, field := range strings.Split(field, ".") {
+		var ok bool
+		sfield, ok = nextType.FieldByName(field)
+		if !ok {
+			panic("unknown struct field")
+		}
+		nextType = sfield.Type
 	}
 	return sfield.Tag.Get(tag)
 }
@@ -44,23 +49,27 @@ func fieldtag(field, tag string) string {
 //
 // Please note that if you update this struct's fields or tags, you
 // will need to regenerate the global Getter/Setter helpers by running:
-// `go run ./internal/config/gen/ -out ./internal/config/helpers.gen.go`
+// `go run ./internal/config/gen/ -out ./internal/config/helpers.gen.go`.
+//
+// You will need to have gofumpt installed in order for this to work:
+// https://github.com/mvdan/gofumpt.
 type Configuration struct {
-	LogLevel           string   `name:"log-level" usage:"Log level to run at: [trace, debug, info, warn, fatal]"`
-	LogTimestampFormat string   `name:"log-timestamp-format" usage:"Format to use for the log timestamp, as supported by Go's time.Layout"`
-	LogDbQueries       bool     `name:"log-db-queries" usage:"Log database queries verbosely when log-level is trace or debug"`
-	LogClientIP        bool     `name:"log-client-ip" usage:"Include the client IP in logs"`
-	ApplicationName    string   `name:"application-name" usage:"Name of the application, used in various places internally"`
-	LandingPageUser    string   `name:"landing-page-user" usage:"the user that should be shown on the instance's landing page"`
-	ConfigPath         string   `name:"config-path" usage:"Path to a file containing gotosocial configuration. Values set in this file will be overwritten by values set as env vars or arguments"`
-	Host               string   `name:"host" usage:"Hostname to use for the server (eg., example.org, gotosocial.whatever.com). DO NOT change this on a server that's already run!"`
-	AccountDomain      string   `name:"account-domain" usage:"Domain to use in account names (eg., example.org, whatever.com). If not set, will default to the setting for host. DO NOT change this on a server that's already run!"`
-	Protocol           string   `name:"protocol" usage:"Protocol to use for the REST api of the server (only use http if you are debugging or behind a reverse proxy!)"`
-	BindAddress        string   `name:"bind-address" usage:"Bind address to use for the GoToSocial server (eg., 0.0.0.0, 172.138.0.9, [::], localhost). For ipv6, enclose the address in square brackets, eg [2001:db8::fed1]. Default binds to all interfaces."`
-	Port               int      `name:"port" usage:"Port to use for GoToSocial. Change this to 443 if you're running the binary directly on the host machine."`
-	TrustedProxies     []string `name:"trusted-proxies" usage:"Proxies to trust when parsing x-forwarded headers into real IPs."`
-	SoftwareVersion    string   `name:"software-version" usage:""`
+	LogLevel           string `name:"log-level" usage:"Log level to run at: [trace, debug, info, warn, fatal]"`
+	LogTimestampFormat string `name:"log-timestamp-format" usage:"Format to use for the log timestamp, as supported by Go's time.Layout"`
+	LogDbQueries       bool   `name:"log-db-queries" usage:"Log database queries verbosely when log-level is trace or debug"`
+	LogClientIP        bool   `name:"log-client-ip" usage:"Include the client IP in logs"`
+	RequestIDHeader    string `name:"request-id-header" usage:"Header to extract the Request ID from. Eg.,'X-Request-Id'."`
 
+	ConfigPath                 string        `name:"config-path" usage:"Path to a file containing gotosocial configuration. Values set in this file will be overwritten by values set as env vars or arguments"`
+	ApplicationName            string        `name:"application-name" usage:"Name of the application, used in various places internally"`
+	LandingPageUser            string        `name:"landing-page-user" usage:"the user that should be shown on the instance's landing page"`
+	Host                       string        `name:"host" usage:"Hostname to use for the server (eg., example.org, gotosocial.whatever.com). DO NOT change this on a server that's already run!"`
+	AccountDomain              string        `name:"account-domain" usage:"Domain to use in account names (eg., example.org, whatever.com). If not set, will default to the setting for host. DO NOT change this on a server that's already run!"`
+	Protocol                   string        `name:"protocol" usage:"Protocol to use for the REST api of the server (only use http if you are debugging or behind a reverse proxy!)"`
+	BindAddress                string        `name:"bind-address" usage:"Bind address to use for the GoToSocial server (eg., 0.0.0.0, 172.138.0.9, [::], localhost). For ipv6, enclose the address in square brackets, eg [2001:db8::fed1]. Default binds to all interfaces."`
+	Port                       int           `name:"port" usage:"Port to use for GoToSocial. Change this to 443 if you're running the binary directly on the host machine."`
+	TrustedProxies             []string      `name:"trusted-proxies" usage:"Proxies to trust when parsing x-forwarded headers into real IPs."`
+	SoftwareVersion            string        `name:"software-version" usage:""`
 	DbType                     string        `name:"db-type" usage:"Database type: eg., postgres"`
 	DbAddress                  string        `name:"db-address" usage:"Database ipv4 address, hostname, or filename"`
 	DbPort                     int           `name:"db-port" usage:"Database port"`
@@ -82,8 +91,10 @@ type Configuration struct {
 	InstanceFederationMode            string             `name:"instance-federation-mode" usage:"Set instance federation mode."`
 	InstanceFederationSpamFilter      bool               `name:"instance-federation-spam-filter" usage:"Enable basic spam filter heuristics for messages coming from other instances, and drop messages identified as spam"`
 	InstanceExposePeers               bool               `name:"instance-expose-peers" usage:"Allow unauthenticated users to query /api/v1/instance/peers?filter=open"`
-	InstanceExposeSuspended           bool               `name:"instance-expose-suspended" usage:"Expose suspended instances via web UI, and allow unauthenticated users to query /api/v1/instance/peers?filter=suspended"`
-	InstanceExposeSuspendedWeb        bool               `name:"instance-expose-suspended-web" usage:"Expose list of suspended instances as webpage on /about/suspended"`
+	InstanceExposeBlocklist           bool               `name:"instance-expose-blocklist" usage:"Expose list of blocked domains via web UI, and allow unauthenticated users to query /api/v1/instance/peers?filter=blocked and /api/v1/instance/domain_blocks"`
+	InstanceExposeBlocklistWeb        bool               `name:"instance-expose-blocklist-web" usage:"Expose list of explicitly blocked domains as webpage on /about/domain_blocks"`
+	InstanceExposeAllowlist           bool               `name:"instance-expose-allowlist" usage:"Expose list of allowed domains via web UI, and allow unauthenticated users to query /api/v1/instance/peers?filter=allowed and /api/v1/instance/domain_allows"`
+	InstanceExposeAllowlistWeb        bool               `name:"instance-expose-allowlist-web" usage:"Expose list of explicitly allowed domains as webpage on /about/domain_allows"`
 	InstanceExposePublicTimeline      bool               `name:"instance-expose-public-timeline" usage:"Allow unauthenticated users to query /api/v1/timelines/public"`
 	InstanceDeliverToSharedInboxes    bool               `name:"instance-deliver-to-shared-inboxes" usage:"Deliver federated messages to shared inboxes, if they're available."`
 	InstanceInjectMastodonVersion     bool               `name:"instance-inject-mastodon-version" usage:"This injects a Mastodon compatible version in /api/v1/instance to help Mastodon clients that use that version for feature detection"`
@@ -91,11 +102,15 @@ type Configuration struct {
 	InstanceSubscriptionsProcessFrom  string             `name:"instance-subscriptions-process-from" usage:"Time of day from which to start running instance subscriptions processing jobs. Should be in the format 'hh:mm:ss', eg., '15:04:05'."`
 	InstanceSubscriptionsProcessEvery time.Duration      `name:"instance-subscriptions-process-every" usage:"Period to elapse between instance subscriptions processing jobs, starting from instance-subscriptions-process-from."`
 	InstanceStatsMode                 string             `name:"instance-stats-mode" usage:"Allows you to customize the way stats are served to crawlers: one of '', 'serve', 'zero', 'baffle'. Home page stats remain unchanged."`
+	InstanceAllowBackdatingStatuses   bool               `name:"instance-allow-backdating-statuses" usage:"Allow local accounts to backdate statuses using the scheduled_at param to /api/v1/statuses"`
 
-	AccountsRegistrationOpen bool `name:"accounts-registration-open" usage:"Allow anyone to submit an account signup request. If false, server will be invite-only."`
-	AccountsReasonRequired   bool `name:"accounts-reason-required" usage:"Do new account signups require a reason to be submitted on registration?"`
-	AccountsAllowCustomCSS   bool `name:"accounts-allow-custom-css" usage:"Allow accounts to enable custom CSS for their profile pages and statuses."`
-	AccountsCustomCSSLength  int  `name:"accounts-custom-css-length" usage:"Maximum permitted length (characters) of custom CSS for accounts."`
+	AccountsRegistrationOpen         bool `name:"accounts-registration-open" usage:"Allow anyone to submit an account signup request. If false, server will be invite-only."`
+	AccountsReasonRequired           bool `name:"accounts-reason-required" usage:"Do new account signups require a reason to be submitted on registration?"`
+	AccountsRegistrationDailyLimit   int  `name:"accounts-registration-daily-limit" usage:"Limit amount of approved account sign-ups allowed per 24hrs before registration is closed. 0 or less = no limit."`
+	AccountsRegistrationBacklogLimit int  `name:"accounts-registration-backlog-limit" usage:"Limit how big the 'accounts pending approval' queue can grow before registration is closed. 0 or less = no limit."`
+	AccountsAllowCustomCSS           bool `name:"accounts-allow-custom-css" usage:"Allow accounts to enable custom CSS for their profile pages and statuses."`
+	AccountsCustomCSSLength          int  `name:"accounts-custom-css-length" usage:"Maximum permitted length (characters) of custom CSS for accounts."`
+	AccountsMaxProfileFields         int  `name:"accounts-max-profile-fields" usage:"Maximum number of profile fields allowed for each account."`
 
 	MediaDescriptionMinChars int           `name:"media-description-min-chars" usage:"Min required chars for an image description"`
 	MediaDescriptionMaxChars int           `name:"media-description-max-chars" usage:"Max permitted chars for an image description"`
@@ -110,15 +125,16 @@ type Configuration struct {
 	MediaCleanupEvery        time.Duration `name:"media-cleanup-every" usage:"Period to elapse between cleanups, starting from media-cleanup-at."`
 	MediaFfmpegPoolSize      int           `name:"media-ffmpeg-pool-size" usage:"Number of instances of the embedded ffmpeg WASM binary to add to the media processing pool. 0 or less uses GOMAXPROCS."`
 
-	StorageBackend       string `name:"storage-backend" usage:"Storage backend to use for media attachments"`
-	StorageLocalBasePath string `name:"storage-local-base-path" usage:"Full path to an already-created directory where gts should store/retrieve media files. Subfolders will be created within this dir."`
-	StorageS3Endpoint    string `name:"storage-s3-endpoint" usage:"S3 Endpoint URL (e.g 'minio.example.org:9000')"`
-	StorageS3AccessKey   string `name:"storage-s3-access-key" usage:"S3 Access Key"`
-	StorageS3SecretKey   string `name:"storage-s3-secret-key" usage:"S3 Secret Key"`
-	StorageS3UseSSL      bool   `name:"storage-s3-use-ssl" usage:"Use SSL for S3 connections. Only set this to 'false' when testing locally"`
-	StorageS3BucketName  string `name:"storage-s3-bucket" usage:"Place blobs in this bucket"`
-	StorageS3Proxy       bool   `name:"storage-s3-proxy" usage:"Proxy S3 contents through GoToSocial instead of redirecting to a presigned URL"`
-	StorageS3RedirectURL string `name:"storage-s3-redirect-url" usage:"Custom URL to use for redirecting S3 media links. If set, this will be used instead of the S3 bucket URL."`
+	StorageBackend        string `name:"storage-backend" usage:"Storage backend to use for media attachments"`
+	StorageLocalBasePath  string `name:"storage-local-base-path" usage:"Full path to an already-created directory where gts should store/retrieve media files. Subfolders will be created within this dir."`
+	StorageS3Endpoint     string `name:"storage-s3-endpoint" usage:"S3 Endpoint URL (e.g 'minio.example.org:9000')"`
+	StorageS3AccessKey    string `name:"storage-s3-access-key" usage:"S3 Access Key"`
+	StorageS3SecretKey    string `name:"storage-s3-secret-key" usage:"S3 Secret Key"`
+	StorageS3UseSSL       bool   `name:"storage-s3-use-ssl" usage:"Use SSL for S3 connections. Only set this to 'false' when testing locally"`
+	StorageS3BucketName   string `name:"storage-s3-bucket" usage:"Place blobs in this bucket"`
+	StorageS3Proxy        bool   `name:"storage-s3-proxy" usage:"Proxy S3 contents through GoToSocial instead of redirecting to a presigned URL"`
+	StorageS3RedirectURL  string `name:"storage-s3-redirect-url" usage:"Custom URL to use for redirecting S3 media links. If set, this will be used instead of the S3 bucket URL."`
+	StorageS3BucketLookup string `name:"storage-s3-bucket-lookup" usage:"S3 bucket lookup type to use. Can be 'auto', 'dns' or 'path'. Defaults to 'auto'."`
 
 	StatusesMaxChars           int `name:"statuses-max-chars" usage:"Max permitted characters for posted statuses, including content warning"`
 	StatusesPollMaxOptions     int `name:"statuses-poll-max-options" usage:"Max amount of options permitted on a poll"`
@@ -143,16 +159,8 @@ type Configuration struct {
 	OIDCLinkExisting     bool     `name:"oidc-link-existing" usage:"link existing user accounts to OIDC logins based on the stored email value"`
 	OIDCAllowedGroups    []string `name:"oidc-allowed-groups" usage:"Membership of one of the listed groups allows access to GtS. If this is empty, all groups are allowed."`
 	OIDCAdminGroups      []string `name:"oidc-admin-groups" usage:"Membership of one of the listed groups makes someone a GtS admin"`
-
-	TracingEnabled           bool   `name:"tracing-enabled" usage:"Enable OTLP Tracing"`
-	TracingTransport         string `name:"tracing-transport" usage:"grpc or http"`
-	TracingEndpoint          string `name:"tracing-endpoint" usage:"Endpoint of your trace collector. Eg., 'localhost:4317' for gRPC, 'localhost:4318' for http"`
-	TracingInsecureTransport bool   `name:"tracing-insecure-transport" usage:"Disable TLS for the gRPC or HTTP transport protocol"`
-
-	MetricsEnabled      bool   `name:"metrics-enabled" usage:"Enable OpenTelemetry based metrics support."`
-	MetricsAuthEnabled  bool   `name:"metrics-auth-enabled" usage:"Enable HTTP Basic Authentication for Prometheus metrics endpoint"`
-	MetricsAuthUsername string `name:"metrics-auth-username" usage:"Username for Prometheus metrics endpoint"`
-	MetricsAuthPassword string `name:"metrics-auth-password" usage:"Password for Prometheus metrics endpoint"`
+	TracingEnabled       bool     `name:"tracing-enabled" usage:"Enable OTLP Tracing"`
+	MetricsEnabled       bool     `name:"metrics-enabled" usage:"Enable OpenTelemetry based metrics support."`
 
 	SMTPHost               string `name:"smtp-host" usage:"Host of the smtp server. Eg., 'smtp.eu.mailgun.org'"`
 	SMTPPort               int    `name:"smtp-port" usage:"Port of the smtp server. Eg., 587"`
@@ -165,15 +173,8 @@ type Configuration struct {
 	SyslogProtocol string `name:"syslog-protocol" usage:"Protocol to use when directing logs to syslog. Leave empty to connect to local syslog."`
 	SyslogAddress  string `name:"syslog-address" usage:"Address:port to send syslog logs to. Leave empty to connect to local syslog."`
 
-	AdvancedCookiesSamesite           string         `name:"advanced-cookies-samesite" usage:"'strict' or 'lax', see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie/SameSite"`
-	AdvancedRateLimitRequests         int            `name:"advanced-rate-limit-requests" usage:"Amount of HTTP requests to permit within a 5 minute window. 0 or less turns rate limiting off."`
-	AdvancedRateLimitExceptions       []string       `name:"advanced-rate-limit-exceptions" usage:"Slice of CIDRs to exclude from rate limit restrictions."`
-	AdvancedRateLimitExceptionsParsed []netip.Prefix `name:"advanced-rate-limit-exceptions-parsed"`
-	AdvancedThrottlingMultiplier      int            `name:"advanced-throttling-multiplier" usage:"Multiplier to use per cpu for http request throttling. 0 or less turns throttling off."`
-	AdvancedThrottlingRetryAfter      time.Duration  `name:"advanced-throttling-retry-after" usage:"Retry-After duration response to send for throttled requests."`
-	AdvancedSenderMultiplier          int            `name:"advanced-sender-multiplier" usage:"Multiplier to use per cpu for batching outgoing fedi messages. 0 or less turns batching off (not recommended)."`
-	AdvancedCSPExtraURIs              []string       `name:"advanced-csp-extra-uris" usage:"Additional URIs to allow when building content-security-policy for media + images."`
-	AdvancedHeaderFilterMode          string         `name:"advanced-header-filter-mode" usage:"Set incoming request header filtering mode."`
+	// Advanced flags.
+	Advanced AdvancedConfig `name:"advanced"`
 
 	// HTTPClient configuration vars.
 	HTTPClient HTTPClientConfiguration `name:"http-client"`
@@ -182,15 +183,13 @@ type Configuration struct {
 	Cache CacheConfiguration `name:"cache"`
 
 	// TODO: move these elsewhere, these are more ephemeral vs long-running flags like above
-	AdminAccountUsername     string `name:"username" usage:"the username to create/delete/etc"`
-	AdminAccountEmail        string `name:"email" usage:"the email address of this account"`
-	AdminAccountPassword     string `name:"password" usage:"the password to set for this account"`
-	AdminTransPath           string `name:"path" usage:"the path of the file to import from/export to"`
-	AdminMediaPruneDryRun    bool   `name:"dry-run" usage:"perform a dry run and only log number of items eligible for pruning"`
-	AdminMediaListLocalOnly  bool   `name:"local-only" usage:"list only local attachments/emojis; if specified then remote-only cannot also be true"`
-	AdminMediaListRemoteOnly bool   `name:"remote-only" usage:"list only remote attachments/emojis; if specified then local-only cannot also be true"`
-
-	RequestIDHeader string `name:"request-id-header" usage:"Header to extract the Request ID from. Eg.,'X-Request-Id'."`
+	AdminAccountUsername     string `name:"username" usage:"the username to create/delete/etc" ephemeral:"yes"`
+	AdminAccountEmail        string `name:"email" usage:"the email address of this account" ephemeral:"yes"`
+	AdminAccountPassword     string `name:"password" usage:"the password to set for this account" ephemeral:"yes"`
+	AdminTransPath           string `name:"path" usage:"the path of the file to import from/export to" ephemeral:"yes"`
+	AdminMediaPruneDryRun    bool   `name:"dry-run" usage:"perform a dry run and only log number of items eligible for pruning" ephemeral:"yes"`
+	AdminMediaListLocalOnly  bool   `name:"local-only" usage:"list only local attachments/emojis; if specified then remote-only cannot also be true" ephemeral:"yes"`
+	AdminMediaListRemoteOnly bool   `name:"remote-only" usage:"list only remote attachments/emojis; if specified then local-only cannot also be true" ephemeral:"yes"`
 }
 
 type HTTPClientConfiguration struct {
@@ -260,15 +259,27 @@ type CacheConfiguration struct {
 	VisibilityMemRatio                    float64       `name:"visibility-mem-ratio"`
 }
 
-// MarshalMap will marshal current Configuration into a map structure (useful for JSON/TOML/YAML).
-func (cfg *Configuration) MarshalMap() (map[string]interface{}, error) {
-	var dst map[string]interface{}
-	dec, _ := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
-		TagName: "name",
-		Result:  &dst,
-	})
-	if err := dec.Decode(cfg); err != nil {
-		return nil, err
-	}
-	return dst, nil
+type AdvancedConfig struct {
+	CookiesSamesite   string                  `name:"cookies-samesite" usage:"'strict' or 'lax', see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie/SameSite"`
+	SenderMultiplier  int                     `name:"sender-multiplier" usage:"Multiplier to use per cpu for batching outgoing fedi messages. 0 or less turns batching off (not recommended)."`
+	CSPExtraURIs      []string                `name:"csp-extra-uris" usage:"Additional URIs to allow when building content-security-policy for media + images."`
+	HeaderFilterMode  string                  `name:"header-filter-mode" usage:"Set incoming request header filtering mode."`
+	RateLimit         RateLimitConfig         `name:"rate-limit"`
+	Throttling        ThrottlingConfig        `name:"throttling"`
+	ScraperDeterrence ScraperDeterrenceConfig `name:"scraper-deterrence"`
+}
+
+type RateLimitConfig struct {
+	Requests   int        `name:"requests"   usage:"Amount of HTTP requests to permit within a 5 minute window. 0 or less turns rate limiting off."`
+	Exceptions IPPrefixes `name:"exceptions" usage:"Slice of CIDRs to exclude from rate limit restrictions."`
+}
+
+type ThrottlingConfig struct {
+	Multiplier int           `name:"multiplier"  usage:"Multiplier to use per cpu for http request throttling. 0 or less turns throttling off."`
+	RetryAfter time.Duration `name:"retry-after" usage:"Retry-After duration response to send for throttled requests."`
+}
+
+type ScraperDeterrenceConfig struct {
+	Enabled    bool  `name:"enabled"    usage:"Enable proof-of-work based scraper deterrence on profile / status pages"`
+	Difficulty uint8 `name:"difficulty" usage:"The proof-of-work difficulty, which determines how many leading zeros to try solve in hash solutions."`
 }

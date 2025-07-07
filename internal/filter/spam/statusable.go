@@ -24,16 +24,16 @@ import (
 	"slices"
 	"strings"
 
+	"code.superseriousbusiness.org/gotosocial/internal/ap"
+	"code.superseriousbusiness.org/gotosocial/internal/config"
+	"code.superseriousbusiness.org/gotosocial/internal/db"
+	"code.superseriousbusiness.org/gotosocial/internal/gtscontext"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/log"
+	"code.superseriousbusiness.org/gotosocial/internal/regexes"
+	"code.superseriousbusiness.org/gotosocial/internal/util"
 	"github.com/miekg/dns"
-	"github.com/superseriousbusiness/gotosocial/internal/ap"
-	"github.com/superseriousbusiness/gotosocial/internal/config"
-	"github.com/superseriousbusiness/gotosocial/internal/db"
-	"github.com/superseriousbusiness/gotosocial/internal/gtscontext"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/log"
-	"github.com/superseriousbusiness/gotosocial/internal/regexes"
-	"github.com/superseriousbusiness/gotosocial/internal/util"
 )
 
 // preppedMention represents a partially-parsed
@@ -142,7 +142,14 @@ func (f *Filter) StatusableOK(
 	}
 
 	// HEURISTIC 6: Are there any media attachments?
-	attachments, _ := ap.ExtractAttachments(statusable)
+	attachments, err := ap.ExtractAttachments(statusable)
+	if err != nil {
+		log.Warnf(ctx,
+			"error(s) extracting attachments for %s: %v",
+			ap.GetJSONLDId(statusable), err,
+		)
+	}
+
 	hasAttachments := len(attachments) != 0
 	if hasAttachments {
 		err := errors.New("status has attachment(s)")
@@ -375,7 +382,7 @@ func (f *Filter) errantLinks(
 	}
 
 	// Find + parse every http/https link in the status.
-	rawLinks := regexes.LinkScheme.FindAllString(concat, -1)
+	rawLinks := regexes.URLLike.FindAllString(concat, -1)
 	links := make([]preppedLink, 0, len(rawLinks))
 	for _, rawLink := range rawLinks {
 		linkURI, err := url.Parse(rawLink)

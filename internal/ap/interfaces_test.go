@@ -18,8 +18,8 @@
 package ap_test
 
 import (
-	"github.com/superseriousbusiness/activity/streams/vocab"
-	"github.com/superseriousbusiness/gotosocial/internal/ap"
+	"code.superseriousbusiness.org/activity/streams/vocab"
+	"code.superseriousbusiness.org/gotosocial/internal/ap"
 )
 
 var (

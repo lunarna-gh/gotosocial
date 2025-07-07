@@ -22,13 +22,13 @@ import (
 	"errors"
 	"slices"
 
-	"github.com/superseriousbusiness/gotosocial/internal/db"
-	"github.com/superseriousbusiness/gotosocial/internal/gtscontext"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/log"
-	"github.com/superseriousbusiness/gotosocial/internal/state"
-	"github.com/superseriousbusiness/gotosocial/internal/util/xslices"
+	"code.superseriousbusiness.org/gotosocial/internal/db"
+	"code.superseriousbusiness.org/gotosocial/internal/gtscontext"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/log"
+	"code.superseriousbusiness.org/gotosocial/internal/state"
+	"code.superseriousbusiness.org/gotosocial/internal/util/xslices"
 	"github.com/uptrace/bun"
 )
 
@@ -54,6 +54,39 @@ func (m *mentionDB) GetMention(ctx context.Context, id string) (*gtsmodel.Mentio
 	}, id)
 	if err != nil {
 		return nil, err
+	}
+
+	// Further populate the mention fields where applicable.
+	if err := m.PopulateMention(ctx, mention); err != nil {
+		return nil, err
+	}
+
+	return mention, nil
+}
+
+func (m *mentionDB) GetMentionByTargetAcctStatus(
+	ctx context.Context,
+	targetAcctID string,
+	statusID string,
+) (*gtsmodel.Mention, error) {
+	// Get the status first.
+	status, err := m.state.DB.GetStatusByID(ctx, statusID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Populate mentions if necessary.
+	if !status.MentionsPopulated() {
+		status.Mentions, err = m.GetMentions(ctx, status.MentionIDs)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// See if the mention is there.
+	mention, ok := status.GetMentionByTargetID(targetAcctID)
+	if !ok {
+		return nil, db.ErrNoEntries
 	}
 
 	// Further populate the mention fields where applicable.

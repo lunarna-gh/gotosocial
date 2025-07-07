@@ -10,7 +10,7 @@ GoToSocial
 
 > Website / wiki
 
-https://github.com/superseriousbusiness/gotosocial / https://docs.gotosocial.org
+https://codeberg.org/superseriousbusiness/gotosocial / https://docs.gotosocial.org
 
 > Abstract: Can you explain the whole project and its expected outcome(s). (you have 1200 characters)
 
@@ -20,7 +20,7 @@ GtS emphasizes user safety and privacy. Unlike other AP servers, it always requi
 
 GtS values ease of deployment and maintenance; this means low system requirements, simple configuration, minimal external dependencies, and clear documentation. GtS makes it easy + affordable for self-hosting newcomers to set up a Fediverse server on low- (or even solar-) powered equipment they might have lying around at home.
 
-GtS began development in Feb 2021. It is still in Alpha, and we hope to use NLNet funding to bring it up to the Beta phase. The project roadmap (https://github.com/superseriousbusiness/gotosocial/blob/main/ROADMAP.md) gives more information on what we have planned.
+GtS began development in Feb 2021. It is still in Alpha, and we hope to use NLNet funding to bring it up to the Beta phase. The project roadmap (https://codeberg.org/superseriousbusiness/gotosocial/src/branch/main/ROADMAP.md) gives more information on what we have planned.
 
 > Have you been involved with projects or organisations relevant to this project before? And if so, can you tell us a bit about your contributions? (Optional) This can help us determine if you are the right person to undertake this effort.
 
@@ -45,7 +45,7 @@ Aside from GoToSocial, I've also made small PRs upstream to the ActivityPub libr
 
 Currently, GoToSocial receives about €22/week from LiberaPay donations - https://liberapay.com/gotosocial. I have been paying my own costs for working on the project from my savings, which is unfortunately not sustainable for a lot longer.
 
-The requested NLNet budget will be used to fund the remaining Alpha portion of development, and bring GoToSocial into the Beta phase (see the roadmap - https://github.com/superseriousbusiness/gotosocial/blob/main/ROADMAP.md). In practical terms, this means paying myself to work full time on the project for one year, and paying for contributions from other developers as well.
+The requested NLNet budget will be used to fund the remaining Alpha portion of development, and bring GoToSocial into the Beta phase (see the roadmap - https://codeberg.org/superseriousbusiness/gotosocial/src/branch/main/ROADMAP.md). In practical terms, this means paying myself to work full time on the project for one year, and paying for contributions from other developers as well.
 
 To pay my living costs + rent I need to make about €2,000/month after tax, working full time. In Belgium, that equates to about €3,000/month, which is €36,000 for one year of work. Naively calculated at 40 hours / week, that's €18.75 per hour.
 
@@ -83,8 +83,8 @@ Thirdly, we want to make GtS as customizable as possible by allowing admins to e
 
 The main technical challenges we foresee on the project are:
 
-1. Ensuring compatibility with other AP servers (see here: https://github.com/superseriousbusiness/gotosocial/projects/4).
-2. Ensuring compatibility with clients that use the Mastodon API (see here: https://github.com/superseriousbusiness/gotosocial/projects/5).
+1. Ensuring compatibility with other AP servers (see here: https://codeberg.org/superseriousbusiness/gotosocial/projects/4).
+2. Ensuring compatibility with clients that use the Mastodon API (see here: https://codeberg.org/superseriousbusiness/gotosocial/projects/5).
 3. Designing nuanced federation safety features that allow instance admins to screen federation without totally breaking it. This will require careful design discussions and lots of testing.
 4. Implementing our own open-source http signature library with a reference implementation of the latest draft of the http signature proposal: https://httpwg.org/http-extensions/draft-ietf-httpbis-message-signatures.html.
 5. Writing + maintaining our own extensions to the AP protocol (see below).

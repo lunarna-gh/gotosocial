@@ -26,34 +26,45 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/superseriousbusiness/activity/pub"
-	"github.com/superseriousbusiness/activity/streams"
-	"github.com/superseriousbusiness/activity/streams/vocab"
-	"github.com/superseriousbusiness/gotosocial/internal/ap"
-	"github.com/superseriousbusiness/gotosocial/internal/config"
-	"github.com/superseriousbusiness/gotosocial/internal/db"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/log"
-	"github.com/superseriousbusiness/gotosocial/internal/uris"
-	"github.com/superseriousbusiness/gotosocial/internal/util"
-	"github.com/superseriousbusiness/gotosocial/internal/util/xslices"
+	"code.superseriousbusiness.org/activity/pub"
+	"code.superseriousbusiness.org/activity/streams"
+	"code.superseriousbusiness.org/activity/streams/vocab"
+	"code.superseriousbusiness.org/gotosocial/internal/ap"
+	"code.superseriousbusiness.org/gotosocial/internal/config"
+	"code.superseriousbusiness.org/gotosocial/internal/db"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/log"
+	"code.superseriousbusiness.org/gotosocial/internal/uris"
+	"code.superseriousbusiness.org/gotosocial/internal/util/xslices"
 )
 
-// AccountToAS converts a gts model account
-// into an activity streams person or service.
+func accountableForActorType(actorType gtsmodel.AccountActorType) ap.Accountable {
+	switch actorType {
+	case gtsmodel.AccountActorTypeApplication:
+		return streams.NewActivityStreamsApplication()
+	case gtsmodel.AccountActorTypeGroup:
+		return streams.NewActivityStreamsGroup()
+	case gtsmodel.AccountActorTypeOrganization:
+		return streams.NewActivityStreamsOrganization()
+	case gtsmodel.AccountActorTypePerson:
+		return streams.NewActivityStreamsPerson()
+	case gtsmodel.AccountActorTypeService:
+		return streams.NewActivityStreamsService()
+	default:
+		panic("invalid actor type")
+	}
+}
+
+// AccountToAS converts a gts model
+// account into an accountable.
 func (c *Converter) AccountToAS(
 	ctx context.Context,
 	a *gtsmodel.Account,
 ) (ap.Accountable, error) {
-	// accountable is a service if this
-	// is a bot account, otherwise a person.
-	var accountable ap.Accountable
-	if util.PtrOrZero(a.Bot) {
-		accountable = streams.NewActivityStreamsService()
-	} else {
-		accountable = streams.NewActivityStreamsPerson()
-	}
+	// Use appropriate underlying
+	// actor type of accountable.
+	accountable := accountableForActorType(a.ActorType)
 
 	// id should be the activitypub URI of this user
 	// something like https://example.org/users/example_user
@@ -390,14 +401,9 @@ func (c *Converter) AccountToASMinimal(
 	ctx context.Context,
 	a *gtsmodel.Account,
 ) (ap.Accountable, error) {
-	// accountable is a service if this
-	// is a bot account, otherwise a person.
-	var accountable ap.Accountable
-	if util.PtrOrZero(a.Bot) {
-		accountable = streams.NewActivityStreamsService()
-	} else {
-		accountable = streams.NewActivityStreamsPerson()
-	}
+	// Use appropriate underlying
+	// actor type of accountable.
+	accountable := accountableForActorType(a.ActorType)
 
 	// id should be the activitypub URI of this user
 	// something like https://example.org/users/example_user
@@ -672,22 +678,9 @@ func (c *Converter) StatusToAS(ctx context.Context, s *gtsmodel.Status) (ap.Stat
 	status.SetActivityStreamsContent(contentProp)
 
 	// attachments
-	attachmentProp := streams.NewActivityStreamsAttachmentProperty()
-	attachments := s.Attachments
-	if len(s.AttachmentIDs) != len(attachments) {
-		attachments, err = c.state.DB.GetAttachmentsByIDs(ctx, s.AttachmentIDs)
-		if err != nil {
-			return nil, gtserror.Newf("error getting attachments from database: %w", err)
-		}
+	if err := c.attachAttachments(ctx, s, status); err != nil {
+		return nil, gtserror.Newf("error attaching attachments: %w", err)
 	}
-	for _, a := range attachments {
-		doc, err := c.AttachmentToAS(ctx, a)
-		if err != nil {
-			return nil, gtserror.Newf("error converting attachment: %w", err)
-		}
-		attachmentProp.AppendActivityStreamsDocument(doc)
-	}
-	status.SetActivityStreamsAttachment(attachmentProp)
 
 	// replies
 	repliesCollection, err := c.StatusToASRepliesCollection(ctx, s, false)
@@ -705,35 +698,38 @@ func (c *Converter) StatusToAS(ctx context.Context, s *gtsmodel.Status) (ap.Stat
 	status.SetActivityStreamsSensitive(sensitiveProp)
 
 	// interactionPolicy
-	var p *gtsmodel.InteractionPolicy
-	if s.InteractionPolicy != nil {
-		// Use InteractionPolicy
-		// set on the status.
-		p = s.InteractionPolicy
-	} else {
-		// Fall back to default policy
-		// for the status's visibility.
-		p = gtsmodel.DefaultInteractionPolicyFor(s.Visibility)
-	}
-	policy, err := c.InteractionPolicyToASInteractionPolicy(ctx, p, s)
-	if err != nil {
-		return nil, fmt.Errorf("error creating interactionPolicy: %w", err)
-	}
-
-	policyProp := streams.NewGoToSocialInteractionPolicyProperty()
-	policyProp.AppendGoToSocialInteractionPolicy(policy)
-	status.SetGoToSocialInteractionPolicy(policyProp)
-
-	// Parse + set approvedBy.
-	if s.ApprovedByURI != "" {
-		approvedBy, err := url.Parse(s.ApprovedByURI)
+	if ipa, ok := status.(ap.InteractionPolicyAware); ok {
+		var p *gtsmodel.InteractionPolicy
+		if s.InteractionPolicy != nil {
+			// Use InteractionPolicy
+			// set on the status.
+			p = s.InteractionPolicy
+		} else {
+			// Fall back to default policy
+			// for the status's visibility.
+			p = gtsmodel.DefaultInteractionPolicyFor(s.Visibility)
+		}
+		policy, err := c.InteractionPolicyToASInteractionPolicy(ctx, p, s)
 		if err != nil {
-			return nil, fmt.Errorf("error parsing approvedBy: %w", err)
+			return nil, fmt.Errorf("error creating interactionPolicy: %w", err)
 		}
 
-		approvedByProp := streams.NewGoToSocialApprovedByProperty()
-		approvedByProp.Set(approvedBy)
-		status.SetGoToSocialApprovedBy(approvedByProp)
+		// Set interaction policy.
+		policyProp := streams.NewGoToSocialInteractionPolicyProperty()
+		policyProp.AppendGoToSocialInteractionPolicy(policy)
+		ipa.SetGoToSocialInteractionPolicy(policyProp)
+
+		// Parse + set approvedBy.
+		if s.ApprovedByURI != "" {
+			approvedBy, err := url.Parse(s.ApprovedByURI)
+			if err != nil {
+				return nil, fmt.Errorf("error parsing approvedBy: %w", err)
+			}
+
+			approvedByProp := streams.NewGoToSocialApprovedByProperty()
+			approvedByProp.Set(approvedBy)
+			ipa.SetGoToSocialApprovedBy(approvedByProp)
+		}
 	}
 
 	return status, nil
@@ -1121,39 +1117,94 @@ func (c *Converter) EmojiToAS(ctx context.Context, e *gtsmodel.Emoji) (vocab.Too
 	return emoji, nil
 }
 
-// AttachmentToAS converts a gts model media attachment into an activity streams Attachment, suitable for federation
-func (c *Converter) AttachmentToAS(ctx context.Context, a *gtsmodel.MediaAttachment) (vocab.ActivityStreamsDocument, error) {
-	// type -- Document
-	doc := streams.NewActivityStreamsDocument()
-
-	// mediaType aka mime content type
-	mediaTypeProp := streams.NewActivityStreamsMediaTypeProperty()
-	mediaTypeProp.Set(a.File.ContentType)
-	doc.SetActivityStreamsMediaType(mediaTypeProp)
-
-	// url -- for the original image not the thumbnail
-	urlProp := streams.NewActivityStreamsUrlProperty()
-	imageURL, err := url.Parse(a.URL)
-	if err != nil {
-		return nil, fmt.Errorf("AttachmentToAS: error parsing uri %s: %s", a.URL, err)
+// attachAttachments converts the attachments on the given status
+// into Attachmentables, and appends them to the given Statusable.
+func (c *Converter) attachAttachments(
+	ctx context.Context,
+	s *gtsmodel.Status,
+	statusable ap.Statusable,
+) error {
+	// Ensure status attachments populated.
+	if len(s.AttachmentIDs) != len(s.Attachments) {
+		var err error
+		s.Attachments, err = c.state.DB.GetAttachmentsByIDs(ctx, s.AttachmentIDs)
+		if err != nil && !errors.Is(err, db.ErrNoEntries) {
+			return gtserror.Newf("db error getting attachments: %w", err)
+		}
 	}
-	urlProp.AppendIRI(imageURL)
-	doc.SetActivityStreamsUrl(urlProp)
 
-	// name -- aka image description
-	nameProp := streams.NewActivityStreamsNameProperty()
-	nameProp.AppendXMLSchemaString(a.Description)
-	doc.SetActivityStreamsName(nameProp)
+	// Prepare attachment property.
+	attachmentProp := streams.NewActivityStreamsAttachmentProperty()
+	defer statusable.SetActivityStreamsAttachment(attachmentProp)
 
-	// blurhash
-	blurProp := streams.NewTootBlurhashProperty()
-	blurProp.Set(a.Blurhash)
-	doc.SetTootBlurhash(blurProp)
+	for _, a := range s.Attachments {
 
-	// focalpoint
-	// TODO
+		// Use appropriate vocab.Type and
+		// append function for this attachment.
+		var (
+			attachmentable ap.Attachmentable
+			append         func()
+		)
+		switch a.Type {
 
-	return doc, nil
+		// png, gif, webp, jpeg, etc.
+		case gtsmodel.FileTypeImage:
+			t := streams.NewActivityStreamsImage()
+			attachmentable = t
+			append = func() { attachmentProp.AppendActivityStreamsImage(t) }
+
+		// mp4, m4a, wmv, webm, etc.
+		case gtsmodel.FileTypeVideo, gtsmodel.FileTypeGifv:
+			t := streams.NewActivityStreamsVideo()
+			attachmentable = t
+			append = func() { attachmentProp.AppendActivityStreamsVideo(t) }
+
+		// mp3, flac, ogg, wma, etc.
+		case gtsmodel.FileTypeAudio:
+			t := streams.NewActivityStreamsAudio()
+			attachmentable = t
+			append = func() { attachmentProp.AppendActivityStreamsAudio(t) }
+
+		// Not sure, fall back to Document.
+		default:
+			t := streams.NewActivityStreamsDocument()
+			attachmentable = t
+			append = func() { attachmentProp.AppendActivityStreamsDocument(t) }
+		}
+
+		// `mediaType` ie., mime content type.
+		ap.SetMediaType(attachmentable, a.File.ContentType)
+
+		// URL of the media file.
+		imageURL, err := url.Parse(a.URL)
+		if err != nil {
+			return gtserror.Newf("error parsing attachment url: %w", err)
+		}
+		ap.AppendURL(attachmentable, imageURL)
+
+		// `summary` ie., media description / alt text
+		ap.AppendSummary(attachmentable, a.Description)
+
+		// `blurhash`
+		ap.SetBlurhash(attachmentable, a.Blurhash)
+
+		// Set `focalPoint` only if necessary.
+		if a.FileMeta.Focus.X != 0 && a.FileMeta.Focus.Y != 0 {
+			if withFocalPoint, ok := attachmentable.(ap.WithFocalPoint); ok {
+				focalPointProp := streams.NewTootFocalPointProperty()
+				focalPointProp.AppendXMLSchemaFloat(float64(a.FileMeta.Focus.X))
+				focalPointProp.AppendXMLSchemaFloat(float64(a.FileMeta.Focus.Y))
+				withFocalPoint.SetTootFocalPoint(focalPointProp)
+			}
+		}
+
+		// Done, append
+		// to Statusable.
+		append()
+	}
+
+	statusable.SetActivityStreamsAttachment(attachmentProp)
+	return nil
 }
 
 // FaveToAS converts a gts model status fave into an activityStreams LIKE, suitable for federation.
@@ -1877,6 +1928,9 @@ func populateValuesForProp[T ap.WithIRI](
 
 // InteractionPolicyToASInteractionPolicy returns a
 // GoToSocial interaction policy suitable for federation.
+//
+// Note: This currently includes deprecated properties `always`
+// and `approvalRequired`. These will be removed in v0.21.0.
 func (c *Converter) InteractionPolicyToASInteractionPolicy(
 	ctx context.Context,
 	interactionPolicy *gtsmodel.InteractionPolicy,
@@ -1891,30 +1945,56 @@ func (c *Converter) InteractionPolicyToASInteractionPolicy(
 	// Build canLike
 	canLike := streams.NewGoToSocialCanLike()
 
-	// Build canLike.always
+	// Build canLike.automaticApproval
+	canLikeAutomaticApprovalProp := streams.NewGoToSocialAutomaticApprovalProperty()
+	if err := populateValuesForProp(
+		canLikeAutomaticApprovalProp,
+		status,
+		interactionPolicy.CanLike.AutomaticApproval,
+	); err != nil {
+		return nil, gtserror.Newf("error setting canLike.automaticApproval: %w", err)
+	}
+
+	// Set canLike.manualApproval
+	canLike.SetGoToSocialAutomaticApproval(canLikeAutomaticApprovalProp)
+
+	// Build canLike.manualApproval
+	canLikeManualApprovalProp := streams.NewGoToSocialManualApprovalProperty()
+	if err := populateValuesForProp(
+		canLikeManualApprovalProp,
+		status,
+		interactionPolicy.CanLike.ManualApproval,
+	); err != nil {
+		return nil, gtserror.Newf("error setting canLike.manualApproval: %w", err)
+	}
+
+	// Set canLike.manualApproval.
+	canLike.SetGoToSocialManualApproval(canLikeManualApprovalProp)
+
+	// deprecated: Build canLike.always
 	canLikeAlwaysProp := streams.NewGoToSocialAlwaysProperty()
 	if err := populateValuesForProp(
 		canLikeAlwaysProp,
 		status,
-		interactionPolicy.CanLike.Always,
+		interactionPolicy.CanLike.AutomaticApproval,
 	); err != nil {
 		return nil, gtserror.Newf("error setting canLike.always: %w", err)
 	}
 
-	// Set canLike.always
+	// deprecated: Set canLike.always
 	canLike.SetGoToSocialAlways(canLikeAlwaysProp)
 
-	// Build canLike.approvalRequired
+	// deprecated: Build canLike.approvalRequired
 	canLikeApprovalRequiredProp := streams.NewGoToSocialApprovalRequiredProperty()
 	if err := populateValuesForProp(
 		canLikeApprovalRequiredProp,
 		status,
-		interactionPolicy.CanLike.WithApproval,
+		interactionPolicy.CanLike.ManualApproval,
 	); err != nil {
 		return nil, gtserror.Newf("error setting canLike.approvalRequired: %w", err)
 	}
 
-	// Set canLike.approvalRequired.
+	// deprecated: Set canLike.approvalRequired.
 	canLike.SetGoToSocialApprovalRequired(canLikeApprovalRequiredProp)
 
 	// Set canLike on the policy.
@@ -1929,30 +2009,56 @@ func (c *Converter) InteractionPolicyToASInteractionPolicy(
 	// Build canReply
 	canReply := streams.NewGoToSocialCanReply()
 
-	// Build canReply.always
+	// Build canReply.automaticApproval
+	canReplyAutomaticApprovalProp := streams.NewGoToSocialAutomaticApprovalProperty()
+	if err := populateValuesForProp(
+		canReplyAutomaticApprovalProp,
+		status,
+		interactionPolicy.CanReply.AutomaticApproval,
+	); err != nil {
+		return nil, gtserror.Newf("error setting canReply.automaticApproval: %w", err)
+	}
+
+	// Set canReply.manualApproval
+	canReply.SetGoToSocialAutomaticApproval(canReplyAutomaticApprovalProp)
+
+	// Build canReply.manualApproval
+	canReplyManualApprovalProp := streams.NewGoToSocialManualApprovalProperty()
+	if err := populateValuesForProp(
+		canReplyManualApprovalProp,
+		status,
+		interactionPolicy.CanReply.ManualApproval,
+	); err != nil {
+		return nil, gtserror.Newf("error setting canReply.manualApproval: %w", err)
+	}
+
+	// Set canReply.manualApproval.
+	canReply.SetGoToSocialManualApproval(canReplyManualApprovalProp)
+
+	// deprecated: Build canReply.always
 	canReplyAlwaysProp := streams.NewGoToSocialAlwaysProperty()
 	if err := populateValuesForProp(
 		canReplyAlwaysProp,
 		status,
-		interactionPolicy.CanReply.Always,
+		interactionPolicy.CanReply.AutomaticApproval,
 	); err != nil {
 		return nil, gtserror.Newf("error setting canReply.always: %w", err)
 	}
 
-	// Set canReply.always
+	// deprecated: Set canReply.always
 	canReply.SetGoToSocialAlways(canReplyAlwaysProp)
 
-	// Build canReply.approvalRequired
+	// deprecated: Build canReply.approvalRequired
 	canReplyApprovalRequiredProp := streams.NewGoToSocialApprovalRequiredProperty()
 	if err := populateValuesForProp(
 		canReplyApprovalRequiredProp,
 		status,
-		interactionPolicy.CanReply.WithApproval,
+		interactionPolicy.CanReply.ManualApproval,
 	); err != nil {
 		return nil, gtserror.Newf("error setting canReply.approvalRequired: %w", err)
 	}
 
-	// Set canReply.approvalRequired.
+	// deprecated: Set canReply.approvalRequired.
 	canReply.SetGoToSocialApprovalRequired(canReplyApprovalRequiredProp)
 
 	// Set canReply on the policy.
@@ -1967,30 +2073,56 @@ func (c *Converter) InteractionPolicyToASInteractionPolicy(
 	// Build canAnnounce
 	canAnnounce := streams.NewGoToSocialCanAnnounce()
 
-	// Build canAnnounce.always
+	// Build canAnnounce.automaticApproval
+	canAnnounceAutomaticApprovalProp := streams.NewGoToSocialAutomaticApprovalProperty()
+	if err := populateValuesForProp(
+		canAnnounceAutomaticApprovalProp,
+		status,
+		interactionPolicy.CanAnnounce.AutomaticApproval,
+	); err != nil {
+		return nil, gtserror.Newf("error setting canAnnounce.automaticApproval: %w", err)
+	}
+
+	// Set canAnnounce.manualApproval
+	canAnnounce.SetGoToSocialAutomaticApproval(canAnnounceAutomaticApprovalProp)
+
+	// Build canAnnounce.manualApproval
+	canAnnounceManualApprovalProp := streams.NewGoToSocialManualApprovalProperty()
+	if err := populateValuesForProp(
+		canAnnounceManualApprovalProp,
+		status,
+		interactionPolicy.CanAnnounce.ManualApproval,
+	); err != nil {
+		return nil, gtserror.Newf("error setting canAnnounce.manualApproval: %w", err)
+	}
+
+	// Set canAnnounce.manualApproval.
+	canAnnounce.SetGoToSocialManualApproval(canAnnounceManualApprovalProp)
+
+	// deprecated: Build canAnnounce.always
 	canAnnounceAlwaysProp := streams.NewGoToSocialAlwaysProperty()
 	if err := populateValuesForProp(
 		canAnnounceAlwaysProp,
 		status,
-		interactionPolicy.CanAnnounce.Always,
+		interactionPolicy.CanAnnounce.AutomaticApproval,
 	); err != nil {
 		return nil, gtserror.Newf("error setting canAnnounce.always: %w", err)
 	}
 
-	// Set canAnnounce.always
+	// deprecated: Set canAnnounce.always
 	canAnnounce.SetGoToSocialAlways(canAnnounceAlwaysProp)
 
-	// Build canAnnounce.approvalRequired
+	// deprecated: Build canAnnounce.approvalRequired
 	canAnnounceApprovalRequiredProp := streams.NewGoToSocialApprovalRequiredProperty()
 	if err := populateValuesForProp(
 		canAnnounceApprovalRequiredProp,
 		status,
-		interactionPolicy.CanAnnounce.WithApproval,
+		interactionPolicy.CanAnnounce.ManualApproval,
 	); err != nil {
 		return nil, gtserror.Newf("error setting canAnnounce.approvalRequired: %w", err)
 	}
 
-	// Set canAnnounce.approvalRequired.
+	// deprecated: Set canAnnounce.approvalRequired.
 	canAnnounce.SetGoToSocialApprovalRequired(canAnnounceApprovalRequiredProp)
 
 	// Set canAnnounce on the policy.

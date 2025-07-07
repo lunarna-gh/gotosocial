@@ -20,11 +20,11 @@ package cache
 import (
 	"sync/atomic"
 
+	"code.superseriousbusiness.org/gotosocial/internal/cache/domain"
+	"code.superseriousbusiness.org/gotosocial/internal/config"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/log"
 	"codeberg.org/gruf/go-structr"
-	"github.com/superseriousbusiness/gotosocial/internal/cache/domain"
-	"github.com/superseriousbusiness/gotosocial/internal/config"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/log"
 )
 
 type DBCaches struct {
@@ -51,9 +51,6 @@ type DBCaches struct {
 
 	// BoostOfIDs provides access to the boost of IDs list database cache.
 	BoostOfIDs SliceCache[string]
-
-	// Client provides access to the gtsmodel Client database cache.
-	Client StructCache[*gtsmodel.Client]
 
 	// Conversation provides access to the gtsmodel Conversation database cache.
 	Conversation StructCache[*gtsmodel.Conversation]
@@ -309,13 +306,8 @@ func (c *Caches) initAccount() {
 		Indices: []structr.IndexConfig{
 			{Fields: "ID"},
 			{Fields: "URI"},
-			{Fields: "URL"},
-			{Fields: "Username,Domain", AllowZero: true},
 			{Fields: "PublicKeyURI"},
-			{Fields: "InboxURI"},
-			{Fields: "OutboxURI"},
-			{Fields: "FollowersURI"},
-			{Fields: "FollowingURI"},
+			{Fields: "Username,Domain", AllowZero: true},
 		},
 		MaxSize:    cap,
 		IgnoreErr:  ignoreErrors,
@@ -487,32 +479,6 @@ func (c *Caches) initBoostOfIDs() {
 	log.Infof(nil, "cache size = %d", cap)
 
 	c.DB.BoostOfIDs.Init(0, cap)
-}
-
-func (c *Caches) initClient() {
-	// Calculate maximum cache size.
-	cap := calculateResultCacheMax(
-		sizeofClient(), // model in-mem size.
-		config.GetCacheClientMemRatio(),
-	)
-
-	log.Infof(nil, "cache size = %d", cap)
-
-	copyF := func(c1 *gtsmodel.Client) *gtsmodel.Client {
-		c2 := new(gtsmodel.Client)
-		*c2 = *c1
-		return c2
-	}
-
-	c.DB.Client.Init(structr.CacheConfig[*gtsmodel.Client]{
-		Indices: []structr.IndexConfig{
-			{Fields: "ID"},
-		},
-		MaxSize:    cap,
-		IgnoreErr:  ignoreErrors,
-		Copy:       copyF,
-		Invalidate: c.OnInvalidateClient,
-	})
 }
 
 func (c *Caches) initConversation() {
@@ -1117,6 +1083,12 @@ func (c *Caches) initMention() {
 		m2.OriginAccount = nil
 		m2.TargetAccount = nil
 
+		// Zero non-db fields.
+		m2.NameString = ""
+		m2.IsNew = false
+		m2.TargetAccountURI = ""
+		m2.TargetAccountURL = ""
+
 		return m2
 	}
 
@@ -1183,7 +1155,7 @@ func (c *Caches) initNotification() {
 	c.DB.Notification.Init(structr.CacheConfig[*gtsmodel.Notification]{
 		Indices: []structr.IndexConfig{
 			{Fields: "ID"},
-			{Fields: "NotificationType,TargetAccountID,OriginAccountID,StatusID", AllowZero: true},
+			{Fields: "NotificationType,TargetAccountID,OriginAccountID,StatusOrEditID", AllowZero: true},
 		},
 		MaxSize:   cap,
 		IgnoreErr: ignoreErrors,

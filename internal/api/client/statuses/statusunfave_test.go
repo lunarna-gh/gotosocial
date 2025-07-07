@@ -26,13 +26,13 @@ import (
 	"strings"
 	"testing"
 
+	"code.superseriousbusiness.org/gotosocial/internal/api/client/statuses"
+	apimodel "code.superseriousbusiness.org/gotosocial/internal/api/model"
+	"code.superseriousbusiness.org/gotosocial/internal/oauth"
+	"code.superseriousbusiness.org/gotosocial/testrig"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	"github.com/superseriousbusiness/gotosocial/internal/api/client/statuses"
-	apimodel "github.com/superseriousbusiness/gotosocial/internal/api/model"
-	"github.com/superseriousbusiness/gotosocial/internal/oauth"
-	"github.com/superseriousbusiness/gotosocial/testrig"
 )
 
 type StatusUnfaveTestSuite struct {
@@ -129,7 +129,6 @@ func (suite *StatusUnfaveTestSuite) TestPostAlreadyNotFaved() {
 	err = json.Unmarshal(b, statusReply)
 	assert.NoError(suite.T(), err)
 
-	assert.Equal(suite.T(), targetStatus.ContentWarning, statusReply.SpoilerText)
 	assert.Equal(suite.T(), targetStatus.Content, statusReply.Content)
 	assert.True(suite.T(), statusReply.Sensitive)
 	assert.Equal(suite.T(), apimodel.VisibilityPublic, statusReply.Visibility)

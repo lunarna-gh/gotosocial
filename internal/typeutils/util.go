@@ -28,16 +28,15 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/k3a/html2text"
-	apimodel "github.com/superseriousbusiness/gotosocial/internal/api/model"
-	"github.com/superseriousbusiness/gotosocial/internal/config"
-	"github.com/superseriousbusiness/gotosocial/internal/db"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/language"
-	"github.com/superseriousbusiness/gotosocial/internal/log"
-	"github.com/superseriousbusiness/gotosocial/internal/regexes"
-	"github.com/superseriousbusiness/gotosocial/internal/text"
+	apimodel "code.superseriousbusiness.org/gotosocial/internal/api/model"
+	"code.superseriousbusiness.org/gotosocial/internal/config"
+	"code.superseriousbusiness.org/gotosocial/internal/db"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/language"
+	"code.superseriousbusiness.org/gotosocial/internal/log"
+	"code.superseriousbusiness.org/gotosocial/internal/regexes"
+	"code.superseriousbusiness.org/gotosocial/internal/text"
 )
 
 // toAPISize converts a set of media dimensions
@@ -247,7 +246,7 @@ func systemMessage(
 	wrappedNote.WriteString(`<div class="gts-system-message `)
 	wrappedNote.WriteString(messageClass)
 	wrappedNote.WriteString(`">`)
-	wrappedNote.WriteString(text.SanitizeToHTML(unsanitizedNoteHTML))
+	wrappedNote.WriteString(text.SanitizeHTML(unsanitizedNoteHTML))
 	wrappedNote.WriteString(`</div>`)
 
 	return wrappedNote.String()
@@ -380,15 +379,11 @@ func filterableFields(s *gtsmodel.Status) []string {
 
 	// Status content. Though we have raw text
 	// available for statuses created on our
-	// instance, use the html2text version to
+	// instance, use the plaintext version to
 	// remove markdown-formatting characters
 	// and ensure more consistent filtering.
 	if s.Content != "" {
-		text := html2text.HTML2TextWithOptions(
-			s.Content,
-			html2text.WithLinksInnerText(),
-			html2text.WithUnixLineBreaks(),
-		)
+		text := text.ParseHTMLToPlain(s.Content)
 		if text != "" {
 			fields = append(fields, text)
 		}

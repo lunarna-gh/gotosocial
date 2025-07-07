@@ -20,17 +20,14 @@ package statuses
 import (
 	"net/http"
 
+	apiutil "code.superseriousbusiness.org/gotosocial/internal/api/util"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
 	"github.com/gin-gonic/gin"
-	apiutil "github.com/superseriousbusiness/gotosocial/internal/api/util"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/oauth"
 )
 
 // StatusHistoryGETHandler swagger:operation GET /api/v1/statuses/{id}/history statusHistoryGet
 //
 // View edit history of status with the given ID.
-//
-// UNIMPLEMENTED: Currently this endpoint will always return an array of length 1, containing only the latest/current version of the status.
 //
 //	---
 //	tags:
@@ -70,9 +67,12 @@ import (
 //		'500':
 //			description: internal server error
 func (m *Module) StatusHistoryGETHandler(c *gin.Context) {
-	authed, err := oauth.Authed(c, true, true, true, true)
-	if err != nil {
-		apiutil.ErrorHandler(c, gtserror.NewErrorUnauthorized(err, err.Error()), m.processor.InstanceGetV1)
+	authed, errWithCode := apiutil.TokenAuth(c,
+		true, true, true, true,
+		apiutil.ScopeReadStatuses,
+	)
+	if errWithCode != nil {
+		apiutil.ErrorHandler(c, errWithCode, m.processor.InstanceGetV1)
 		return
 	}
 

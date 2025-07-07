@@ -77,7 +77,7 @@ const gtsBaseQuery: BaseQueryFn<
 	// Retrieve state at the moment
 	// this function was called.
 	const state = api.getState() as RootState;
-	const { instanceUrl, token } = state.oauth;
+	const { instanceUrl, token } = state.login;
 
 	// Derive baseUrl dynamically.
 	let baseUrl: string | undefined;
@@ -143,15 +143,20 @@ const gtsBaseQuery: BaseQueryFn<
 			return headers;
 		},
 		responseHandler: (response) => {
-			// Return just text if caller has
-			// set a custom accept content-type.
-			if (accept !== "application/json") {
-				return response.text();
+			switch (true) {
+				case (accept === "application/json"):
+					// return good old
+					// fashioned JSON baby!
+					return response.json();
+				case (accept.startsWith("image/")):
+					// It's an image,
+					// return the blob.
+					return response.blob();
+				default:
+					// God knows what it
+					// is, just return text.
+					return response.text();
 			}
-
-			// Else return good old
-			// fashioned JSON baby!
-			return response.json();
 		},
 	})(args, api, extraOptions);
 };
@@ -160,6 +165,7 @@ export const gtsApi = createApi({
 	reducerPath: "api",
 	baseQuery: gtsBaseQuery,
 	tagTypes: [
+		"Application",
 		"Auth",
 		"Emoji",
 		"Report",
@@ -171,7 +177,9 @@ export const gtsApi = createApi({
 		"InteractionRequest",
 		"DomainPermissionDraft",
 		"DomainPermissionExclude",
-		"DomainPermissionSubscription"
+		"DomainPermissionSubscription",
+		"TokenInfo",
+		"User",
 	],
 	endpoints: (build) => ({
 		instanceV1: build.query<InstanceV1, void>({

@@ -28,29 +28,26 @@ import (
 	"os/signal"
 	"syscall"
 
+	"code.superseriousbusiness.org/gotosocial/cmd/gotosocial/action"
+	"code.superseriousbusiness.org/gotosocial/internal/admin"
+	"code.superseriousbusiness.org/gotosocial/internal/api"
+	apiutil "code.superseriousbusiness.org/gotosocial/internal/api/util"
+	"code.superseriousbusiness.org/gotosocial/internal/cleaner"
+	"code.superseriousbusiness.org/gotosocial/internal/config"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/language"
+	"code.superseriousbusiness.org/gotosocial/internal/log"
+	"code.superseriousbusiness.org/gotosocial/internal/middleware"
+	"code.superseriousbusiness.org/gotosocial/internal/observability"
+	"code.superseriousbusiness.org/gotosocial/internal/oidc"
+	"code.superseriousbusiness.org/gotosocial/internal/router"
+	"code.superseriousbusiness.org/gotosocial/internal/state"
+	"code.superseriousbusiness.org/gotosocial/internal/storage"
+	"code.superseriousbusiness.org/gotosocial/internal/subscriptions"
+	"code.superseriousbusiness.org/gotosocial/internal/typeutils"
+	"code.superseriousbusiness.org/gotosocial/internal/web"
+	"code.superseriousbusiness.org/gotosocial/testrig"
 	"github.com/gin-gonic/gin"
-	"github.com/superseriousbusiness/gotosocial/cmd/gotosocial/action"
-	"github.com/superseriousbusiness/gotosocial/internal/admin"
-	"github.com/superseriousbusiness/gotosocial/internal/api"
-	apiutil "github.com/superseriousbusiness/gotosocial/internal/api/util"
-	"github.com/superseriousbusiness/gotosocial/internal/cleaner"
-	"github.com/superseriousbusiness/gotosocial/internal/config"
-	"github.com/superseriousbusiness/gotosocial/internal/filter/visibility"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/language"
-	"github.com/superseriousbusiness/gotosocial/internal/log"
-	"github.com/superseriousbusiness/gotosocial/internal/middleware"
-	"github.com/superseriousbusiness/gotosocial/internal/observability"
-	"github.com/superseriousbusiness/gotosocial/internal/oidc"
-	tlprocessor "github.com/superseriousbusiness/gotosocial/internal/processing/timeline"
-	"github.com/superseriousbusiness/gotosocial/internal/router"
-	"github.com/superseriousbusiness/gotosocial/internal/state"
-	"github.com/superseriousbusiness/gotosocial/internal/storage"
-	"github.com/superseriousbusiness/gotosocial/internal/subscriptions"
-	"github.com/superseriousbusiness/gotosocial/internal/timeline"
-	"github.com/superseriousbusiness/gotosocial/internal/typeutils"
-	"github.com/superseriousbusiness/gotosocial/internal/web"
-	"github.com/superseriousbusiness/gotosocial/testrig"
 )
 
 // Start creates and starts a gotosocial testrig server.
@@ -89,20 +86,6 @@ var Start action.GTSAction = func(ctx context.Context) error {
 		// tasks from being executed.
 		testrig.StopWorkers(state)
 
-		if state.Timelines.Home != nil {
-			// Home timeline mgr was setup, ensure it gets stopped.
-			if err := state.Timelines.Home.Stop(); err != nil {
-				log.Errorf(ctx, "error stopping home timeline: %v", err)
-			}
-		}
-
-		if state.Timelines.List != nil {
-			// List timeline mgr was setup, ensure it gets stopped.
-			if err := state.Timelines.List.Stop(); err != nil {
-				log.Errorf(ctx, "error stopping list timeline: %v", err)
-			}
-		}
-
 		if state.Storage != nil {
 			// If storage was created, ensure torn down.
 			testrig.StandardStorageTeardown(state.Storage)
@@ -127,7 +110,7 @@ var Start action.GTSAction = func(ctx context.Context) error {
 	}
 	config.SetInstanceLanguages(parsedLangs)
 
-	if err := observability.InitializeTracing(); err != nil {
+	if err := observability.InitializeTracing(ctx); err != nil {
 		return fmt.Errorf("error initializing tracing: %w", err)
 	}
 
@@ -170,27 +153,6 @@ var Start action.GTSAction = func(ctx context.Context) error {
 	emailSender := testrig.NewEmailSender("./web/template/", nil)
 	webPushSender := testrig.NewWebPushMockSender()
 	typeConverter := typeutils.NewConverter(state)
-	filter := visibility.NewFilter(state)
-
-	// Initialize both home / list timelines.
-	state.Timelines.Home = timeline.NewManager(
-		tlprocessor.HomeTimelineGrab(state),
-		tlprocessor.HomeTimelineFilter(state, filter),
-		tlprocessor.HomeTimelineStatusPrepare(state, typeConverter),
-		tlprocessor.SkipInsert(),
-	)
-	if err := state.Timelines.Home.Start(); err != nil {
-		return fmt.Errorf("error starting home timeline: %s", err)
-	}
-	state.Timelines.List = timeline.NewManager(
-		tlprocessor.ListTimelineGrab(state),
-		tlprocessor.ListTimelineFilter(state, filter),
-		tlprocessor.ListTimelineStatusPrepare(state, typeConverter),
-		tlprocessor.SkipInsert(),
-	)
-	if err := state.Timelines.List.Start(); err != nil {
-		return fmt.Errorf("error starting list timeline: %s", err)
-	}
 
 	processor := testrig.NewTestProcessor(state, federator, emailSender, webPushSender, mediaManager)
 
@@ -199,7 +161,7 @@ var Start action.GTSAction = func(ctx context.Context) error {
 	defer testrig.StopWorkers(state)
 
 	// Initialize metrics.
-	if err := observability.InitializeMetrics(state.DB); err != nil {
+	if err := observability.InitializeMetrics(ctx, state.DB); err != nil {
 		return fmt.Errorf("error initializing metrics: %w", err)
 	}
 
@@ -282,23 +244,24 @@ var Start action.GTSAction = func(ctx context.Context) error {
 		return fmt.Errorf("error generating session name for session middleware: %w", err)
 	}
 
+	// Configure our instance cookie policy.
+	cookiePolicy := apiutil.NewCookiePolicy()
+
 	var (
-		authModule        = api.NewAuth(state.DB, processor, idp, routerSession, sessionName) // auth/oauth paths
-		clientModule      = api.NewClient(state, processor)                                   // api client endpoints
-		metricsModule     = api.NewMetrics()                                                  // Metrics endpoints
-		healthModule      = api.NewHealth(state.DB.Ready)                                     // Health check endpoints
-		fileserverModule  = api.NewFileserver(processor)                                      // fileserver endpoints
-		robotsModule      = api.NewRobots()                                                   // robots.txt endpoint
-		wellKnownModule   = api.NewWellKnown(processor)                                       // .well-known endpoints
-		nodeInfoModule    = api.NewNodeInfo(processor)                                        // nodeinfo endpoint
-		activityPubModule = api.NewActivityPub(state.DB, processor)                           // ActivityPub endpoints
-		webModule         = web.New(state.DB, processor)                                      // web pages + user profiles + settings panels etc
+		authModule        = api.NewAuth(state, processor, idp, routerSession, sessionName, cookiePolicy) // auth/oauth paths
+		clientModule      = api.NewClient(state, processor)                                              // api client endpoints
+		healthModule      = api.NewHealth(state.DB.Ready)                                                // Health check endpoints
+		fileserverModule  = api.NewFileserver(processor)                                                 // fileserver endpoints
+		robotsModule      = api.NewRobots()                                                              // robots.txt endpoint
+		wellKnownModule   = api.NewWellKnown(processor)                                                  // .well-known endpoints
+		nodeInfoModule    = api.NewNodeInfo(processor)                                                   // nodeinfo endpoint
+		activityPubModule = api.NewActivityPub(state.DB, processor)                                      // ActivityPub endpoints
+		webModule         = web.New(state.DB, processor, cookiePolicy)                                   // web pages + user profiles + settings panels etc
 	)
 
 	// these should be routed in order
 	authModule.Route(route)
 	clientModule.Route(route)
-	metricsModule.Route(route)
 	healthModule.Route(route)
 	fileserverModule.Route(route)
 	fileserverModule.RouteEmojis(route, instanceAccount.ID)

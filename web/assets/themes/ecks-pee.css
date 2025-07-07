@@ -88,36 +88,6 @@
   --boxshadow-border: 1px solid var(--ecks-pee-darkest-blue);
 }
 
-/* Set fonts with woff fallbacks */
-@font-face {
-  font-family: "Atkinson Hyperlegible";
-  font-weight: normal;
-  font-style: normal;
-  src: url(/assets/fonts/Atkinson-Hyperlegible-Regular-102a.woff2) format('woff2');
-  src: url(/assets/fonts/Atkinson-Hyperlegible-Regular-102.woff) format('woff');
-}
-@font-face {
-  font-family: "Atkinson Hyperlegible";
-  font-weight: bold;
-  font-style: normal;
-  src: url(/assets/fonts/Atkinson-Hyperlegible-Bold-102a.woff2) format('woff2');
-  src: url(/assets/fonts/Atkinson-Hyperlegible-Bold-102.woff) format('woff');
-}
-@font-face {
-  font-family: "Atkinson Hyperlegible";
-  font-weight: normal;
-  font-style: italic;
-  src: url(/assets/fonts/Atkinson-Hyperlegible-Italic-102a.woff2) format('woff2');
-  src: url(/assets/fonts/Atkinson-Hyperlegible-Italic-102.woff) format('woff');
-}
-@font-face {
-  font-family: "Atkinson Hyperlegible";
-  font-weight: bold;
-  font-style: italic;
-  src: url(/assets/fonts/Atkinson-Hyperlegible-BoldItalic-102a.woff2) format('woff2');
-  src: url(/assets/fonts/Atkinson-Hyperlegible-BoldItalic-102.woff) format('woff');
-}
-
 /* Main page background */
 body {
   background: radial-gradient(
@@ -216,7 +186,8 @@ html, body {
 /* Code snippets */
 pre, pre[class*="language-"],
 code, code[class*="language-"] {
-	background: black;
+	font-family: "Atkinson Hyperlegible Mono", "Noto Sans Mono", monospace;
+  background: black;
   color: var(--ecks-pee-white);
   border-radius: 0;
 }
@@ -238,6 +209,31 @@ blockquote {
   border-right: 1px solid #001ea0;
 }
 
+/* Status info dropdown button */
+.status .status-info .status-stats details.stats-more-info > summary {
+  color: var(--button-fg);
+  background: var(--ecks-pee-start-button);
+  border-left: 1px solid var(--ecks-pee-darkest-green);
+  border-right: 1px solid var(--ecks-pee-darkest-green);
+}
+.status .status-info .status-stats details.stats-more-info > summary:hover {
+  outline: 0;
+  background: var(--ecks-pee-light-green);
+}
+
+/* Status info dropdown content */
+.status .status-info .status-stats .stats-more-info-content,
+.status.expanded .status-info .status-stats .stats-more-info-content {
+  color: black;
+  text-shadow: none;
+  background: var(--ecks-pee-beige);
+  border: 0.2rem outset var(--ecks-pee-darker-beige);
+  border-radius: 0;
+}
+.status .status-info .status-stats .stats-item.edit-timeline {
+  border-top: var(--ecks-pee-dotted-trim);
+}
+
 /* Button stuff */
 button, .button {
   border-left: 1px solid var(--ecks-pee-darkest-green);
@@ -251,4 +247,9 @@ button:hover, .button:hover {
 /* Make these bold or they don't contrast enough */
 .backnextlinks {
   font-weight: bold;
+}
+
+button, .button,
+.status .text-spoiler > summary .button {
+  font-family: 'Atkinson Hyperlegible', 'Noto Sans', sans-serif;
 }

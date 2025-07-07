@@ -18,10 +18,10 @@
 package ap
 
 import (
-	"github.com/superseriousbusiness/activity/pub"
-	"github.com/superseriousbusiness/activity/streams"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/text"
+	"code.superseriousbusiness.org/activity/pub"
+	"code.superseriousbusiness.org/activity/streams"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/text"
 )
 
 /*
@@ -113,7 +113,7 @@ func normalizeContent(rawContent interface{}) string {
 	//
 	// TODO: sanitize differently based on mediaType.
 	// https://www.w3.org/TR/activitystreams-vocabulary/#dfn-mediatype
-	content = text.SanitizeToHTML(content)
+	content = text.SanitizeHTML(content)
 	content = text.MinifyHTML(content)
 	return content
 }
@@ -248,7 +248,7 @@ func NormalizeIncomingSummary(item WithSummary, rawJSON map[string]interface{}) 
 
 	// Summary should be HTML encoded:
 	// https://www.w3.org/TR/activitystreams-vocabulary/#dfn-summary
-	summary = text.SanitizeToHTML(summary)
+	summary = text.SanitizeHTML(summary)
 	summary = text.MinifyHTML(summary)
 
 	// Set normalized summary property from the raw string; this
@@ -339,7 +339,7 @@ func NormalizeIncomingName(item WithName, rawJSON map[string]interface{}) {
 	//
 	// todo: We probably want to update this to allow
 	// *escaped* HTML markup, but for now just nuke it.
-	name = text.SanitizeToPlaintext(name)
+	name = text.StripHTMLFromText(name)
 
 	// Set normalized name property from the raw string; this
 	// will replace any existing name property on the item.
@@ -369,7 +369,7 @@ func NormalizeIncomingValue(item WithValue, rawJSON map[string]interface{}) {
 	// Value often contains links or
 	// mentions or other little snippets.
 	// Sanitize to HTML to allow these.
-	value = text.SanitizeToHTML(value)
+	value = text.SanitizeHTML(value)
 
 	// Set normalized name property from the raw string; this
 	// will replace any existing value property on the item.
@@ -582,16 +582,16 @@ func NormalizeOutgoingContentProp(item WithContent, rawJSON map[string]interface
 //
 //	"interactionPolicy": {
 //		"canAnnounce": {
-//			"always": "https://www.w3.org/ns/activitystreams#Public",
-//			"approvalRequired": []
+//			"automaticApproval": "https://www.w3.org/ns/activitystreams#Public",
+//			"manualApproval": []
 //		},
 //		"canLike": {
-//			"always": "https://www.w3.org/ns/activitystreams#Public",
-//			"approvalRequired": []
+//			"automaticApproval": "https://www.w3.org/ns/activitystreams#Public",
+//			"manualApproval": []
 //		},
 //		"canReply": {
-//			"always": "https://www.w3.org/ns/activitystreams#Public",
-//			"approvalRequired": []
+//			"automaticApproval": "https://www.w3.org/ns/activitystreams#Public",
+//			"manualApproval": []
 //		}
 //	}
 //
@@ -599,22 +599,22 @@ func NormalizeOutgoingContentProp(item WithContent, rawJSON map[string]interface
 //
 //	"interactionPolicy": {
 //		"canAnnounce": {
-//			"always": [
+//			"automaticApproval": [
 //				"https://www.w3.org/ns/activitystreams#Public"
 //			],
-//			"approvalRequired": []
+//			"manualApproval": []
 //		},
 //		"canLike": {
-//			"always": [
+//			"automaticApproval": [
 //				"https://www.w3.org/ns/activitystreams#Public"
 //			],
-//			"approvalRequired": []
+//			"manualApproval": []
 //		},
 //		"canReply": {
-//			"always": [
+//			"automaticApproval": [
 //				"https://www.w3.org/ns/activitystreams#Public"
 //			],
-//			"approvalRequired": []
+//			"manualApproval": []
 //		}
 //	}
 //
@@ -655,8 +655,10 @@ func NormalizeOutgoingInteractionPolicyProp(item WithInteractionPolicy, rawJSON 
 		}
 
 		for _, PolicyValuesKey := range []string{
-			"always",
-			"approvalRequired",
+			"automaticApproval",
+			"manualApproval",
+			"always",           // deprecated
+			"approvalRequired", // deprecated
 		} {
 			PolicyValuesVal, ok := rulesValMap[PolicyValuesKey]
 			if !ok {

@@ -20,9 +20,9 @@ package config
 import (
 	"time"
 
+	"code.superseriousbusiness.org/gotosocial/internal/language"
 	"codeberg.org/gruf/go-bytesize"
 	"github.com/coreos/go-oidc/v3/oidc"
-	"github.com/superseriousbusiness/gotosocial/internal/language"
 )
 
 // Defaults contains a populated Configuration with reasonable defaults. Note that
@@ -41,8 +41,8 @@ var Defaults = Configuration{
 	Port:               8080,
 	TrustedProxies:     []string{"127.0.0.1/32", "::1"}, // localhost
 
-	DbType:                   "postgres",
-	DbAddress:                "",
+	DbType:                   "sqlite",
+	DbAddress:                "db.sqlite",
 	DbPort:                   5432,
 	DbUser:                   "",
 	DbPassword:               "",
@@ -61,17 +61,21 @@ var Defaults = Configuration{
 	InstanceFederationMode:            InstanceFederationModeDefault,
 	InstanceFederationSpamFilter:      false,
 	InstanceExposePeers:               false,
-	InstanceExposeSuspended:           false,
-	InstanceExposeSuspendedWeb:        false,
+	InstanceExposeBlocklist:           false,
+	InstanceExposeBlocklistWeb:        false,
 	InstanceDeliverToSharedInboxes:    true,
 	InstanceLanguages:                 make(language.Languages, 0),
 	InstanceSubscriptionsProcessFrom:  "23:00",        // 11pm,
 	InstanceSubscriptionsProcessEvery: 24 * time.Hour, // 1/day.
+	InstanceAllowBackdatingStatuses:   true,
 
-	AccountsRegistrationOpen: false,
-	AccountsReasonRequired:   true,
-	AccountsAllowCustomCSS:   false,
-	AccountsCustomCSSLength:  10000,
+	AccountsRegistrationOpen:         false,
+	AccountsReasonRequired:           true,
+	AccountsRegistrationDailyLimit:   10,
+	AccountsRegistrationBacklogLimit: 20,
+	AccountsAllowCustomCSS:           false,
+	AccountsCustomCSSLength:          10000,
+	AccountsMaxProfileFields:         6,
 
 	MediaDescriptionMinChars: 0,
 	MediaDescriptionMaxChars: 1500,
@@ -84,11 +88,12 @@ var Defaults = Configuration{
 	MediaCleanupEvery:        24 * time.Hour, // 1/day.
 	MediaFfmpegPoolSize:      1,
 
-	StorageBackend:       "local",
-	StorageLocalBasePath: "/gotosocial/storage",
-	StorageS3UseSSL:      true,
-	StorageS3Proxy:       false,
-	StorageS3RedirectURL: "",
+	StorageBackend:        "local",
+	StorageLocalBasePath:  "/gotosocial/storage",
+	StorageS3UseSSL:       true,
+	StorageS3Proxy:        false,
+	StorageS3RedirectURL:  "",
+	StorageS3BucketLookup: "auto",
 
 	StatusesMaxChars:           5000,
 	StatusesPollMaxOptions:     6,
@@ -119,26 +124,34 @@ var Defaults = Configuration{
 	SMTPFrom:               "",
 	SMTPDiscloseRecipients: false,
 
-	TracingEnabled:           false,
-	TracingTransport:         "grpc",
-	TracingEndpoint:          "",
-	TracingInsecureTransport: false,
-
-	MetricsEnabled:     false,
-	MetricsAuthEnabled: false,
+	TracingEnabled: false,
+	MetricsEnabled: false,
 
 	SyslogEnabled:  false,
 	SyslogProtocol: "udp",
 	SyslogAddress:  "localhost:514",
 
-	AdvancedCookiesSamesite:      "lax",
-	AdvancedRateLimitRequests:    300, // 1 per second per 5 minutes
-	AdvancedRateLimitExceptions:  []string{},
-	AdvancedThrottlingMultiplier: 8, // 8 open requests per CPU
-	AdvancedThrottlingRetryAfter: time.Second * 30,
-	AdvancedSenderMultiplier:     2, // 2 senders per CPU
-	AdvancedCSPExtraURIs:         []string{},
-	AdvancedHeaderFilterMode:     RequestHeaderFilterModeDisabled,
+	Advanced: AdvancedConfig{
+		SenderMultiplier: 2, // 2 senders per CPU
+		CSPExtraURIs:     []string{},
+		HeaderFilterMode: RequestHeaderFilterModeDisabled,
+		CookiesSamesite:  "lax",
+
+		RateLimit: RateLimitConfig{
+			Requests:   300, // 1 per second per 5 minutes
+			Exceptions: IPPrefixes{},
+		},
+
+		Throttling: ThrottlingConfig{
+			Multiplier: 8, // 8 open requests per CPU
+			RetryAfter: 30 * time.Second,
+		},
+
+		ScraperDeterrence: ScraperDeterrenceConfig{
+			Enabled:    false,
+			Difficulty: 4,
+		},
+	},
 
 	Cache: CacheConfiguration{
 		// Rough memory target that the total

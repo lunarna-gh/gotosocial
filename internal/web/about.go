@@ -20,11 +20,11 @@ package web
 import (
 	"context"
 
+	apimodel "code.superseriousbusiness.org/gotosocial/internal/api/model"
+	apiutil "code.superseriousbusiness.org/gotosocial/internal/api/util"
+	"code.superseriousbusiness.org/gotosocial/internal/config"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
 	"github.com/gin-gonic/gin"
-	apimodel "github.com/superseriousbusiness/gotosocial/internal/api/model"
-	apiutil "github.com/superseriousbusiness/gotosocial/internal/api/util"
-	"github.com/superseriousbusiness/gotosocial/internal/config"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
 )
 
 const (
@@ -57,7 +57,8 @@ func (m *Module) aboutGETHandler(c *gin.Context) {
 		Stylesheets: []string{cssAbout},
 		Extra: map[string]any{
 			"showStrap":        true,
-			"blocklistExposed": config.GetInstanceExposeSuspendedWeb(),
+			"blocklistExposed": config.GetInstanceExposeBlocklistWeb(),
+			"allowlistExposed": config.GetInstanceExposeAllowlistWeb(),
 			"languages":        config.GetInstanceLanguages().DisplayStrs(),
 		},
 	}

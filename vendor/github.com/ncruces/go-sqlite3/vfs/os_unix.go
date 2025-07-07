@@ -10,8 +10,8 @@ import (
 )
 
 const (
+	isUnix      = true
 	_O_NOFOLLOW = unix.O_NOFOLLOW
-	canSyncDirs = true
 )
 
 func osAccess(path string, flags AccessFlag) error {
@@ -23,6 +23,28 @@ func osAccess(path string, flags AccessFlag) error {
 		access = unix.R_OK
 	}
 	return unix.Access(path, access)
+}
+
+func osReadAt(file *os.File, p []byte, off int64) (int, error) {
+	n, err := file.ReadAt(p, off)
+	if errno, ok := err.(unix.Errno); ok {
+		switch errno {
+		case
+			unix.ERANGE,
+			unix.EIO,
+			unix.ENXIO:
+			return n, _IOERR_CORRUPTFS
+		}
+	}
+	return n, err
+}
+
+func osWriteAt(file *os.File, p []byte, off int64) (int, error) {
+	n, err := file.WriteAt(p, off)
+	if errno, ok := err.(unix.Errno); ok && errno == unix.ENOSPC {
+		return n, _FULL
+	}
+	return n, err
 }
 
 func osSetMode(file *os.File, modeof string) error {
@@ -43,10 +65,15 @@ func osTestLock(file *os.File, start, len int64) (int16, _ErrorCode) {
 		Start: start,
 		Len:   len,
 	}
-	if unix.FcntlFlock(file.Fd(), unix.F_GETLK, &lock) != nil {
-		return 0, _IOERR_CHECKRESERVEDLOCK
+	for {
+		err := unix.FcntlFlock(file.Fd(), unix.F_GETLK, &lock)
+		if err == nil {
+			return lock.Type, _OK
+		}
+		if err != unix.EINTR {
+			return 0, _IOERR_CHECKRESERVEDLOCK
+		}
 	}
-	return lock.Type, _OK
 }
 
 func osLockErrorCode(err error, def _ErrorCode) _ErrorCode {

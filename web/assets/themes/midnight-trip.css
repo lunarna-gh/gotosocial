@@ -113,9 +113,6 @@ html, body {
 .status .media .media-wrapper {
   background: var(--bg-nearly-opaque);
 }
-.status .media .media-wrapper details .unknown-attachment .placeholder {
-  border: 0.2rem dashed var(--magenta);
-}
 
 /* Polls */
 .status .text .poll {
@@ -130,6 +127,16 @@ html, body {
 /* Status info bars */
 .status .status-info, .status.expanded .status-info {
   background: black;
+}
+
+/* Status info dropdown content */
+.status.expanded .status-info .status-stats .stats-more-info-content,
+.status .status-info .status-stats .stats-more-info-content {
+  background-color: black;
+  border: 0.25rem solid var(--magenta);
+}
+.status .status-info .status-stats .stats-item.edit-timeline {
+  border-top: 0.15rem dotted var(--acid-green);
 }
 
 /* Back + next links */

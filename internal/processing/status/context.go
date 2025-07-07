@@ -23,11 +23,11 @@ import (
 	"slices"
 	"strings"
 
-	apimodel "github.com/superseriousbusiness/gotosocial/internal/api/model"
-	statusfilter "github.com/superseriousbusiness/gotosocial/internal/filter/status"
-	"github.com/superseriousbusiness/gotosocial/internal/gtscontext"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
+	apimodel "code.superseriousbusiness.org/gotosocial/internal/api/model"
+	statusfilter "code.superseriousbusiness.org/gotosocial/internal/filter/status"
+	"code.superseriousbusiness.org/gotosocial/internal/gtscontext"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
 )
 
 // internalThreadContext is like
@@ -442,6 +442,33 @@ func (p *Processor) WebContextGet(
 		_, parentHidden := hiddenStatuses[status.InReplyToID]
 		v, err := p.visFilter.StatusVisible(ctx, nil, status)
 		if err != nil || !v || parentHidden {
+			// If this is the main status whose
+			// context we're looking for, and it's
+			// not visible for whatever reason, we
+			// should just return a 404 here, as we
+			// can't meaningfully render the thread.
+			if status.ID == targetStatusID {
+				var thisErr error
+				switch {
+				case err != nil:
+					thisErr = gtserror.Newf("error checking visibility of target status: %w", err)
+
+				case !v:
+					const errText = "target status not visible"
+					thisErr = gtserror.New(errText)
+
+				case parentHidden:
+					const errText = "target status parent is hidden"
+					thisErr = gtserror.New(errText)
+				}
+
+				return nil, gtserror.NewErrorNotFound(thisErr)
+			}
+
+			// This isn't the main status whose
+			// context we're looking for, just
+			// your standard not-visible status,
+			// so add it to the count + map.
 			if !inReplies {
 				// Main thread entry hidden.
 				wCtx.ThreadHidden++

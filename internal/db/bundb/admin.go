@@ -27,17 +27,16 @@ import (
 	"strings"
 	"time"
 
+	"code.superseriousbusiness.org/gotosocial/internal/config"
+	"code.superseriousbusiness.org/gotosocial/internal/db"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/id"
+	"code.superseriousbusiness.org/gotosocial/internal/log"
+	"code.superseriousbusiness.org/gotosocial/internal/state"
+	"code.superseriousbusiness.org/gotosocial/internal/uris"
+	"code.superseriousbusiness.org/gotosocial/internal/util"
 	"github.com/google/uuid"
-	"github.com/superseriousbusiness/gotosocial/internal/ap"
-	"github.com/superseriousbusiness/gotosocial/internal/config"
-	"github.com/superseriousbusiness/gotosocial/internal/db"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/id"
-	"github.com/superseriousbusiness/gotosocial/internal/log"
-	"github.com/superseriousbusiness/gotosocial/internal/state"
-	"github.com/superseriousbusiness/gotosocial/internal/uris"
-	"github.com/superseriousbusiness/gotosocial/internal/util"
 	"github.com/uptrace/bun"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -131,7 +130,7 @@ func (a *adminDB) NewSignup(ctx context.Context, newSignup gtsmodel.NewSignup) (
 			FollowingURI:          uris.FollowingURI,
 			FollowersURI:          uris.FollowersURI,
 			FeaturedCollectionURI: uris.FeaturedCollectionURI,
-			ActorType:             ap.ActorPerson,
+			ActorType:             gtsmodel.AccountActorTypePerson,
 			PrivateKey:            privKey,
 			PublicKey:             &privKey.PublicKey,
 			PublicKeyURI:          uris.PublicKeyURI,
@@ -166,15 +165,11 @@ func (a *adminDB) NewSignup(ctx context.Context, newSignup gtsmodel.NewSignup) (
 		return nil, err
 	}
 
-	defer func() {
-		// Pin account to (new)
-		// user before returning.
-		user.Account = account
-	}()
-
+	// If there's already a
+	// user for this account,
+	// just pin acct + return.
 	if user != nil {
-		// Already had a user for this
-		// account, just return that.
+		user.Account = account
 		return user, nil
 	}
 
@@ -192,6 +187,25 @@ func (a *adminDB) NewSignup(ctx context.Context, newSignup gtsmodel.NewSignup) (
 	if err != nil {
 		err := gtserror.Newf("error hashing password: %w", err)
 		return nil, err
+	}
+
+	// If no app ID was set,
+	// get the instance app
+	// and use its ID.
+	if newSignup.AppID == "" {
+		instanceApp, err := a.state.DB.GetInstanceApplication(ctx)
+		if err != nil && !errors.Is(err, db.ErrNoEntries) {
+			err := gtserror.Newf("db error getting instance app: %w", err)
+			return nil, err
+		}
+
+		if instanceApp == nil {
+			const errText = "instance application not yet created, run the server at least once *before* creating users"
+			err := gtserror.New(errText)
+			return nil, err
+		}
+
+		newSignup.AppID = instanceApp.ID
 	}
 
 	user = &gtsmodel.User{
@@ -272,7 +286,7 @@ func (a *adminDB) CreateInstanceAccount(ctx context.Context) error {
 		PrivateKey:            key,
 		PublicKey:             &key.PublicKey,
 		PublicKeyURI:          newAccountURIs.PublicKeyURI,
-		ActorType:             ap.ActorPerson,
+		ActorType:             gtsmodel.AccountActorTypeService,
 		URI:                   newAccountURIs.UserURI,
 		InboxURI:              newAccountURIs.InboxURI,
 		OutboxURI:             newAccountURIs.OutboxURI,
@@ -341,6 +355,7 @@ func (a *adminDB) CreateInstanceApplication(ctx context.Context) error {
 	// instance account's ID so this is an easy check.
 	instanceAcct, err := a.state.DB.GetInstanceAccount(ctx, "")
 	if err != nil {
+		err := gtserror.Newf("db error getting instance account: %w", err)
 		return err
 	}
 
@@ -369,18 +384,14 @@ func (a *adminDB) CreateInstanceApplication(ctx context.Context) error {
 
 	clientID := instanceAcct.ID
 	clientSecret := uuid.NewString()
-	appID, err := id.NewRandomULID()
-	if err != nil {
-		return err
-	}
 
 	// Generate the application
 	// to put in the database.
 	app := &gtsmodel.Application{
-		ID:           appID,
+		ID:           id.NewULID(),
 		Name:         host + " instance application",
 		Website:      url,
-		RedirectURI:  url,
+		RedirectURIs: []string{url},
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
 		Scopes:       "write:accounts",
@@ -388,19 +399,11 @@ func (a *adminDB) CreateInstanceApplication(ctx context.Context) error {
 
 	// Store it.
 	if err := a.state.DB.PutApplication(ctx, app); err != nil {
+		err := gtserror.Newf("db error storing instance application: %w", err)
 		return err
 	}
 
-	// Model an oauth client
-	// from the application.
-	oc := &gtsmodel.Client{
-		ID:     clientID,
-		Secret: clientSecret,
-		Domain: url,
-	}
-
-	// Store it.
-	return a.state.DB.PutClient(ctx, oc)
+	return nil
 }
 
 func (a *adminDB) GetInstanceApplication(ctx context.Context) (*gtsmodel.Application, error) {

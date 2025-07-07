@@ -20,16 +20,17 @@ package federatingdb
 import (
 	"context"
 	"errors"
+	"slices"
 
-	"github.com/superseriousbusiness/activity/streams/vocab"
-	"github.com/superseriousbusiness/gotosocial/internal/ap"
-	"github.com/superseriousbusiness/gotosocial/internal/db"
-	"github.com/superseriousbusiness/gotosocial/internal/gtscontext"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/id"
-	"github.com/superseriousbusiness/gotosocial/internal/log"
-	"github.com/superseriousbusiness/gotosocial/internal/messages"
+	"code.superseriousbusiness.org/activity/streams/vocab"
+	"code.superseriousbusiness.org/gotosocial/internal/ap"
+	"code.superseriousbusiness.org/gotosocial/internal/db"
+	"code.superseriousbusiness.org/gotosocial/internal/gtscontext"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/id"
+	"code.superseriousbusiness.org/gotosocial/internal/log"
+	"code.superseriousbusiness.org/gotosocial/internal/messages"
 )
 
 // Create adds a new entry to the database which must be able to be
@@ -44,7 +45,7 @@ import (
 //
 // Under certain conditions and network activities, Create may be called
 // multiple times for the same ActivityStreams object.
-func (f *federatingDB) Create(ctx context.Context, asType vocab.Type) error {
+func (f *DB) Create(ctx context.Context, asType vocab.Type) error {
 	log.DebugKV(ctx, "create", serialize{asType})
 
 	// Cache entry for this activity type's ID for later
@@ -125,7 +126,7 @@ func (f *federatingDB) Create(ctx context.Context, asType vocab.Type) error {
 // createPollOptionable handles a Create activity for a PollOptionable.
 // This function doesn't handle database insertion, only validation checks
 // before passing off to a worker for asynchronous processing.
-func (f *federatingDB) createPollOptionables(
+func (f *DB) createPollOptionables(
 	ctx context.Context,
 	receiver *gtsmodel.Account,
 	requester *gtsmodel.Account,
@@ -137,6 +138,10 @@ func (f *federatingDB) createPollOptionables(
 		// iteration, relevant checks performed
 		// then re-used in each further iteration.
 		inReplyTo *gtsmodel.Status
+
+		// existing poll vote by requesting user
+		// in receiving user's poll, if it exists.
+		vote *gtsmodel.PollVote
 
 		// the resulting slices of Poll.Option
 		// choice indices passed into the new
@@ -169,26 +174,23 @@ func (f *federatingDB) createPollOptionables(
 			case inReplyTo.PollID == "":
 				return gtserror.Newf("poll vote in status %s without poll", statusURI)
 
-			// We don't own the poll ...
-			case !*inReplyTo.Local:
-				return gtserror.Newf("poll vote in remote status %s", statusURI)
+			// Ensure poll isn't closed.
+			case inReplyTo.Poll.Closed():
+				return gtserror.Newf("poll vote in closed poll %s", statusURI)
+
+			// Ensure receiver actually owns poll.
+			case inReplyTo.AccountID != receiver.ID:
+				return gtserror.Newf("receiving account %s does not own poll %s", receiver.URI, statusURI)
 			}
 
-			// Check whether user has already vote in this poll.
-			// (we only check this for the first object, as multiple
-			// may be sent in response to a multiple-choice poll).
-			vote, err := f.state.DB.GetPollVoteBy(
+			// Try load any existing vote(s) by user.
+			vote, err = f.state.DB.GetPollVoteBy(
 				gtscontext.SetBarebones(ctx),
 				inReplyTo.PollID,
 				requester.ID,
 			)
 			if err != nil && !errors.Is(err, db.ErrNoEntries) {
 				return gtserror.Newf("error getting status %s poll votes from database: %w", statusURI, err)
-			}
-
-			if vote != nil {
-				log.Warnf(ctx, "%s has already voted in poll %s", requester.URI, statusURI)
-				return nil // this is a useful warning for admins to report to us from logs
 			}
 		}
 
@@ -210,21 +212,60 @@ func (f *federatingDB) createPollOptionables(
 		choices = append(choices, choice)
 	}
 
-	// Enqueue message to the fedi API worker with poll vote(s).
-	f.state.Workers.Federator.Queue.Push(&messages.FromFediAPI{
-		APActivityType: ap.ActivityCreate,
-		APObjectType:   ap.ActivityQuestion,
-		GTSModel: &gtsmodel.PollVote{
-			ID:        id.NewULID(),
-			Choices:   choices,
-			AccountID: requester.ID,
-			Account:   requester,
-			PollID:    inReplyTo.PollID,
-			Poll:      inReplyTo.Poll,
-		},
-		Receiving:  receiver,
-		Requesting: requester,
-	})
+	if vote != nil {
+		// Ensure this isn't a multiple vote
+		// by same account in the same poll.
+		if !*inReplyTo.Poll.Multiple {
+			log.Warnf(ctx, "%s has already voted in single-choice poll %s", requester.URI, inReplyTo.URI)
+			return nil // this is a useful warning for admins to report to us from logs
+		}
+
+		// Drop all existing votes from the new slice of choices.
+		choices = slices.DeleteFunc(choices, func(choice int) bool {
+			return slices.Contains(vote.Choices, choice)
+		})
+
+		// Update poll with new choices but *not* voters.
+		inReplyTo.Poll.IncrementVotes(choices, false)
+
+		// Append new vote choices to existing
+		// vote, then sort them by index size.
+		vote.Choices = append(vote.Choices, choices...)
+		slices.Sort(vote.Choices)
+
+		// Populate the poll vote,
+		// later used in fedi worker.
+		vote.Poll = inReplyTo.Poll
+		vote.Account = requester
+
+		// TODO: would it be useful to store an UpdatedAt field
+		// on poll votes? i'm not sure we'd actually use it...
+
+		// Enqueue an update event for poll vote to fedi API worker.
+		f.state.Workers.Federator.Queue.Push(&messages.FromFediAPI{
+			APActivityType: ap.ActivityUpdate,
+			APObjectType:   ap.ActivityQuestion,
+			GTSModel:       vote,
+			Receiving:      receiver,
+			Requesting:     requester,
+		})
+	} else {
+		// Create new poll vote and enqueue create to fedi API worker.
+		f.state.Workers.Federator.Queue.Push(&messages.FromFediAPI{
+			APActivityType: ap.ActivityCreate,
+			APObjectType:   ap.ActivityQuestion,
+			GTSModel: &gtsmodel.PollVote{
+				ID:        id.NewULID(),
+				Choices:   choices,
+				AccountID: requester.ID,
+				Account:   requester,
+				PollID:    inReplyTo.PollID,
+				Poll:      inReplyTo.Poll,
+			},
+			Receiving:  receiver,
+			Requesting: requester,
+		})
+	}
 
 	return nil
 }
@@ -233,7 +274,7 @@ func (f *federatingDB) createPollOptionables(
 // This function won't insert anything in the database yet,
 // but will pass the Statusable (if appropriate) through to
 // the processor for further asynchronous processing.
-func (f *federatingDB) createStatusable(
+func (f *DB) createStatusable(
 	ctx context.Context,
 	receiver *gtsmodel.Account,
 	requester *gtsmodel.Account,

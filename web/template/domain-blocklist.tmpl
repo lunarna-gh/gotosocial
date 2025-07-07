@@ -20,18 +20,17 @@
 {{- with . }}
 <main>
     <section>
-        <h1>Suspended Instances</h1>
+        <h1>Instance Blocklist</h1>
         <p>
-            The following list of domains have been suspended
-            by the administrator(s) of this server.
+            The following list of domains has been blocked by the administrator(s) of this instance.
         </p>
         <p>
-            All current and future accounts on these instances are
-            blocked, and no more data is federated to the remote servers.
-            This extends to subdomains, so an entry for 'example.com'
-            includes 'social.example.com' as well.
+            All past, present, and future accounts at blocked domains are forbidden from interacting
+            with this instance or accounts on this instance. No data will be sent to the server at the
+            remote domain, and no data will be received from it. This extends to subdomains, so a
+            blocklist entry for domain 'example.com' includes domain 'social.example.com' etc as well.
         </p>
-        <div class="list domain-blocklist">
+        <div class="list domain-perm-list">
             <div class="header entry">
                 <div class="domain">Domain</div>
                 <div class="public_comment">Public comment</div>
@@ -42,7 +41,7 @@
                     <a class="text-cutoff" href="#{{- .Domain -}}" title="{{- .Domain -}}">{{- .Domain -}}</a>
                 </div>
                 <div class="public_comment">
-                    <p>{{- .PublicComment -}}</p>
+                    <p>{{- .Comment -}}</p>
                 </div>
             </div>
             {{- end }}

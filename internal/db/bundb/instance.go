@@ -21,15 +21,15 @@ import (
 	"context"
 	"time"
 
-	"github.com/superseriousbusiness/gotosocial/internal/config"
-	"github.com/superseriousbusiness/gotosocial/internal/db"
-	"github.com/superseriousbusiness/gotosocial/internal/gtscontext"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/id"
-	"github.com/superseriousbusiness/gotosocial/internal/log"
-	"github.com/superseriousbusiness/gotosocial/internal/state"
-	"github.com/superseriousbusiness/gotosocial/internal/util"
+	"code.superseriousbusiness.org/gotosocial/internal/config"
+	"code.superseriousbusiness.org/gotosocial/internal/db"
+	"code.superseriousbusiness.org/gotosocial/internal/gtscontext"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/id"
+	"code.superseriousbusiness.org/gotosocial/internal/log"
+	"code.superseriousbusiness.org/gotosocial/internal/state"
+	"code.superseriousbusiness.org/gotosocial/internal/util"
 	"github.com/uptrace/bun"
 )
 
@@ -77,44 +77,52 @@ func (i *instanceDB) CountInstanceUsers(ctx context.Context, domain string) (int
 }
 
 func (i *instanceDB) CountInstanceStatuses(ctx context.Context, domain string) (int, error) {
-	localhost := (domain == config.GetHost() || domain == config.GetAccountDomain())
+	local := (domain == config.GetHost() || domain == config.GetAccountDomain())
 
-	if localhost {
-		// Check for a cached instance statuses count, if so return this.
-		if n := i.state.Caches.DB.LocalInstance.Statuses.Load(); n != nil {
-			return *n, nil
-		}
+	if local {
+		return i.countLocalStatuses(ctx)
 	}
 
 	q := i.db.
 		NewSelect().
-		TableExpr("? AS ?", bun.Ident("statuses"), bun.Ident("status"))
-
-	if localhost {
-		// if the domain is *this* domain, just count where local is true
-		q = q.Where("? = ?", bun.Ident("status.local"), true)
-	} else {
-		// join on the domain of the account
-		q = q.
-			Join("JOIN ? AS ? ON ? = ?", bun.Ident("accounts"), bun.Ident("account"), bun.Ident("account.id"), bun.Ident("status.account_id")).
-			Where("? = ?", bun.Ident("account.domain"), domain)
-	}
-
-	// Ignore statuses that are currently pending approval.
-	q = q.Where("NOT ? = ?", bun.Ident("status.pending_approval"), true)
-
-	// Ignore statuses that are direct messages.
-	q = q.Where("NOT ? = ?", bun.Ident("status.visibility"), gtsmodel.VisibilityDirect)
+		TableExpr("? AS ?", bun.Ident("statuses"), bun.Ident("status")).
+		// Join on the domain of the account.
+		Join(
+			"JOIN ? AS ? ON ? = ?",
+			bun.Ident("accounts"), bun.Ident("account"),
+			bun.Ident("account.id"), bun.Ident("status.account_id"),
+		).
+		Where("? = ?", bun.Ident("account.domain"), domain).
+		// Ignore pending approval.
+		Where("? = ?", bun.Ident("status.pending_approval"), false).
+		// Ignore direct messages.
+		Where("NOT ? = ?", bun.Ident("status.visibility"), gtsmodel.VisibilityDirect)
 
 	count, err := q.Count(ctx)
 	if err != nil {
 		return 0, err
 	}
 
-	if localhost {
-		// Update cached instance statuses account value.
-		i.state.Caches.DB.LocalInstance.Statuses.Store(&count)
+	return count, nil
+}
+
+func (i *instanceDB) countLocalStatuses(ctx context.Context) (int, error) {
+	// Check for a cached instance statuses count, if so return this.
+	if n := i.state.Caches.DB.LocalInstance.Statuses.Load(); n != nil {
+		return *n, nil
 	}
+
+	// Select from local count view.
+	var count int
+	if err := i.db.
+		NewSelect().
+		Table("statuses_local_count_view").
+		Scan(ctx, &count); err != nil {
+		return 0, err
+	}
+
+	// Update cached instance statuses account value.
+	i.state.Caches.DB.LocalInstance.Statuses.Store(&count)
 
 	return count, nil
 }

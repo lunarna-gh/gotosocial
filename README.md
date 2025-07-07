@@ -3,23 +3,23 @@
 
 **Update regarding corporate sponsors: we are open to sponsorship arrangements with organizations that align with our values; see the conditions below**
 
-GoToSocial is an [ActivityPub](https://activitypub.rocks/) social network server, written in Golang.
+🏳️‍🌈 GoToSocial is an [ActivityPub](https://activitypub.rocks/) social network server, written in Golang. 🏳️‍⚧️
 
 With GoToSocial, you can keep in touch with your friends, post, read, and share images and articles. All without being tracked or advertised to!
 
 <p align="middle">
-  <img src="https://raw.githubusercontent.com/superseriousbusiness/gotosocial/main/docs/overrides/public/sloth.webp" width="300"/>
+  <img src="https://codeberg.org/superseriousbusiness/gotosocial/raw/branch/main/docs/overrides/public/sloth.webp" width="300"/>
 </p>
 
 **GoToSocial is still [BETA SOFTWARE](https://en.wikipedia.org/wiki/Software_release_life_cycle#Beta)**. It is already deployable and useable, and it federates cleanly with many other Fediverse servers (not yet all). However, many things are not yet implemented, and there are plenty of bugs! We left alpha stage around September/October 2024, and we intend to exit beta some time around 2026.
 
 Documentation is at [docs.gotosocial.org](https://docs.gotosocial.org). You can skip straight to the API documentation [here](https://docs.gotosocial.org/en/latest/api/swagger/).
 
-To build from source, check the [CONTRIBUTING.md](https://github.com/superseriousbusiness/gotosocial/blob/main/CONTRIBUTING.md) file.
+To build from source, check the [CONTRIBUTING.md](https://codeberg.org/superseriousbusiness/gotosocial/src/branch/main/CONTRIBUTING.md) file.
 
 Here's a screenshot of the instance landing page! Check out the project's [official account](https://gts.superseriousbusiness.org/@gotosocial) running on GoToSocial.
 
-![Screenshot of the landing page for the GoToSocial instance goblin.technology. It shows basic information about the instance; number of users and posts etc.](https://raw.githubusercontent.com/superseriousbusiness/gotosocial/main/docs/overrides/public/instancesplash.png)
+![Screenshot of the landing page for the GoToSocial instance goblin.technology. It shows basic information about the instance; number of users and posts etc.](https://codeberg.org/superseriousbusiness/gotosocial/raw/branch/main/docs/overrides/public/instancesplash.png)
 <!--overview-end-->
 
 ## Table of Contents <!-- omit in toc -->
@@ -40,10 +40,12 @@ Here's a screenshot of the instance landing page! Check out the project's [offic
   - [Various federation modes](#various-federation-modes)
   - [OIDC integration](#oidc-integration)
   - [Backend-first design](#backend-first-design)
+- [Alternatives to GoToSocial](#alternatives-to-gotosocial)
 - [Known Issues](#known-issues)
 - [Installing GoToSocial](#installing-gotosocial)
   - [Supported Platforms](#supported-platforms)
-    - [FreeBSD](#freebsd)
+    - [64-bit](#64-bit)
+    - [BSDs](#bsds)
     - [32-bit](#32-bit)
     - [OpenBSD](#openbsd)
   - [Stable Releases](#stable-releases)
@@ -72,7 +74,7 @@ GoToSocial provides a lightweight, customizable, and safety-focused entryway int
 
 If you've ever used something like Twitter or Tumblr (or even Myspace!) GoToSocial will probably feel familiar to you: You can follow people and have followers, you make posts which people can favourite and reply to and share, and you scroll through posts from people you follow using a timeline. You can write long posts or short posts, or just post images, it's up to you. You can also, of course, block people or otherwise limit interactions that you don't want by posting just to your friends.
 
-![Screenshot of the web view of a profile in GoToSocial, showing header and avatar, bio, and numbers of followers/following.](https://raw.githubusercontent.com/superseriousbusiness/gotosocial/main/docs/overrides/public/profile1.png)
+![Screenshot of the web view of a profile in GoToSocial, showing header and avatar, bio, and numbers of followers/following.](https://codeberg.org/superseriousbusiness/gotosocial/raw/branch/main/docs/overrides/public/profile1.png)
 
 **GoToSocial does NOT use recommendation algorithms or collect data about you to suggest content or 'improve your experience'**. The timeline is chronological: whatever you see at the top of your timeline is there because it's *just been posted*, not because it's been selected as interesting (or controversial) based on your personal profile.
 
@@ -84,7 +86,7 @@ GoToSocial doesn't claim to be *better* than any other application, but it offer
 
 Because GoToSocial uses [ActivityPub](https://activitypub.rocks/), you can hang out not just with people on your home server, but with people all over the [Fediverse](https://en.wikipedia.org/wiki/Fediverse), seamlessly.
 
-![the activitypub logo](https://raw.githubusercontent.com/superseriousbusiness/gotosocial/main/docs/overrides/public/ap_logo.svg)
+![the activitypub logo](https://codeberg.org/superseriousbusiness/gotosocial/raw/branch/main/docs/overrides/public/ap_logo.svg)
 
 Federation means that your home server is part of a network of servers all over the world that all communicate using the same protocol. Your data is no longer centralized on one company's servers, but resides on your own server and is shared — as you see fit — across a resilient web of servers run by other people.
 
@@ -100,7 +102,7 @@ It began as a solo project, and then picked up steam as more developers became i
 
 We made our first Alpha release in November 2021. We left Alpha and entered Beta in September/October 2024.
 
-For a detailed view on what's implemented and what's not, and progress made towards [stable release](https://en.wikipedia.org/wiki/Software_release_life_cycle#Stable_release), please see [the roadmap document](https://github.com/superseriousbusiness/gotosocial/blob/main/ROADMAP.md).
+For a detailed view on what's implemented and what's not, and progress made towards [stable release](https://en.wikipedia.org/wiki/Software_release_life_cycle#Stable_release), please see [the roadmap document](https://codeberg.org/superseriousbusiness/gotosocial/src/branch/main/ROADMAP.md).
 
 ---
 
@@ -128,11 +130,11 @@ GoToSocial offers public, unlisted/unlocked, followers-only, and direct posts (s
 
 GoToSocial lets you choose who can reply to your posts, via [interaction policies](https://docs.gotosocial.org/en/latest/user_guide/settings/#default-interaction-policies). You can choose to let anyone reply to your posts, let only your friends reply, and more.
 
-![interaction policies settings](https://raw.githubusercontent.com/superseriousbusiness/gotosocial/main/docs/overrides/public/user-settings-interaction-policy-1.png)
+![interaction policies settings](https://codeberg.org/superseriousbusiness/gotosocial/raw/branch/main/docs/overrides/public/user-settings-interaction-policy-1.png)
 
 ### Local-only posting
 
-Sometimes you only want to talk to people you share an instance with. GoToSocial supports this via local-only posting, which ensures that your post stays on your instance only. (Local-only posting is currently dependent on client support.)
+Sometimes you only want to talk to people you share an instance with. GoToSocial supports this via local-only posting, which ensures that your post stays on your instance only, even if it gets boosted. They also do not show up in the web interface, and are not accessible publicly via URL. (Local-only posting is currently dependent on client support.)
 
 ### RSS feed
 
@@ -142,7 +144,7 @@ GoToSocial lets you opt-in to exposing your profile as an RSS feed, so that peop
 
 With GoToSocial, you can write posts using the popular, easy-to-use Markdown markup language, which lets you produce rich HTML posts with support for blockquotes, syntax-highlighted code blocks, lists, inline links, and more.
 
-![markdown-formatted post](https://raw.githubusercontent.com/superseriousbusiness/gotosocial/main/docs/overrides/public/markdown-post.png)
+![markdown-formatted post](https://codeberg.org/superseriousbusiness/gotosocial/raw/branch/main/docs/overrides/public/markdown-post.png)
 
 ### Themes and custom CSS
 
@@ -153,61 +155,61 @@ It's also easy for admins to [add their own custom themes](https://docs.gotosoci
 <details>
 <summary>Show theme examples</summary>
 <figure>
-  <img src="https://raw.githubusercontent.com/superseriousbusiness/gotosocial/main/docs/overrides/public/theme-blurple-dark.png"/>
+  <img src="https://codeberg.org/superseriousbusiness/gotosocial/raw/branch/main/docs/overrides/public/theme-blurple-dark.png"/>
   <figcaption>Blurple dark</figcaption>
 </figure>
 <hr/>
 <figure>
-  <img src="https://raw.githubusercontent.com/superseriousbusiness/gotosocial/main/docs/overrides/public/theme-blurple-light.png"/>
+  <img src="https://codeberg.org/superseriousbusiness/gotosocial/raw/branch/main/docs/overrides/public/theme-blurple-light.png"/>
   <figcaption>Blurple light</figcaption>
 </figure>
 <hr/>
 <figure>
-  <img src="https://raw.githubusercontent.com/superseriousbusiness/gotosocial/main/docs/overrides/public/theme-brutalist-light.png"/>
+  <img src="https://codeberg.org/superseriousbusiness/gotosocial/raw/branch/main/docs/overrides/public/theme-brutalist-light.png"/>
   <figcaption>Brutalist light</figcaption>
 </figure>
 <hr/>
 <figure>
-  <img src="https://raw.githubusercontent.com/superseriousbusiness/gotosocial/main/docs/overrides/public/theme-brutalist-dark.png"/>
+  <img src="https://codeberg.org/superseriousbusiness/gotosocial/raw/branch/main/docs/overrides/public/theme-brutalist-dark.png"/>
   <figcaption>Brutalist dark</figcaption>
 </figure>
 <hr/>
 <figure>
-  <img src="https://raw.githubusercontent.com/superseriousbusiness/gotosocial/main/docs/overrides/public/theme-ecks-pee.png"/>
+  <img src="https://codeberg.org/superseriousbusiness/gotosocial/raw/branch/main/docs/overrides/public/theme-ecks-pee.png"/>
   <figcaption>Ecks pee</figcaption>
 </figure>
 <hr/>
 <figure>
-  <img src="https://raw.githubusercontent.com/superseriousbusiness/gotosocial/main/docs/overrides/public/theme-midnight-trip.png"/>
+  <img src="https://codeberg.org/superseriousbusiness/gotosocial/raw/branch/main/docs/overrides/public/theme-midnight-trip.png"/>
   <figcaption>Midnight trip</figcaption>
 </figure>
 <figure>
-  <img src="https://raw.githubusercontent.com/superseriousbusiness/gotosocial/main/docs/overrides/public/theme-moonlight-hunt.png"/>
+  <img src="https://codeberg.org/superseriousbusiness/gotosocial/raw/branch/main/docs/overrides/public/theme-moonlight-hunt.png"/>
   <figcaption>Moonlight hunt</figcaption>
 </figure>
 <hr/>
 <figure>
-  <img src="https://raw.githubusercontent.com/superseriousbusiness/gotosocial/main/docs/overrides/public/theme-rainforest.png"/>
+  <img src="https://codeberg.org/superseriousbusiness/gotosocial/raw/branch/main/docs/overrides/public/theme-rainforest.png"/>
   <figcaption>Rainforest</figcaption>
 </figure>
 <hr/>
 <figure>
-  <img src="https://raw.githubusercontent.com/superseriousbusiness/gotosocial/main/docs/overrides/public/theme-soft.png"/>
+  <img src="https://codeberg.org/superseriousbusiness/gotosocial/raw/branch/main/docs/overrides/public/theme-soft.png"/>
   <figcaption>Soft</figcaption>
 </figure>
 <hr/>
 <figure>
-  <img src="https://raw.githubusercontent.com/superseriousbusiness/gotosocial/main/docs/overrides/public/theme-solarized-dark.png"/>
+  <img src="https://codeberg.org/superseriousbusiness/gotosocial/raw/branch/main/docs/overrides/public/theme-solarized-dark.png"/>
   <figcaption>Solarized dark</figcaption>
 </figure>
 <hr/>
 <figure>
-  <img src="https://raw.githubusercontent.com/superseriousbusiness/gotosocial/main/docs/overrides/public/theme-solarized-light.png"/>
+  <img src="https://codeberg.org/superseriousbusiness/gotosocial/raw/branch/main/docs/overrides/public/theme-solarized-light.png"/>
   <figcaption>Solarized light</figcaption>
 </figure>
 <hr/>
 <figure>
-  <img src="https://raw.githubusercontent.com/superseriousbusiness/gotosocial/main/docs/overrides/public/theme-sunset.png"/>
+  <img src="https://codeberg.org/superseriousbusiness/gotosocial/raw/branch/main/docs/overrides/public/theme-sunset.png"/>
   <figcaption>Sunset</figcaption>
 </figure>
 <hr/>
@@ -217,7 +219,7 @@ It's also easy for admins to [add their own custom themes](https://docs.gotosoci
 
 GoToSocial uses only about 250-350MiB of RAM, and requires very little CPU power, so it plays nice with single-board computers, old laptops and tiny $5/month VPSes.
 
-![Grafana graph showing GoToSocial heap in use hovering around 250MB and spiking occasionally to 400MB-500MB.](https://raw.githubusercontent.com/superseriousbusiness/gotosocial/main/docs/overrides/public/getting-started-memory-graph.png)
+![Grafana graph showing GoToSocial heap in use hovering around 250MB and spiking occasionally to 400MB-500MB.](https://codeberg.org/superseriousbusiness/gotosocial/raw/branch/main/docs/overrides/public/getting-started-memory-graph.png)
 
 No external dependencies apart from a database (or just use SQLite!).
 
@@ -230,6 +232,7 @@ Simply download the binary + assets (or Docker container), tweak your configurat
 - [Import, export](https://docs.gotosocial.org/en/latest/admin/settings/#importexport), and [subscribe](https://docs.gotosocial.org/en/latest/admin/domain_permission_subscriptions) to community-created domain allow and domain block lists.
 - HTTP signature authentication: GoToSocial requires [HTTP Signatures](https://datatracker.ietf.org/doc/html/draft-cavage-http-signatures-12) when sending and receiving messages, to ensure that your messages can't be tampered with and your identity can't be forged.
 - Built-in, automatic support for secure HTTPS with [Let's Encrypt](https://letsencrypt.org/).
+- Support for two-factor authentication via time-based one-time passwords (Google authenticator, LastPass authenticator, etc).
 
 ### Various federation modes
 
@@ -255,17 +258,29 @@ On top of this API, web developers are encouraged to build any front-end impleme
 
 ---
 
+## Alternatives to GoToSocial
+
+Don't like GtS but still want to use the fediverse? Like GtS but prefer not to use beta software? There are lots of alternatives that might suit you better! Here are some that we know work well (alphabetical order):
+
+- [Akkoma](https://akkoma.social/): Full-featured ActivityPub microblogging with emoji reacts and quote posts (Elixir).
+- [Honk](https://humungus.tedunangst.com/r/honk/m/activitypub.7): Minimalist, opinionated microblogging with "No likes, no faves, no polls, no stars, no claps, no counts." (Go).
+- [Iceshrimp.net](https://iceshrimp.dev/iceshrimp/Iceshrimp.NET): rewrite of Iceshrimp from the ground up (.Net).
+- [Mastodon](https://joinmastodon.org/): Actively developed, widely recognized, scaleable ActivityPub microblogging instance (Ruby).
+- [Snac2](https://codeberg.org/grunfink/snac2): Simple, minimalistic instance with very low system requirements (portable C).
+
+---
+
 ## Known Issues
 
-Since GoToSocial is still in beta, there are plenty of bugs. We use [GitHub issues](https://github.com/superseriousbusiness/gotosocial/issues?q=is%3Aissue+is%3Aopen+label%3Abug) to track these.
+Since GoToSocial is still in beta, there are plenty of bugs. We use [Codeberg issues](https://codeberg.org/superseriousbusiness/gotosocial/issues?q=is%3Aissue+is%3Aopen+label%3Abug) to track these.
 
-Since every ActivityPub server implementation has a slightly different interpretation of the protocol, some servers don't quite federate properly with GoToSocial yet. We're tracking these issues [in this project](https://github.com/superseriousbusiness/gotosocial/projects/4). Eventually, we want to make sure that any implementation that can federate nicely with Mastodon should also be able to federate with GoToSocial.
+Since every ActivityPub server implementation has a slightly different interpretation of the protocol, some servers don't quite federate properly with GoToSocial yet. We're tracking these issues [in this project](https://codeberg.org/superseriousbusiness/gotosocial/projects/4). Eventually, we want to make sure that any implementation that can federate nicely with Mastodon should also be able to federate with GoToSocial.
 
 ---
 
 ## Installing GoToSocial
 
-Check our [getting started](https://docs.gotosocial.org/en/latest/getting_started/) documentation! And have a peruse of our [releases page](https://github.com/superseriousbusiness/gotosocial/releases).
+Check our [getting started](https://docs.gotosocial.org/en/latest/getting_started/) documentation! And have a peruse of our [releases page](https://codeberg.org/superseriousbusiness/gotosocial/releases).
 
 <!--releases-start-->
 ### Supported Platforms
@@ -291,13 +306,13 @@ This is the current status of support offered by GoToSocial for different platfo
 
 #### 64-bit
 
-64-bit platforms require the following (now, very common) CPU features:
+Notes on 64-bit CPU feature requirements:
 
-- x86-64 require SSE4.1 (for both media decoding and WASM SQLite)
+- x86_64 requires the SSE4.1 instruction set. (CPUs manufactured after ~2010)
 
-- Armv8 require ARM64 Large System Extensions (specifically when using WASM SQLite)
+- ARM64 requires no specific features, ARMv8 CPUs (and later) have all required features.
 
-Without these features, performance will suffer. In these situations, you may have some success building a binary yourself with the totally **unsupported, experimental** [nowasm](https://docs.gotosocial.org/en/latest/advanced/builds/nowasm/) tag.
+If any of the above features are missing, performance of media processing (and possibly, SQLite) will suffer. In these situations, you may have some success building a binary yourself with the totally **unsupported, experimental** [nowasm](https://docs.gotosocial.org/en/latest/advanced/builds/nowasm/) tag.
 
 #### BSDs
 
@@ -321,7 +336,7 @@ While we don't support running GtS on OpenBSD, you may have some success buildin
 
 We package our stable releases for both binary builds and Docker containers, so that you don't have to build from source yourself.
 
-The Docker image `superseriousbusiness/gotosocial:latest` will always correspond to the latest stable release. Since this tag is overwritten frequently, you may want to use Docker CLI flag `--pull always` to ensure that you always have the most up-to-date image every time you run using this tag. Alternatively, run `docker pull superseriousbusiness/gotosocial:latest` manually just before use.
+The Docker image `docker.io/superseriousbusiness/gotosocial:latest` will always correspond to the latest stable release. Since this tag is overwritten frequently, you may want to use Docker CLI flag `--pull always` to ensure that you always have the most up-to-date image every time you run using this tag. Alternatively, run `docker pull docker.io/superseriousbusiness/gotosocial:latest` manually just before use.
 
 ### Snapshot Releases
 
@@ -331,17 +346,17 @@ Please be warned that you do so at your own risk! We try to keep main working pr
 
 #### Docker
 
-To run from main using Docker, use the `snapshot` Docker tag. The Docker image `superseriousbusiness/gotosocial:snapshot` will always correspond to the latest commit on main. Since this tag is overwritten frequently, you may want to use Docker CLI flag `--pull always` to ensure that you always have the most up-to-date image every time you run using this tag. Alternatively, run `docker pull superseriousbusiness/gotosocial:snapshot` manually just before use.
+To run from main using Docker, use the `snapshot` Docker tag. The Docker image `docker.io/superseriousbusiness/gotosocial:snapshot` will always correspond to the latest commit on main that involves changes to Go code or web assets/source. Since this tag is overwritten frequently, you may want to use Docker CLI flag `--pull always` to ensure that you always have the most up-to-date image every time you run using this tag. Alternatively, run `docker pull docker.io/superseriousbusiness/gotosocial:snapshot` manually just before use.
 
 #### Binary release .tar.gz
 
 To run from main using a binary release, download the appropriate .tar.gz file for your architecture from our [self-hosted Minio S3 repository](https://minio.s3.superseriousbusiness.org/browser/gotosocial-snapshots).
 
-Snapshot binary releases in the S3 bucket are keyed by Github commit hash. To get the latest one, sort by Last Modified, or check out the list of commits [here](https://github.com/superseriousbusiness/gotosocial/commits/main), copy the SHA of the latest one, and paste it in the Minio console filter. Snapshot binary releases are expired after 28 days, to keep our hosting costs down.
+Snapshot binary releases in the S3 bucket are keyed by commit hash. To get the latest one, sort by Last Modified, or check out the list of commits [here](https://codeberg.org/superseriousbusiness/gotosocial/commits/main), copy the SHA of the latest one, and paste it in the Minio console filter. Snapshot binary releases are expired after 28 days, to keep our hosting costs down.
 
 ### From Source
 
-Instructions for building GoToSocial from source are in the [CONTRIBUTING.md](https://github.com/superseriousbusiness/gotosocial/blob/main/CONTRIBUTING.md) file.
+Instructions for building GoToSocial from source are in the [CONTRIBUTING.md](https://codeberg.org/superseriousbusiness/gotosocial/src/branch/main/CONTRIBUTING.md) file.
 
 ### Third-party Packaging
 
@@ -362,7 +377,7 @@ You can also deploy your own instance of GoToSocial with the help of:
 
 ## Contributing
 
-You would like to contribute to GtS? Great! ❤️❤️❤️ Check out the issues page to see if there's anything you intend to jump in on, and read the [CONTRIBUTING.md](https://github.com/superseriousbusiness/gotosocial/blob/main/CONTRIBUTING.md) file for guidelines and setting up your dev environment.
+You would like to contribute to GtS? Great! ❤️❤️❤️ Check out the issues page to see if there's anything you intend to jump in on, and read the [CONTRIBUTING.md](https://codeberg.org/superseriousbusiness/gotosocial/src/branch/main/CONTRIBUTING.md) file for guidelines and setting up your dev environment.
 
 ---
 
@@ -370,7 +385,7 @@ You would like to contribute to GtS? Great! ❤️❤️❤️ Check out the iss
 
 For questions and comments, you can [join our Matrix space](https://matrix.to/#/#gotosocial-space:superseriousbusiness.org) at `#gotosocial-space:superseriousbusiness.org`. This is the quickest way to reach the devs. You can also mail [admin@gotosocial.org](mailto:admin@gotosocial.org).
 
-For bugs and feature requests, please check to see if there's [already an issue](https://github.com/superseriousbusiness/gotosocial/issues), and if not, open one or use one of the above channels to make a request (if you don't have a Github account).
+For bugs and feature requests, please check to see if there's [already an issue](https://codeberg.org/superseriousbusiness/gotosocial/issues), and if not, open one or use one of the above channels to make a request (if you don't have a Codeberg account).
 
 ---
 
@@ -409,6 +424,7 @@ The following open source libraries, frameworks, and tools are used by GoToSocia
   - [gruf/go-mutexes](https://codeberg.org/gruf/go-mutexes); safemutex & mutex map. [MIT License](https://spdx.org/licenses/MIT.html).
   - [gruf/go-runners](https://codeberg.org/gruf/go-runners); synchronization utilities. [MIT License](https://spdx.org/licenses/MIT.html).
   - [gruf/go-sched](https://codeberg.org/gruf/go-sched); task scheduler. [MIT License](https://spdx.org/licenses/MIT.html).
+  - [gruf/go-split](https://codeberg.org/gruf/go-split); configuration string handling. [MIT License](https://spdx.org/licenses/MIT.html).
   - [gruf/go-storage](https://codeberg.org/gruf/go-storage); file storage backend (local & s3). [MIT License](https://spdx.org/licenses/MIT.html).
   - [gruf/go-structr](https://codeberg.org/gruf/go-structr); struct caching + queueing with automated indexing by field. [MIT License](https://spdx.org/licenses/MIT.html).
 - jackc:
@@ -425,15 +441,17 @@ The following open source libraries, frameworks, and tools are used by GoToSocia
 - [mvdan.cc/xurls](https://github.com/mvdan/xurls); URL parsing regular expressions. [BSD-3-Clause License](https://spdx.org/licenses/BSD-3-Clause.html).
 - [oklog/ulid](https://github.com/oklog/ulid); sequential, database-friendly ID generation. [Apache-2.0 License](https://spdx.org/licenses/Apache-2.0.html).
 - [open-telemetry/opentelemetry-go](https://github.com/open-telemetry/opentelemetry-go); OpenTelemetry API + SDK. [Apache-2.0 License](https://spdx.org/licenses/Apache-2.0.html).
+- [pquerna/otp](https://github.com/pquerna/otp); One Time Password utilities. [Apache-2.0 License](https://spdx.org/licenses/Apache-2.0.html).
 - spf13:
   - [spf13/cobra](https://github.com/spf13/cobra); command-line tooling. [Apache-2.0 License](https://spdx.org/licenses/Apache-2.0.html).
   - [spf13/viper](https://github.com/spf13/viper); configuration management. [Apache-2.0 License](https://spdx.org/licenses/Apache-2.0.html).
 - [stretchr/testify](https://github.com/stretchr/testify); test framework. [MIT License](https://spdx.org/licenses/MIT.html).
 - superseriousbusiness:
-  - [superseriousbusiness/activity](https://github.com/superseriousbusiness/activity) forked from [go-fed/activity](https://github.com/go-fed/activity); Golang ActivityPub/ActivityStreams library. [BSD-3-Clause License](https://spdx.org/licenses/BSD-3-Clause.html).
-  - [superseriousbusiness/exif-terminator](https://codeberg.org/superseriousbusiness/exif-terminator); EXIF data removal. [GNU AGPL v3 LICENSE](https://spdx.org/licenses/AGPL-3.0-or-later.html).
-  - [superseriousbusiness/httpsig](https://github.com/superseriousbusiness/httpsig) forked from [go-fed/httpsig](https://github.com/go-fed/httpsig); secure HTTP signature library. [BSD-3-Clause License](https://spdx.org/licenses/BSD-3-Clause.html).
-  - [superseriousbusiness/oauth2](https://github.com/superseriousbusiness/oauth2) forked from [go-oauth2/oauth2](https://github.com/go-oauth2/oauth2); OAuth server framework and token handling. [MIT License](https://spdx.org/licenses/MIT.html).
+  - [superseriousbusiness/activity](https://code.superseriousbusiness.org/activity) forked from [go-fed/activity](https://github.com/go-fed/activity); Golang ActivityPub/ActivityStreams library. [BSD-3-Clause License](https://spdx.org/licenses/BSD-3-Clause.html).
+  - [superseriousbusiness/exif-terminator](https://code.superseriousbusiness.org/exif-terminator); EXIF data removal. [GNU AGPL v3 LICENSE](https://spdx.org/licenses/AGPL-3.0-or-later.html).
+  - [superseriousbusiness/httpsig](https://code.superseriousbusiness.org/httpsig) forked from [go-fed/httpsig](https://github.com/go-fed/httpsig); secure HTTP signature library. [BSD-3-Clause License](https://spdx.org/licenses/BSD-3-Clause.html).
+  - [superseriousbusiness/oauth2](https://code.superseriousbusiness.org/oauth2) forked from [go-oauth2/oauth2](https://github.com/go-oauth2/oauth2); OAuth server framework and token handling. [MIT License](https://spdx.org/licenses/MIT.html).
+- [temoto/robotstxt](https://github.com/temoto/robotstxt); robots.txt parsing. [MIT License](https://spdx.org/licenses/MIT.html).
 - [tdewolff/minify](https://github.com/tdewolff/minify); HTML minification for Markdown-submitted posts. [MIT License](https://spdx.org/licenses/MIT.html).
 - [uber-go/automaxprocs](https://github.com/uber-go/automaxprocs); GOMAXPROCS automation. [MIT License](https://spdx.org/licenses/MIT.html).
 - [ulule/limiter](https://github.com/ulule/limiter); http rate limit middleware. [MIT License](https://spdx.org/licenses/MIT.html).
@@ -450,10 +468,10 @@ Sloth logo by [Anna Abramek](https://abramek.art/).
 
 The Creative Commons Attribution-ShareAlike 4.0 International License license applies specifically to the following files and subdirectories of this repository:
 
-- [sloth logo png](https://github.com/superseriousbusiness/gotosocial/blob/main/web/assets/logo.png)
-- [sloth logo webp](https://github.com/superseriousbusiness/gotosocial/blob/main/web/assets/logo.webp)
-- [sloth logo svg](https://github.com/superseriousbusiness/gotosocial/blob/main/web/assets/logo.svg)
-- [all default avatars](https://github.com/superseriousbusiness/gotosocial/blob/main/web/assets/default_avatars)
+- [sloth logo png](https://codeberg.org/superseriousbusiness/gotosocial/src/branch/main/web/assets/logo.png)
+- [sloth logo webp](https://codeberg.org/superseriousbusiness/gotosocial/src/branch/main/web/assets/logo.webp)
+- [sloth logo svg](https://codeberg.org/superseriousbusiness/gotosocial/src/branch/main/web/assets/logo.svg)
+- [all default avatars](https://codeberg.org/superseriousbusiness/gotosocial/src/branch/main/web/assets/default_avatars)
 
 Under the terms of the license, you are free to:
 
@@ -511,7 +529,7 @@ If after reading this you are still interested in supporting us, that is wonderf
 
 <img src="https://nlnet.nl/logo/NGI/NGIZero-green.hex.svg" width="75" alt="NGIZero logo"/>
 
-Combined with the above crowdfunding sources, 2023 Alpha development of GoToSocial was funded by a 50,000 EUR grant from the [NGI0 Entrust Fund](https://nlnet.nl/entrust/), via [NLnet](https://nlnet.nl/). See [here](https://nlnet.nl/project/GoToSocial/#ack) for more details. The successful grant application is archived [here](https://github.com/superseriousbusiness/gotosocial/blob/main/archive/nlnet/2022-next-generation-internet-zero.md).
+Combined with the above crowdfunding sources, 2023 Alpha development of GoToSocial was funded by a 50,000 EUR grant from the [NGI0 Entrust Fund](https://nlnet.nl/entrust/), via [NLnet](https://nlnet.nl/). See [here](https://nlnet.nl/project/GoToSocial/#ack) for more details. The successful grant application is archived [here](https://codeberg.org/superseriousbusiness/gotosocial/src/branch/main/archive/nlnet/2022-next-generation-internet-zero.md).
 
 2024 Beta development of GoToSocial is being funded by an additional 50,000 EUR grant from the [NGI0 Entrust Fund](https://nlnet.nl/entrust/), via [NLnet](https://nlnet.nl/).
 
@@ -521,7 +539,7 @@ Combined with the above crowdfunding sources, 2023 Alpha development of GoToSoci
 
 ![the gnu AGPL logo](https://www.gnu.org/graphics/agplv3-155x51.png)
 
-GoToSocial is free software, licensed under the [GNU AGPL v3 LICENSE](https://github.com/superseriousbusiness/gotosocial/blob/main/LICENSE). We encourage forking and changing the code, hacking around with it, and experimenting.
+GoToSocial is free software, licensed under the [GNU AGPL v3 LICENSE](https://codeberg.org/superseriousbusiness/gotosocial/src/branch/main/LICENSE). We encourage forking and changing the code, hacking around with it, and experimenting.
 
 See [here](https://www.gnu.org/licenses/why-affero-gpl.html) for the differences between AGPL versus GPL licensing, and [here](https://www.gnu.org/licenses/gpl-faq.html) for FAQ's about GPL licenses, including the AGPL.
 

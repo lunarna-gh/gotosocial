@@ -22,21 +22,21 @@ import (
 	"errors"
 	"time"
 
+	"code.superseriousbusiness.org/gotosocial/internal/ap"
+	"code.superseriousbusiness.org/gotosocial/internal/db"
+	"code.superseriousbusiness.org/gotosocial/internal/gtscontext"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/id"
+	"code.superseriousbusiness.org/gotosocial/internal/log"
+	"code.superseriousbusiness.org/gotosocial/internal/messages"
+	"code.superseriousbusiness.org/gotosocial/internal/processing/account"
+	"code.superseriousbusiness.org/gotosocial/internal/processing/common"
+	"code.superseriousbusiness.org/gotosocial/internal/state"
+	"code.superseriousbusiness.org/gotosocial/internal/typeutils"
+	"code.superseriousbusiness.org/gotosocial/internal/uris"
+	"code.superseriousbusiness.org/gotosocial/internal/util"
 	"codeberg.org/gruf/go-kv"
-	"github.com/superseriousbusiness/gotosocial/internal/ap"
-	"github.com/superseriousbusiness/gotosocial/internal/db"
-	"github.com/superseriousbusiness/gotosocial/internal/gtscontext"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/id"
-	"github.com/superseriousbusiness/gotosocial/internal/log"
-	"github.com/superseriousbusiness/gotosocial/internal/messages"
-	"github.com/superseriousbusiness/gotosocial/internal/processing/account"
-	"github.com/superseriousbusiness/gotosocial/internal/processing/common"
-	"github.com/superseriousbusiness/gotosocial/internal/state"
-	"github.com/superseriousbusiness/gotosocial/internal/typeutils"
-	"github.com/superseriousbusiness/gotosocial/internal/uris"
-	"github.com/superseriousbusiness/gotosocial/internal/util"
 )
 
 // clientAPI wraps processing functions
@@ -260,9 +260,18 @@ func (p *clientAPI) CreateUser(ctx context.Context, cMsg *messages.FromClientAPI
 }
 
 func (p *clientAPI) CreateStatus(ctx context.Context, cMsg *messages.FromClientAPI) error {
-	status, ok := cMsg.GTSModel.(*gtsmodel.Status)
-	if !ok {
-		return gtserror.Newf("%T not parseable as *gtsmodel.Status", cMsg.GTSModel)
+	var status *gtsmodel.Status
+	var backfill bool
+
+	// Check passed client message model type.
+	switch model := cMsg.GTSModel.(type) {
+	case *gtsmodel.Status:
+		status = model
+	case *gtsmodel.BackfillStatus:
+		status = model.Status
+		backfill = true
+	default:
+		return gtserror.Newf("%T not parseable as *gtsmodel.Status or *gtsmodel.BackfillStatus", cMsg.GTSModel)
 	}
 
 	// If pending approval is true then status must
@@ -344,18 +353,25 @@ func (p *clientAPI) CreateStatus(ctx context.Context, cMsg *messages.FromClientA
 		log.Errorf(ctx, "error updating account stats: %v", err)
 	}
 
-	if err := p.surface.timelineAndNotifyStatus(ctx, status); err != nil {
-		log.Errorf(ctx, "error timelining and notifying status: %v", err)
-	}
+	// We specifically do not timeline
+	// or notify for backfilled statuses,
+	// as these are more for archival than
+	// newly posted content for user feeds.
+	if !backfill {
 
-	if err := p.federate.CreateStatus(ctx, status); err != nil {
-		log.Errorf(ctx, "error federating status: %v", err)
+		if err := p.surface.timelineAndNotifyStatus(ctx, status); err != nil {
+			log.Errorf(ctx, "error timelining and notifying status: %v", err)
+		}
+
+		if err := p.federate.CreateStatus(ctx, status); err != nil {
+			log.Errorf(ctx, "error federating status: %v", err)
+		}
 	}
 
 	if status.InReplyToID != "" {
 		// Interaction counts changed on the replied status;
 		// uncache the prepared version from all timelines.
-		p.surface.invalidateStatusFromTimelines(ctx, status.InReplyToID)
+		p.surface.invalidateStatusFromTimelines(status.InReplyToID)
 	}
 
 	return nil
@@ -397,7 +413,7 @@ func (p *clientAPI) CreatePollVote(ctx context.Context, cMsg *messages.FromClien
 	}
 
 	// Interaction counts changed on the source status, uncache from timelines.
-	p.surface.invalidateStatusFromTimelines(ctx, vote.Poll.StatusID)
+	p.surface.invalidateStatusFromTimelines(vote.Poll.StatusID)
 
 	return nil
 }
@@ -549,7 +565,7 @@ func (p *clientAPI) CreateLike(ctx context.Context, cMsg *messages.FromClientAPI
 
 	// Interaction counts changed on the faved status;
 	// uncache the prepared version from all timelines.
-	p.surface.invalidateStatusFromTimelines(ctx, fave.StatusID)
+	p.surface.invalidateStatusFromTimelines(fave.StatusID)
 
 	return nil
 }
@@ -655,7 +671,7 @@ func (p *clientAPI) CreateAnnounce(ctx context.Context, cMsg *messages.FromClien
 
 	// Interaction counts changed on the boosted status;
 	// uncache the prepared version from all timelines.
-	p.surface.invalidateStatusFromTimelines(ctx, boost.BoostOfID)
+	p.surface.invalidateStatusFromTimelines(boost.BoostOfID)
 
 	return nil
 }
@@ -666,22 +682,20 @@ func (p *clientAPI) CreateBlock(ctx context.Context, cMsg *messages.FromClientAP
 		return gtserror.Newf("%T not parseable as *gtsmodel.Block", cMsg.GTSModel)
 	}
 
-	// Remove blockee's statuses from blocker's timeline.
-	if err := p.state.Timelines.Home.WipeItemsFromAccountID(
-		ctx,
-		block.AccountID,
-		block.TargetAccountID,
-	); err != nil {
-		return gtserror.Newf("error wiping timeline items for block: %w", err)
+	if block.Account.IsLocal() {
+		// Remove posts by target from origin's timelines.
+		p.surface.removeRelationshipFromTimelines(ctx,
+			block.AccountID,
+			block.TargetAccountID,
+		)
 	}
 
-	// Remove blocker's statuses from blockee's timeline.
-	if err := p.state.Timelines.Home.WipeItemsFromAccountID(
-		ctx,
-		block.TargetAccountID,
-		block.AccountID,
-	); err != nil {
-		return gtserror.Newf("error wiping timeline items for block: %w", err)
+	if block.TargetAccount.IsLocal() {
+		// Remove posts by origin from target's timelines.
+		p.surface.removeRelationshipFromTimelines(ctx,
+			block.TargetAccountID,
+			block.AccountID,
+		)
 	}
 
 	// TODO: same with notifications?
@@ -715,13 +729,40 @@ func (p *clientAPI) UpdateStatus(ctx context.Context, cMsg *messages.FromClientA
 		}
 	}
 
+	// Notify any *new* mentions added
+	// to this status by the editor.
+	for _, mention := range status.Mentions {
+		// Check if we've seen
+		// this mention already.
+		if !mention.IsNew {
+			// Already seen
+			// it, skip.
+			continue
+		}
+
+		// Haven't seen this mention
+		// yet, notify it if necessary.
+		mention.Status = status
+		if err := p.surface.notifyMention(ctx, mention); err != nil {
+			log.Errorf(ctx, "error notifying mention: %v", err)
+		}
+	}
+
+	// Notify of the latest edit.
+	if editsLen := len(status.EditIDs); editsLen != 0 {
+		editID := status.EditIDs[editsLen-1]
+		if err := p.surface.notifyStatusEdit(ctx, status, editID); err != nil {
+			log.Errorf(ctx, "error notifying status edit: %v", err)
+		}
+	}
+
 	// Push message that the status has been edited to streams.
 	if err := p.surface.timelineStatusUpdate(ctx, status); err != nil {
 		log.Errorf(ctx, "error streaming status edit: %v", err)
 	}
 
 	// Status representation has changed, invalidate from timelines.
-	p.surface.invalidateStatusFromTimelines(ctx, status.ID)
+	p.surface.invalidateStatusFromTimelines(status.ID)
 
 	return nil
 }
@@ -735,6 +776,9 @@ func (p *clientAPI) UpdateAccount(ctx context.Context, cMsg *messages.FromClient
 	if err := p.federate.UpdateAccount(ctx, account); err != nil {
 		log.Errorf(ctx, "error federating account update: %v", err)
 	}
+
+	// Account representation has changed, invalidate from timelines.
+	p.surface.invalidateTimelineEntriesByAccount(account.ID)
 
 	return nil
 }
@@ -842,6 +886,22 @@ func (p *clientAPI) UndoFollow(ctx context.Context, cMsg *messages.FromClientAPI
 		log.Errorf(ctx, "error updating account stats: %v", err)
 	}
 
+	if follow.Account.IsLocal() {
+		// Remove posts by target from origin's timelines.
+		p.surface.removeRelationshipFromTimelines(ctx,
+			follow.AccountID,
+			follow.TargetAccountID,
+		)
+	}
+
+	if follow.TargetAccount.IsLocal() {
+		// Remove posts by origin from target's timelines.
+		p.surface.removeRelationshipFromTimelines(ctx,
+			follow.TargetAccountID,
+			follow.AccountID,
+		)
+	}
+
 	if err := p.federate.UndoFollow(ctx, follow); err != nil {
 		log.Errorf(ctx, "error federating follow undo: %v", err)
 	}
@@ -874,7 +934,7 @@ func (p *clientAPI) UndoFave(ctx context.Context, cMsg *messages.FromClientAPI) 
 
 	// Interaction counts changed on the faved status;
 	// uncache the prepared version from all timelines.
-	p.surface.invalidateStatusFromTimelines(ctx, statusFave.StatusID)
+	p.surface.invalidateStatusFromTimelines(statusFave.StatusID)
 
 	return nil
 }
@@ -894,9 +954,8 @@ func (p *clientAPI) UndoAnnounce(ctx context.Context, cMsg *messages.FromClientA
 		log.Errorf(ctx, "error updating account stats: %v", err)
 	}
 
-	if err := p.surface.deleteStatusFromTimelines(ctx, status.ID); err != nil {
-		log.Errorf(ctx, "error removing timelined status: %v", err)
-	}
+	// Delete the boost wrapper status from timelines.
+	p.surface.deleteStatusFromTimelines(ctx, status.ID)
 
 	if err := p.federate.UndoAnnounce(ctx, status); err != nil {
 		log.Errorf(ctx, "error federating announce undo: %v", err)
@@ -904,7 +963,7 @@ func (p *clientAPI) UndoAnnounce(ctx context.Context, cMsg *messages.FromClientA
 
 	// Interaction counts changed on the boosted status;
 	// uncache the prepared version from all timelines.
-	p.surface.invalidateStatusFromTimelines(ctx, status.BoostOfID)
+	p.surface.invalidateStatusFromTimelines(status.BoostOfID)
 
 	return nil
 }
@@ -967,7 +1026,7 @@ func (p *clientAPI) DeleteStatus(ctx context.Context, cMsg *messages.FromClientA
 	if status.InReplyToID != "" {
 		// Interaction counts changed on the replied status;
 		// uncache the prepared version from all timelines.
-		p.surface.invalidateStatusFromTimelines(ctx, status.InReplyToID)
+		p.surface.invalidateStatusFromTimelines(status.InReplyToID)
 	}
 
 	return nil
@@ -1009,6 +1068,23 @@ func (p *clientAPI) DeleteAccountOrUser(ctx context.Context, cMsg *messages.From
 	// (stops processing of remote origin data targeting this account).
 	p.state.Workers.Federator.Queue.Delete("Receiving.ID", account.ID)
 	p.state.Workers.Federator.Queue.Delete("TargetURI", account.URI)
+
+	// Remove any entries authored by account from timelines.
+	p.surface.removeTimelineEntriesByAccount(account.ID)
+
+	// Remove any of their cached timelines.
+	p.state.Caches.Timelines.Home.Delete(account.ID)
+
+	// Get the IDs of all the lists owned by the given account ID.
+	listIDs, err := p.state.DB.GetListIDsByAccountID(ctx, account.ID)
+	if err != nil {
+		log.Errorf(ctx, "error getting lists for account %s: %v", account.ID, err)
+	}
+
+	// Remove list timelines of account.
+	for _, listID := range listIDs {
+		p.state.Caches.Timelines.List.Delete(listID)
+	}
 
 	if err := p.federate.DeleteAccount(ctx, cMsg.Target); err != nil {
 		log.Errorf(ctx, "error federating account delete: %v", err)
@@ -1153,7 +1229,7 @@ func (p *clientAPI) AcceptLike(ctx context.Context, cMsg *messages.FromClientAPI
 
 	// Interaction counts changed on the faved status;
 	// uncache the prepared version from all timelines.
-	p.surface.invalidateStatusFromTimelines(ctx, req.Like.StatusID)
+	p.surface.invalidateStatusFromTimelines(req.Like.StatusID)
 
 	return nil
 }
@@ -1186,7 +1262,7 @@ func (p *clientAPI) AcceptReply(ctx context.Context, cMsg *messages.FromClientAP
 
 	// Interaction counts changed on the replied status;
 	// uncache the prepared version from all timelines.
-	p.surface.invalidateStatusFromTimelines(ctx, reply.InReplyToID)
+	p.surface.invalidateStatusFromTimelines(reply.InReplyToID)
 
 	return nil
 }
@@ -1224,7 +1300,7 @@ func (p *clientAPI) AcceptAnnounce(ctx context.Context, cMsg *messages.FromClien
 
 	// Interaction counts changed on the original status;
 	// uncache the prepared version from all timelines.
-	p.surface.invalidateStatusFromTimelines(ctx, boost.BoostOfID)
+	p.surface.invalidateStatusFromTimelines(boost.BoostOfID)
 
 	return nil
 }

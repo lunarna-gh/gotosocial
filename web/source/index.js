@@ -60,8 +60,35 @@ skulk({
 			transform: [
 				["babelify", {
 					global: true,
-					ignore: [/node_modules\/(?!(photoswipe.*))/]
+					ignore: [/node_modules\/(?!(.*photoswipe.*))/]
 				}]
+			],
+		},
+		frontend_prerender: {
+			entryFile: "frontend_prerender",
+			outputFile: "frontend_prerender.js",
+			preset: ["js"],
+			prodCfg: prodCfg,
+			transform: [
+				["babelify", { global: true }]
+			],
+		},
+		nollamas: {
+			entryFile: "nollamas",
+			outputFile: "nollamas.js",
+			preset: ["js"],
+			prodCfg: prodCfg,
+			transform: [
+				["babelify", { global: true }]
+			],
+		},
+		nollamasworker: {
+			entryFile: "nollamasworker",
+			outputFile: "nollamasworker.js",
+			preset: ["js"],
+			prodCfg: prodCfg,
+			transform: [
+				["babelify", { global: true }]
 			],
 		},
 		settings: {

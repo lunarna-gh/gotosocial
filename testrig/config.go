@@ -24,11 +24,11 @@ import (
 	"strconv"
 	"time"
 
+	"code.superseriousbusiness.org/gotosocial/internal/config"
+	"code.superseriousbusiness.org/gotosocial/internal/language"
+	"code.superseriousbusiness.org/gotosocial/internal/media/ffmpeg"
 	"codeberg.org/gruf/go-bytesize"
 	"github.com/coreos/go-oidc/v3/oidc"
-	"github.com/superseriousbusiness/gotosocial/internal/config"
-	"github.com/superseriousbusiness/gotosocial/internal/language"
-	"github.com/superseriousbusiness/gotosocial/internal/media/ffmpeg"
 )
 
 func init() {
@@ -88,8 +88,10 @@ func testDefaults() config.Configuration {
 		InstanceFederationMode:         config.InstanceFederationModeDefault,
 		InstanceFederationSpamFilter:   true,
 		InstanceExposePeers:            true,
-		InstanceExposeSuspended:        true,
-		InstanceExposeSuspendedWeb:     true,
+		InstanceExposeBlocklist:        true,
+		InstanceExposeBlocklistWeb:     true,
+		InstanceExposeAllowlist:        true,
+		InstanceExposeAllowlistWeb:     true,
 		InstanceDeliverToSharedInboxes: true,
 		InstanceLanguages: language.Languages{
 			{
@@ -101,11 +103,15 @@ func testDefaults() config.Configuration {
 		},
 		InstanceSubscriptionsProcessFrom:  "23:00",        // 11pm,
 		InstanceSubscriptionsProcessEvery: 24 * time.Hour, // 1/day.
+		InstanceAllowBackdatingStatuses:   true,
 
-		AccountsRegistrationOpen: true,
-		AccountsReasonRequired:   true,
-		AccountsAllowCustomCSS:   true,
-		AccountsCustomCSSLength:  10000,
+		AccountsRegistrationOpen:         true,
+		AccountsReasonRequired:           true,
+		AccountsRegistrationDailyLimit:   10,
+		AccountsRegistrationBacklogLimit: 20,
+		AccountsAllowCustomCSS:           true,
+		AccountsCustomCSSLength:          10000,
+		AccountsMaxProfileFields:         8,
 
 		MediaDescriptionMinChars: 0,
 		MediaDescriptionMaxChars: 500,
@@ -151,28 +157,43 @@ func testDefaults() config.Configuration {
 		SMTPFrom:               "GoToSocial",
 		SMTPDiscloseRecipients: false,
 
-		TracingEnabled:           false,
-		TracingEndpoint:          "localhost:4317",
-		TracingTransport:         "grpc",
-		TracingInsecureTransport: true,
-
-		MetricsEnabled:     true,
-		MetricsAuthEnabled: false,
+		TracingEnabled: false,
+		MetricsEnabled: false,
 
 		SyslogEnabled:  false,
 		SyslogProtocol: "udp",
 		SyslogAddress:  "localhost:514",
 
-		AdvancedCookiesSamesite:      "lax",
-		AdvancedRateLimitRequests:    0, // disabled
-		AdvancedThrottlingMultiplier: 0, // disabled
-		AdvancedSenderMultiplier:     0, // 1 sender only, regardless of CPU
+		Advanced: config.AdvancedConfig{
+			CookiesSamesite:  "lax",
+			SenderMultiplier: 0, // 1 sender only, regardless of CPU
+
+			RateLimit: config.RateLimitConfig{
+				Requests: 0, // disabled
+			},
+
+			Throttling: config.ThrottlingConfig{
+				Multiplier: 0, // disabled
+			},
+
+			ScraperDeterrence: config.ScraperDeterrenceConfig{
+				Enabled:    envBool("GTS_ADVANCED_SCRAPER_DETERRENCE_ENABLED", false),
+				Difficulty: uint8(envInt("GTS_ADVANCED_SCRAPER_DETERRENCE_DIFFICULTY", 4)), //nolint
+			},
+		},
 
 		SoftwareVersion: "0.0.0-testrig",
 
 		// simply use cache defaults.
 		Cache: config.Defaults.Cache,
 	}
+}
+
+func envBool(key string, _default bool) bool {
+	return env(key, _default, func(value string) bool {
+		b, _ := strconv.ParseBool(value)
+		return b
+	})
 }
 
 func envInt(key string, _default int) int {

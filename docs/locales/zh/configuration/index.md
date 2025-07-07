@@ -18,7 +18,7 @@ gotosocial --config-path ./config.yaml server start
 
 该命令需要一个 [YAML](https://en.wikipedia.org/wiki/YAML) 或 [JSON](https://en.wikipedia.org/wiki/JSON) 格式的文件。
 
-可以在[这里](https://github.com/superseriousbusiness/gotosocial/blob/main/example/config.yaml)找到示例配置文件，其中包含每个配置字段的解释、默认值和示例值。此示例文件也包含在每个发行版的下载资源中。
+可以在[这里](https://codeberg.org/superseriousbusiness/gotosocial/src/branch/main/example/config.yaml)找到示例配置文件，其中包含每个配置字段的解释、默认值和示例值。此示例文件也包含在每个发行版的下载资源中。
 
 建议创建你自己的配置文件，只更改你需要改变的设置。这可以确保在每次发布时，你不必合并默认值的更改或者增删未从默认值更改的配置设置。
 
@@ -119,7 +119,7 @@ gotosocial server start --media-image-max-size 2097152
 
 *大多数*配置参数都提供了合理的默认值，除了必须自定义值的情况。
 
-请查看[示例配置文件](https://github.com/superseriousbusiness/gotosocial/blob/main/example/config.yaml)以获取默认值，或运行 `gotosocial --help`。
+请查看[示例配置文件](https://codeberg.org/superseriousbusiness/gotosocial/src/branch/main/example/config.yaml)以获取默认值，或运行 `gotosocial --help`。
 
 ## `GTS_WAZERO_COMPILATION_CACHE`
 
@@ -129,7 +129,7 @@ gotosocial server start --media-image-max-size 2097152
 
 你可以通过将环境变量 `GTS_WAZERO_COMPILATION_CACHE` 设置为一个目录来指示 GoToSocial 存储 Wazero 工件，该目录将由 GtS 用于存储两个大小约为 ~50MiB 的小型工件（总计约 ~100MiB）。
 
-要了解此方法的示例，请参见 [docker-compose.yaml](https://raw.githubusercontent.com/superseriousbusiness/gotosocial/main/example/docker-compose/docker-compose.yaml) 和 [gotosocial.service](https://raw.githubusercontent.com/superseriousbusiness/gotosocial/main/example/gotosocial.service) 示例文件。
+要了解此方法的示例，请参见 [docker-compose.yaml](https://codeberg.org/superseriousbusiness/gotosocial/raw/branch/main/example/docker-compose/docker-compose.yaml) 和 [gotosocial.service](https://codeberg.org/superseriousbusiness/gotosocial/raw/branch/main/example/gotosocial.service) 示例文件。
 
 如果你希望在 systemd 或 Docker 之外为 GtS 提供此值，可以在启动 GtS 服务器时通过以下方式进行：
 

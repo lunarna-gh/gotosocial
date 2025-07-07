@@ -25,17 +25,17 @@ import (
 	"slices"
 	"time"
 
-	"github.com/superseriousbusiness/gotosocial/internal/ap"
-	"github.com/superseriousbusiness/gotosocial/internal/config"
-	"github.com/superseriousbusiness/gotosocial/internal/db"
-	"github.com/superseriousbusiness/gotosocial/internal/gtscontext"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/id"
-	"github.com/superseriousbusiness/gotosocial/internal/log"
-	"github.com/superseriousbusiness/gotosocial/internal/media"
-	"github.com/superseriousbusiness/gotosocial/internal/util"
-	"github.com/superseriousbusiness/gotosocial/internal/util/xslices"
+	"code.superseriousbusiness.org/gotosocial/internal/ap"
+	"code.superseriousbusiness.org/gotosocial/internal/config"
+	"code.superseriousbusiness.org/gotosocial/internal/db"
+	"code.superseriousbusiness.org/gotosocial/internal/gtscontext"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/id"
+	"code.superseriousbusiness.org/gotosocial/internal/log"
+	"code.superseriousbusiness.org/gotosocial/internal/media"
+	"code.superseriousbusiness.org/gotosocial/internal/util"
+	"code.superseriousbusiness.org/gotosocial/internal/util/xslices"
 )
 
 // statusFresh returns true if the given status is still
@@ -454,7 +454,8 @@ func (d *Dereferencer) enrichStatus(
 
 	// Ensure we have the author account of the status dereferenced (+ up-to-date). If this is a new status
 	// (i.e. status.AccountID == "") then any error here is irrecoverable. status.AccountID must ALWAYS be set.
-	if _, _, err := d.getAccountByURI(ctx, requestUser, attributedTo); err != nil && status.AccountID == "" {
+	// We want the exact URI match here as well, not the imprecise URL match.
+	if _, _, err := d.getAccountByURI(ctx, requestUser, attributedTo, false); err != nil && status.AccountID == "" {
 
 		// Note that we specifically DO NOT wrap the error, instead collapsing it as string.
 		// Errors fetching an account do not necessarily relate to dereferencing the status.
@@ -669,9 +670,9 @@ func (d *Dereferencer) fetchStatusMentions(
 			alreadyExists bool
 		)
 
-		// Search existing status for a mention already stored,
+		// Search existing status + db for a mention already stored,
 		// else ensure new mention's target account is populated.
-		mention, alreadyExists, err = d.getPopulatedMention(ctx,
+		mention, alreadyExists, err = d.newOrExistingMention(ctx,
 			requestUser,
 			existing,
 			mention,
@@ -682,8 +683,8 @@ func (d *Dereferencer) fetchStatusMentions(
 		}
 
 		if alreadyExists {
-			// This mention was already attached
-			// to the status, use it and continue.
+			// This mention was already
+			// stored, use it and continue.
 			status.Mentions[i] = mention
 			status.MentionIDs[i] = mention.ID
 			continue
@@ -707,6 +708,7 @@ func (d *Dereferencer) fetchStatusMentions(
 		mention.TargetAccountURL = mention.TargetAccount.URL
 		mention.StatusID = status.ID
 		mention.Status = status
+		mention.IsNew = true
 
 		// Place the new mention into the database.
 		if err := d.state.DB.PutMention(ctx, mention); err != nil {
@@ -949,6 +951,8 @@ func (d *Dereferencer) fetchStatusAttachments(
 				RemoteURL:   &placeholder.RemoteURL,
 				Description: &placeholder.Description,
 				Blurhash:    &placeholder.Blurhash,
+				FocusX:      &placeholder.FileMeta.Focus.X,
+				FocusY:      &placeholder.FileMeta.Focus.Y,
 			},
 		)
 		if err != nil {
@@ -1239,6 +1243,7 @@ func (d *Dereferencer) handleStatusEdit(
 		edit.Content = existing.Content
 		edit.ContentWarning = existing.ContentWarning
 		edit.Text = existing.Text
+		edit.ContentType = existing.ContentType
 		edit.Language = existing.Language
 		edit.Sensitive = existing.Sensitive
 		edit.StatusID = status.ID
@@ -1289,19 +1294,26 @@ func (d *Dereferencer) handleStatusEdit(
 	return cols, nil
 }
 
-// getPopulatedMention tries to populate the given
+// newOrExistingMention tries to populate the given
 // mention with the correct TargetAccount and (if not
 // yet set) TargetAccountURI, returning the populated
 // mention.
 //
-// Will check on the existing status if the mention
-// is already there and populated; if so, existing
-// mention will be returned along with `true`.
+// Will check on the existing status and in the db
+// if the mention is already there and populated;
+// if so, existing mention will be returned along
+// with `true` to indicate that it already existed.
 //
 // Otherwise, this function will try to parse first
 // the Href of the mention, and then the namestring,
 // to see who it targets, and go fetch that account.
-func (d *Dereferencer) getPopulatedMention(
+//
+// Note: Ordinarily it would make sense to try the
+// namestring first, as it definitely can't be a URL
+// rather than a URI, but because some remotes do
+// silly things like only provide `@username` instead
+// of `@username@domain`, we try by URI first.
+func (d *Dereferencer) newOrExistingMention(
 	ctx context.Context,
 	requestUser string,
 	existing *gtsmodel.Status,
@@ -1311,34 +1323,59 @@ func (d *Dereferencer) getPopulatedMention(
 	bool, // True if mention already exists in the DB.
 	error,
 ) {
-	// Mentions can be created using Name or Href.
-	// Prefer Href (TargetAccountURI), fall back to Name.
-	if mention.TargetAccountURI != "" {
-
-		// Look for existing mention with target account's URI, if so use this.
+	// Mentions can be created using `name` or `href`.
+	//
+	// Prefer `href` (TargetAccountURI), fall back to Name.
+	switch {
+	case mention.TargetAccountURI != "":
+		// Look on the status for existing mention with target account's URI.
 		existingMention, ok := existing.GetMentionByTargetURI(mention.TargetAccountURI)
 		if ok && existingMention.ID != "" {
+			// Already populated
+			// mention, use this.
 			return existingMention, true, nil
 		}
 
 		// Ensure that mention account URI is parseable.
-		accountURI, err := url.Parse(mention.TargetAccountURI)
+		targetAccountURI, err := url.Parse(mention.TargetAccountURI)
 		if err != nil {
 			err := gtserror.Newf("invalid account uri %q: %w", mention.TargetAccountURI, err)
 			return nil, false, err
 		}
 
-		// Ensure we have  account of the mention target dereferenced.
+		// Ensure we have the account of
+		// the mention target dereferenced.
+		//
+		// Use exact URI match only, not URL,
+		// as we want to be precise here.
 		mention.TargetAccount, _, err = d.getAccountByURI(ctx,
 			requestUser,
-			accountURI,
+			targetAccountURI,
+			false,
 		)
 		if err != nil {
-			err := gtserror.Newf("failed to dereference account %s: %w", accountURI, err)
+			err := gtserror.Newf("failed to dereference account %s: %w", targetAccountURI, err)
 			return nil, false, err
 		}
-	} else {
 
+		// Look in the db for this existing mention.
+		existingMention, err = d.state.DB.GetMentionByTargetAcctStatus(
+			ctx,
+			mention.TargetAccount.ID,
+			existing.ID,
+		)
+		if err != nil && !errors.Is(err, db.ErrNoEntries) {
+			err := gtserror.Newf("db error looking for existing mention: %w", err)
+			return nil, false, err
+		}
+
+		if existingMention != nil {
+			// Already had stored
+			// mention, use this.
+			return existingMention, true, nil
+		}
+
+	case mention.NameString != "":
 		// Href wasn't set, extract the username and domain parts from namestring.
 		username, domain, err := util.ExtractNamestringParts(mention.NameString)
 		if err != nil {
@@ -1346,28 +1383,68 @@ func (d *Dereferencer) getPopulatedMention(
 			return nil, false, err
 		}
 
-		// Look for existing mention with username domain target, if so use this.
+		// Look on the status for existing mention with username domain target.
 		existingMention, ok := existing.GetMentionByUsernameDomain(username, domain)
 		if ok && existingMention.ID != "" {
+			// Already populated
+			// mention, use this.
 			return existingMention, true, nil
 		}
 
-		// Ensure we have the account of the mention target dereferenced.
+		// Ensure we have the account of
+		// the mention target dereferenced.
+		//
+		// This might fail if the remote does
+		// something silly like only setting
+		// `@username` and not `@username@domain`.
 		mention.TargetAccount, _, err = d.getAccountByUsernameDomain(ctx,
 			requestUser,
 			username,
 			domain,
 		)
-		if err != nil {
+		if err != nil && !errors.Is(err, db.ErrNoEntries) {
 			err := gtserror.Newf("failed to dereference account %s: %w", mention.NameString, err)
 			return nil, false, err
 		}
 
-		// Look for existing mention with target account's URI, if so use this.
+		if mention.TargetAccount == nil {
+			// Probably failed for abovementioned
+			// silly reason. Nothing we can do about it.
+			err := gtserror.Newf(
+				"failed to populate mention target account (badly formatted namestring?) %s: %w",
+				mention.NameString, err,
+			)
+			return nil, false, err
+		}
+
+		// Look on the status for existing mention with target account's URI.
 		existingMention, ok = existing.GetMentionByTargetURI(mention.TargetAccountURI)
 		if ok && existingMention.ID != "" {
+			// Already populated
+			// mention, use this.
 			return existingMention, true, nil
 		}
+
+		// Look in the db for this existing mention.
+		existingMention, err = d.state.DB.GetMentionByTargetAcctStatus(
+			ctx,
+			mention.TargetAccount.ID,
+			existing.ID,
+		)
+		if err != nil && !errors.Is(err, db.ErrNoEntries) {
+			err := gtserror.Newf("db error looking for existing mention: %w", err)
+			return nil, false, err
+		}
+
+		if existingMention != nil {
+			// Already had stored
+			// mention, use this.
+			return existingMention, true, nil
+		}
+
+	default:
+		const errText = "neither target uri nor namestring were set on mention, cannot process it"
+		return nil, false, gtserror.New(errText)
 	}
 
 	// At this point, mention.TargetAccountURI

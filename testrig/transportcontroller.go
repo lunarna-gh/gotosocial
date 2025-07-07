@@ -26,17 +26,16 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/superseriousbusiness/activity/pub"
-	"github.com/superseriousbusiness/activity/streams"
-	"github.com/superseriousbusiness/activity/streams/vocab"
-	"github.com/superseriousbusiness/gotosocial/internal/ap"
-	apimodel "github.com/superseriousbusiness/gotosocial/internal/api/model"
-	"github.com/superseriousbusiness/gotosocial/internal/federation"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/httpclient"
-	"github.com/superseriousbusiness/gotosocial/internal/log"
-	"github.com/superseriousbusiness/gotosocial/internal/state"
-	"github.com/superseriousbusiness/gotosocial/internal/transport"
+	"code.superseriousbusiness.org/activity/pub"
+	"code.superseriousbusiness.org/activity/streams"
+	"code.superseriousbusiness.org/activity/streams/vocab"
+	"code.superseriousbusiness.org/gotosocial/internal/ap"
+	apimodel "code.superseriousbusiness.org/gotosocial/internal/api/model"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/httpclient"
+	"code.superseriousbusiness.org/gotosocial/internal/log"
+	"code.superseriousbusiness.org/gotosocial/internal/state"
+	"code.superseriousbusiness.org/gotosocial/internal/transport"
 )
 
 const (
@@ -56,7 +55,7 @@ const (
 // PER TEST rather than per suite, so that the do function can be set on a test by test (or even more granular)
 // basis.
 func NewTestTransportController(state *state.State, client pub.HttpClient) transport.Controller {
-	return transport.NewController(state, NewTestFederatingDB(state), &federation.Clock{}, client)
+	return transport.NewController(state, NewTestFederatingDB(state), client)
 }
 
 type MockHTTPClient struct {
@@ -133,6 +132,12 @@ func NewMockHTTPClient(do func(req *http.Request) (*http.Response, error), relat
 			responseCode, responseBytes, responseContentType, responseContentLength, extraHeaders = WebfingerResponse(req)
 		} else if strings.Contains(reqURLString, ".well-known/host-meta") {
 			responseCode, responseBytes, responseContentType, responseContentLength, extraHeaders = HostMetaResponse(req)
+		} else if strings.Contains(reqURLString, ".well-known/nodeinfo") {
+			responseCode, responseBytes, responseContentType, responseContentLength, extraHeaders = WellKnownNodeInfoResponse(req)
+		} else if strings.Contains(reqURLString, "/robots.txt") {
+			responseCode, responseBytes, responseContentType, responseContentLength, extraHeaders = RobotsTxtResponse(req)
+		} else if strings.Contains(reqURLString, "/nodeinfo/2.1") {
+			responseCode, responseBytes, responseContentType, responseContentLength, extraHeaders = NodeInfoResponse(req)
 		} else if strings.Contains(reqURLString, "lists.example.org") {
 			responseCode, responseBytes, responseContentType, responseContentLength, extraHeaders = DomainPermissionSubscriptionResponse(req)
 		} else if note, ok := mockHTTPClient.TestRemoteStatuses[reqURLString]; ok {
@@ -318,6 +323,162 @@ func HostMetaResponse(req *http.Request) (
 	return
 }
 
+func WellKnownNodeInfoResponse(req *http.Request) (
+	responseCode int,
+	responseBytes []byte,
+	responseContentType string,
+	responseContentLength int,
+	extraHeaders map[string]string,
+) {
+	var wkr *apimodel.WellKnownResponse
+
+	switch req.URL.String() {
+	case "https://fossbros-anonymous.io/.well-known/nodeinfo":
+		wkr = &apimodel.WellKnownResponse{
+			Links: []apimodel.Link{
+				{
+					Rel:  "http://nodeinfo.diaspora.software/ns/schema/2.1",
+					Href: "https://fossbros-anonymous.io/nodeinfo/2.1",
+				},
+			},
+		}
+	case "https://furtive-nerds.example.org/.well-known/nodeinfo":
+		wkr = &apimodel.WellKnownResponse{
+			Links: []apimodel.Link{
+				{
+					Rel:  "http://nodeinfo.diaspora.software/ns/schema/2.1",
+					Href: "https://furtive-nerds.example.org/nodeinfo/2.1",
+				},
+			},
+		}
+	case "https://really.furtive-nerds.example.org/.well-known/nodeinfo":
+		wkr = &apimodel.WellKnownResponse{
+			Links: []apimodel.Link{
+				{
+					Rel:  "http://nodeinfo.diaspora.software/ns/schema/2.1",
+					Href: "https://really.furtive-nerds.example.org/nodeinfo/2.1",
+				},
+			},
+		}
+		extraHeaders = map[string]string{"X-Robots-Tag": "noindex,nofollow"}
+	default:
+		log.Debugf(nil, "nodeinfo response not available for %s", req.URL)
+		responseCode = http.StatusNotFound
+		responseBytes = []byte(``)
+		responseContentType = "application/json"
+		responseContentLength = len(responseBytes)
+		return
+	}
+
+	niJSON, err := json.Marshal(wkr)
+	if err != nil {
+		panic(err)
+	}
+	responseCode = http.StatusOK
+	responseBytes = niJSON
+	responseContentType = "application/json"
+	responseContentLength = len(niJSON)
+
+	return
+}
+
+func NodeInfoResponse(req *http.Request) (
+	responseCode int,
+	responseBytes []byte,
+	responseContentType string,
+	responseContentLength int,
+	extraHeaders map[string]string,
+) {
+	var ni *apimodel.Nodeinfo
+
+	switch req.URL.String() {
+	case "https://fossbros-anonymous.io/nodeinfo/2.1":
+		ni = &apimodel.Nodeinfo{
+			Version: "2.1",
+			Software: apimodel.NodeInfoSoftware{
+				Name:       "Hellsoft",
+				Version:    "6.6.6",
+				Repository: "https://forge.hellsoft.fossbros-anonymous.io",
+				Homepage:   "https://hellsoft.fossbros-anonymous.io",
+			},
+			Protocols: []string{"activitypub"},
+		}
+	case "https://furtive-nerds.example.org/nodeinfo/2.1":
+		ni = &apimodel.Nodeinfo{
+			Version: "2.1",
+			Software: apimodel.NodeInfoSoftware{
+				Name:       "GoToSocial",
+				Version:    "1.3.1.2",
+				Repository: "https://codeberg.org/superseriousbusiness/gotosocial",
+				Homepage:   "https://docs.gotosocial.org",
+			},
+			Protocols: []string{"activitypub"},
+		}
+	case "https://really.furtive-nerds.example.org/nodeinfo/2.1":
+		ni = &apimodel.Nodeinfo{
+			Version: "2.1",
+			Software: apimodel.NodeInfoSoftware{
+				Name:       "GoToSocial",
+				Version:    "1.3.1.2",
+				Repository: "https://codeberg.org/superseriousbusiness/gotosocial",
+				Homepage:   "https://docs.gotosocial.org",
+			},
+			Protocols: []string{"activitypub"},
+		}
+	default:
+		log.Debugf(nil, "nodeinfo response not available for %s", req.URL)
+		responseCode = http.StatusNotFound
+		responseBytes = []byte(``)
+		responseContentType = "application/json"
+		responseContentLength = len(responseBytes)
+		return
+	}
+
+	niJSON, err := json.Marshal(ni)
+	if err != nil {
+		panic(err)
+	}
+	responseCode = http.StatusOK
+	responseBytes = niJSON
+	responseContentType = "application/json"
+	responseContentLength = len(niJSON)
+
+	return
+}
+
+func RobotsTxtResponse(req *http.Request) (
+	responseCode int,
+	responseBytes []byte,
+	responseContentType string,
+	responseContentLength int,
+	extraHeaders map[string]string,
+) {
+	var robots string
+
+	switch req.URL.String() {
+	case "https://furtive-nerds.example.org/robots.txt":
+		// Disallow nodeinfo.
+		robots = "User-agent: *\nDisallow: /nodeinfo"
+	case "https://robotic.furtive-nerds.example.org/robots.txt":
+		// Disallow everything.
+		robots = "User-agent: *\nDisallow: /"
+	default:
+		log.Debugf(nil, "robots response not available for %s", req.URL)
+		responseCode = http.StatusNotFound
+		responseBytes = []byte(``)
+		responseContentType = "text/plain"
+		responseContentLength = len(responseBytes)
+		return
+	}
+
+	responseCode = http.StatusOK
+	responseBytes = []byte(robots)
+	responseContentType = "text/plain"
+	responseContentLength = len(responseBytes)
+
+	return
+}
+
 func WebfingerResponse(req *http.Request) (
 	responseCode int,
 	responseBytes []byte,
@@ -465,7 +626,7 @@ nothanks.com`
   {
     "domain": "bumfaces.net",
     "suspended_at": "2020-05-13T13:29:12.000Z",
-    "public_comment": "big jerks"
+    "comment": "big jerks"
   },
     {
     "domain": "peepee.poopoo",
@@ -478,6 +639,10 @@ nothanks.com`
   }
 ]`
 		jsonRespETag = "\"don't modify me daddy\""
+		allowsResp   = `people.we.like.com
+goodeggs.org
+allowthesefolks.church`
+		allowsRespETag = "\"never change\""
 	)
 
 	switch req.URL.String() {
@@ -554,6 +719,36 @@ nothanks.com`
 		} else {
 			responseBytes = []byte(csvResp)
 			responseContentType = textCSV
+			responseCode = http.StatusOK
+		}
+		responseContentLength = len(responseBytes)
+
+	case "https://lists.example.org/goodies.csv":
+		extraHeaders = map[string]string{
+			"Last-Modified": lastModified,
+			"ETag":          allowsRespETag,
+		}
+		if req.Header.Get("If-None-Match") == allowsRespETag {
+			// Cached.
+			responseCode = http.StatusNotModified
+		} else {
+			responseBytes = []byte(allowsResp)
+			responseContentType = textCSV
+			responseCode = http.StatusOK
+		}
+		responseContentLength = len(responseBytes)
+
+	case "https://lists.example.org/goodies":
+		extraHeaders = map[string]string{
+			"Last-Modified": lastModified,
+			"ETag":          allowsRespETag,
+		}
+		if req.Header.Get("If-None-Match") == allowsRespETag {
+			// Cached.
+			responseCode = http.StatusNotModified
+		} else {
+			responseBytes = []byte(allowsResp)
+			responseContentType = textPlain
 			responseCode = http.StatusOK
 		}
 		responseContentLength = len(responseBytes)

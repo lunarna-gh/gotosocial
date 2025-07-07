@@ -1,0 +1,54 @@
+# https://woodpecker-ci.org/docs/usage/workflow-syntax#when---global-workflow-conditions
+when:
+  - event: tag
+
+# https://goreleaser.com/ci/woodpecker/
+# https://woodpecker-ci.org/docs/usage/workflow-syntax#clone
+clone:
+  git:
+    image: woodpeckerci/plugin-git
+    settings:
+      tags: true
+
+steps:
+  release:
+    # https://codeberg.org/superseriousbusiness/gotosocial-woodpecker-build
+    image: superseriousbusiness/gotosocial-woodpecker-build:0.11.0
+    pull: true
+
+    # https://woodpecker-ci.org/docs/usage/volumes
+    volumes:
+      - /woodpecker/gotosocial/go-build-cache-root:/root/.cache/go-build
+      - /woodpecker/gotosocial/go-pkg-cache-root:/go/pkg
+      - /var/run/docker.sock:/var/run/docker.sock
+
+    # https://woodpecker-ci.org/docs/usage/environment
+    # https://woodpecker-ci.org/docs/usage/secrets#usage
+    environment:
+      # Needed for goreleaser to
+      # push manifests + containers.
+      DOCKER_USERNAME: gotosocial
+      DOCKER_PASSWORD:
+        from_secret: gts_docker_password
+      
+      # Needed for goreleaser
+      # to publish the release.
+      # https://goreleaser.com/scm/gitea/
+      GITEA_TOKEN:
+        from_secret: codeberg_token
+    
+    # https://woodpecker-ci.org/docs/usage/workflow-syntax#commands
+    commands:
+      - git fetch --tags
+      - /go/dockerlogin.sh
+      
+      # When releasing, compare commits to the most recent tag that is not the
+      # current one AND is not a release candidate tag (ie., no "rc" in the name).
+      #
+      # The CI_COMMIT_TAG env var should point to the tag that triggered this build.
+      # See: https://woodpecker-ci.org/docs/usage/environment
+      #
+      # Note, this may cause annoyances when doing backport releases, for example,
+      # releasing v0.10.1 when we've already released v0.15.0 or whatever, but
+      # they should only be superficial annoyances related to the release notes.
+      - GORELEASER_PREVIOUS_TAG=$(git tag -l | grep -v "rc\|${CI_COMMIT_TAG}" | sort -V -r | head -n 1) goreleaser release --clean

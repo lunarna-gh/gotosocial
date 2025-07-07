@@ -22,9 +22,9 @@ import (
 	"encoding/json"
 	"testing"
 
+	"code.superseriousbusiness.org/activity/streams"
+	"code.superseriousbusiness.org/gotosocial/internal/ap"
 	"github.com/stretchr/testify/suite"
-	"github.com/superseriousbusiness/activity/streams"
-	"github.com/superseriousbusiness/gotosocial/internal/ap"
 )
 
 type ExtractAttachmentsTestSuite struct {

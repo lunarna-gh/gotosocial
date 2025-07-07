@@ -26,10 +26,11 @@ import type {
 import type { Theme } from "../../types/theme";
 import { User } from "../../types/user";
 import { DefaultInteractionPolicies, UpdateDefaultInteractionPolicies } from "../../types/interaction";
+import { Account } from "../../types/account";
 
 const extended = gtsApi.injectEndpoints({
 	endpoints: (build) => ({
-		updateCredentials: build.mutation({
+		updateCredentials: build.mutation<Account, any>({
 			query: (formData) => ({
 				method: "PATCH",
 				url: `/api/v1/accounts/update_credentials`,
@@ -39,9 +40,26 @@ const extended = gtsApi.injectEndpoints({
 			}),
 			...replaceCacheOnMutation("verifyCredentials")
 		}),
+
+		deleteHeader: build.mutation<Account, void>({
+			query: (_) => ({
+				method: "DELETE",
+				url: `/api/v1/profile/header`,
+			}),
+			...replaceCacheOnMutation("verifyCredentials")
+		}),
+
+		deleteAvatar: build.mutation<Account, void>({
+			query: (_) => ({
+				method: "DELETE",
+				url: `/api/v1/profile/avatar`,
+			}),
+			...replaceCacheOnMutation("verifyCredentials")
+		}),
 		
 		user: build.query<User, void>({
-			query: () => ({url: `/api/v1/user`})
+			query: () => ({url: `/api/v1/user`}),
+			providesTags: ["User"],
 		}),
 		
 		passwordChange: build.mutation({
@@ -122,6 +140,8 @@ const extended = gtsApi.injectEndpoints({
 
 export const {
 	useUpdateCredentialsMutation,
+	useDeleteHeaderMutation,
+	useDeleteAvatarMutation,
 	useUserQuery,
 	usePasswordChangeMutation,
 	useEmailChangeMutation,

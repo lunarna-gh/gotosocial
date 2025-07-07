@@ -21,9 +21,10 @@ import (
 	"context"
 	"errors"
 
-	apimodel "github.com/superseriousbusiness/gotosocial/internal/api/model"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
+	apimodel "code.superseriousbusiness.org/gotosocial/internal/api/model"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/typeutils"
 )
 
 // Get gets the given status, taking account of privacy settings and blocks etc.
@@ -52,9 +53,21 @@ func (p *Processor) SourceGet(ctx context.Context, requester *gtsmodel.Account, 
 			"target status not found",
 		)
 	}
+
+	// Try to use unparsed content
+	// warning text if available,
+	// fall back to parsed cw html.
+	var spoilerText string
+	if status.ContentWarningText != "" {
+		spoilerText = status.ContentWarningText
+	} else {
+		spoilerText = status.ContentWarning
+	}
+
 	return &apimodel.StatusSource{
 		ID:          status.ID,
 		Text:        status.Text,
-		SpoilerText: status.ContentWarning,
+		SpoilerText: spoilerText,
+		ContentType: typeutils.ContentTypeToAPIContentType(status.ContentType),
 	}, nil
 }

@@ -22,10 +22,11 @@ import (
 	"testing"
 	"time"
 
+	apimodel "code.superseriousbusiness.org/gotosocial/internal/api/model"
+	apiutil "code.superseriousbusiness.org/gotosocial/internal/api/util"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/oauth"
 	"github.com/stretchr/testify/suite"
-	apimodel "github.com/superseriousbusiness/gotosocial/internal/api/model"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/oauth"
 )
 
 type MoveTestSuite struct {
@@ -56,7 +57,7 @@ func (suite *MoveTestSuite) TestMoveAccountOK() {
 	// Trigger move from zork to admin.
 	if err := suite.accountProcessor.MoveSelf(
 		ctx,
-		&oauth.Auth{
+		&apiutil.Auth{
 			Token:       oauth.DBTokenToToken(suite.testTokens["local_account_1"]),
 			Application: suite.testApplications["local_account_1"],
 			User:        suite.testUsers["local_account_1"],
@@ -120,7 +121,7 @@ func (suite *MoveTestSuite) TestMoveAccountNotAliased() {
 	// not aliased back to zork.
 	err := suite.accountProcessor.MoveSelf(
 		ctx,
-		&oauth.Auth{
+		&apiutil.Auth{
 			Token:       oauth.DBTokenToToken(suite.testTokens["local_account_1"]),
 			Application: suite.testApplications["local_account_1"],
 			User:        suite.testUsers["local_account_1"],
@@ -150,7 +151,7 @@ func (suite *MoveTestSuite) TestMoveAccountBadPassword() {
 	// not aliased back to zork.
 	err := suite.accountProcessor.MoveSelf(
 		ctx,
-		&oauth.Auth{
+		&apiutil.Auth{
 			Token:       oauth.DBTokenToToken(suite.testTokens["local_account_1"]),
 			Application: suite.testApplications["local_account_1"],
 			User:        suite.testUsers["local_account_1"],

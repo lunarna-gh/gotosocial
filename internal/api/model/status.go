@@ -17,7 +17,11 @@
 
 package model
 
-import "github.com/superseriousbusiness/gotosocial/internal/language"
+import (
+	"time"
+
+	"code.superseriousbusiness.org/gotosocial/internal/language"
+)
 
 // Status models a status or post.
 //
@@ -106,6 +110,10 @@ type Status struct {
 	// so the user may redraft from the source text without the client having to reverse-engineer
 	// the original text from the HTML content.
 	Text string `json:"text,omitempty"`
+	// Content type that was used to parse the status's text. Returned when
+	// status is deleted, so if the user is redrafting the message the client
+	// can default to the same content type.
+	ContentType StatusContentType `json:"content_type,omitempty"`
 	// A list of filters that matched this status and why they matched, if there are any such filters.
 	Filtered []FilterResult `json:"filtered,omitempty"`
 	// The interaction policy for this status, as set by the status author.
@@ -118,6 +126,10 @@ type Status struct {
 // swagger:ignore
 type WebStatus struct {
 	*Status
+
+	// HTML version of spoiler content
+	// (ie., not converted to plaintext).
+	SpoilerContent string `json:"-"`
 
 	// Override API account with web account.
 	Account *WebAccount `json:"account"`
@@ -154,6 +166,12 @@ type WebStatus struct {
 	// after the "main" thread, so it and everything
 	// below it can be considered "replies".
 	ThreadFirstReply bool
+
+	// Sorted slice of StatusEdit times for
+	// this status, from latest to oldest.
+	// Only set if status has been edited.
+	// Last entry is always creation time.
+	EditTimeline []string `json:"-"`
 }
 
 /*
@@ -231,9 +249,14 @@ type StatusCreateRequest struct {
 	Federated *bool `form:"federated" json:"federated"`
 
 	// ISO 8601 Datetime at which to schedule a status.
-	// Providing this parameter will cause ScheduledStatus to be returned instead of Status.
+	//
+	// Providing this parameter with a *future* time will cause ScheduledStatus to be returned instead of Status.
 	// Must be at least 5 minutes in the future.
-	ScheduledAt string `form:"scheduled_at" json:"scheduled_at"`
+	// This feature isn't implemented yet.
+	//
+	// Providing this parameter with a *past* time will cause the status to be backdated,
+	// and will not push it to the user's followers. This is intended for importing old statuses.
+	ScheduledAt *time.Time `form:"scheduled_at" json:"scheduled_at"`
 
 	// ISO 639 language code for this status.
 	Language string `form:"language" json:"language"`
@@ -311,6 +334,9 @@ type StatusSource struct {
 
 	// Plain-text version of spoiler text.
 	SpoilerText string `json:"spoiler_text"`
+
+	// Content type that was used to parse the text.
+	ContentType StatusContentType `json:"content_type,omitempty"`
 }
 
 // StatusEdit represents one historical revision of a status, containing

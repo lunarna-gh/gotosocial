@@ -22,9 +22,9 @@ import (
 	"encoding/json"
 	"testing"
 
+	"code.superseriousbusiness.org/gotosocial/internal/ap"
+	"code.superseriousbusiness.org/gotosocial/internal/typeutils"
 	"github.com/stretchr/testify/suite"
-	"github.com/superseriousbusiness/gotosocial/internal/ap"
-	"github.com/superseriousbusiness/gotosocial/internal/typeutils"
 )
 
 type WrapTestSuite struct {
@@ -90,9 +90,9 @@ func (suite *WrapTestSuite) TestWrapNoteInCreate() {
     "attachment": [],
     "attributedTo": "http://localhost:8080/users/the_mighty_zork",
     "cc": "http://localhost:8080/users/the_mighty_zork/followers",
-    "content": "hello everyone!",
+    "content": "\u003cp\u003ehello everyone!\u003c/p\u003e",
     "contentMap": {
-      "en": "hello everyone!"
+      "en": "\u003cp\u003ehello everyone!\u003c/p\u003e"
     },
     "id": "http://localhost:8080/users/the_mighty_zork/statuses/01F8MHAMCHF6Y650WCRSCP4WMY",
     "interactionPolicy": {
@@ -100,19 +100,31 @@ func (suite *WrapTestSuite) TestWrapNoteInCreate() {
         "always": [
           "https://www.w3.org/ns/activitystreams#Public"
         ],
-        "approvalRequired": []
+        "approvalRequired": [],
+        "automaticApproval": [
+          "https://www.w3.org/ns/activitystreams#Public"
+        ],
+        "manualApproval": []
       },
       "canLike": {
         "always": [
           "https://www.w3.org/ns/activitystreams#Public"
         ],
-        "approvalRequired": []
+        "approvalRequired": [],
+        "automaticApproval": [
+          "https://www.w3.org/ns/activitystreams#Public"
+        ],
+        "manualApproval": []
       },
       "canReply": {
         "always": [
           "https://www.w3.org/ns/activitystreams#Public"
         ],
-        "approvalRequired": []
+        "approvalRequired": [],
+        "automaticApproval": [
+          "https://www.w3.org/ns/activitystreams#Public"
+        ],
+        "manualApproval": []
       }
     },
     "published": "2021-10-20T12:40:37+02:00",
@@ -206,7 +218,7 @@ func (suite *WrapTestSuite) TestWrapAccountableInUpdate() {
     "publicKey": {
       "id": "http://localhost:8080/users/the_mighty_zork/main-key",
       "owner": "http://localhost:8080/users/the_mighty_zork",
-      "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwXTcOAvM1Jiw5Ffpk0qn\nr0cwbNvFe/5zQ+Tp7tumK/ZnT37o7X0FUEXrxNi+dkhmeJ0gsaiN+JQGNUewvpSk\nPIAXKvi908aSfCGjs7bGlJCJCuDuL5d6m7hZnP9rt9fJc70GElPpG0jc9fXwlz7T\nlsPb2ecatmG05Y4jPwdC+oN4MNCv9yQzEvCVMzl76EJaM602kIHC1CISn0rDFmYd\n9rSN7XPlNJw1F6PbpJ/BWQ+pXHKw3OEwNTETAUNYiVGnZU+B7a7bZC9f6/aPbJuV\nt8Qmg+UnDvW1Y8gmfHnxaWG2f5TDBvCHmcYtucIZPLQD4trAozC4ryqlmCWQNKbt\n0wIDAQAB\n-----END PUBLIC KEY-----\n"
+      "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqtQQjwFLHPez+7uF9AX7\nuvLFHm3SyNIozhhVmGhxHIs0xdgRnZKmzmZkFdrFuXddBTAglU4C2u3dw10jJO1a\nWIFQF8bGkRHZG7Pd25/XmWWBRPmOJxNLeWBqpj0G+2zTMgnAV72hALSDFY2/QDsx\nUthenKw0Srpj1LUwvRbyVQQ8fGu4v0HACFnlOX2hCQwhfAnGrb0V70Y2IJu++MP7\n6i49md0vR0Mv3WbsEJUNp1fTIUzkgWB31icvfrNmaaAxw5FkAE+KfkkylhRxi5i5\nRR1XQUINWc2Kj2Kro+CJarKG+9zasMyN7+D230gpESi8rXv1SwRu865FR3gANdDS\nMwIDAQAB\n-----END PUBLIC KEY-----\n"
     },
     "published": "2022-05-20T11:09:18Z",
     "summary": "\u003cp\u003ehey yo this is my profile!\u003c/p\u003e",

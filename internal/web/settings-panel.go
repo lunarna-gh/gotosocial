@@ -20,10 +20,10 @@ package web
 import (
 	"context"
 
+	apimodel "code.superseriousbusiness.org/gotosocial/internal/api/model"
+	apiutil "code.superseriousbusiness.org/gotosocial/internal/api/util"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
 	"github.com/gin-gonic/gin"
-	apimodel "github.com/superseriousbusiness/gotosocial/internal/api/model"
-	apiutil "github.com/superseriousbusiness/gotosocial/internal/api/util"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
 )
 
 func (m *Module) SettingsPanelHandler(c *gin.Context) {
@@ -54,7 +54,13 @@ func (m *Module) SettingsPanelHandler(c *gin.Context) {
 			cssStatus,  // Used for rendering stub/fake statuses.
 			cssSettings,
 		},
-		Javascript: []string{jsSettings},
+		Javascript: []apiutil.JavascriptEntry{
+			{
+				Src:   jsSettings,
+				Async: true,
+				Defer: true,
+			},
+		},
 	}
 
 	apiutil.TemplateWebPage(c, page)

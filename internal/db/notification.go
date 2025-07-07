@@ -20,8 +20,8 @@ package db
 import (
 	"context"
 
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/paging"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/paging"
 )
 
 // Notification contains functions for creating and getting notifications.
@@ -39,8 +39,14 @@ type Notification interface {
 	GetNotificationsByIDs(ctx context.Context, ids []string) ([]*gtsmodel.Notification, error)
 
 	// GetNotification gets one notification according to the provided parameters, if it exists.
-	// Since not all notifications are about a status, statusID can be an empty string.
-	GetNotification(ctx context.Context, notificationType gtsmodel.NotificationType, targetAccountID string, originAccountID string, statusID string) (*gtsmodel.Notification, error)
+	// Since not all notifications are about a status or an edit, statusOrEditID can be empty.
+	GetNotification(
+		ctx context.Context,
+		notifType gtsmodel.NotificationType,
+		targetAcctID string,
+		originAcctID string,
+		statusOrEditID string,
+	) (*gtsmodel.Notification, error)
 
 	// PopulateNotification ensures that the notification's struct fields are populated.
 	PopulateNotification(ctx context.Context, notif *gtsmodel.Notification) error

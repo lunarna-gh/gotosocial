@@ -20,9 +20,9 @@ package ap_test
 import (
 	"testing"
 
+	"code.superseriousbusiness.org/gotosocial/internal/ap"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
 	"github.com/stretchr/testify/suite"
-	"github.com/superseriousbusiness/gotosocial/internal/ap"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
 )
 
 type ExtractVisibilityTestSuite struct {
@@ -51,7 +51,7 @@ func (suite *ExtractVisibilityTestSuite) TestExtractVisibilityFollowersOnly() {
 }
 
 func (suite *ExtractVisibilityTestSuite) TestExtractVisibilityFollowersOnlyAnnounce() {
-	// https://github.com/superseriousbusiness/gotosocial/issues/267
+	// https://codeberg.org/superseriousbusiness/gotosocial/issues/267
 	a := suite.addressable4
 	visibility, err := ap.ExtractVisibility(a, "https://example.org/users/someone/followers")
 	suite.NoError(err)

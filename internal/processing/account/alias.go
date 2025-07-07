@@ -24,10 +24,10 @@ import (
 	"net/url"
 	"slices"
 
-	apimodel "github.com/superseriousbusiness/gotosocial/internal/api/model"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/util/xslices"
+	apimodel "code.superseriousbusiness.org/gotosocial/internal/api/model"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/util/xslices"
 )
 
 func (p *Processor) Alias(
@@ -107,9 +107,14 @@ func (p *Processor) Alias(
 		}
 
 		// Ensure we have account dereferenced.
+		//
+		// As this comes from user input, allow checking
+		// by URL to make things easier, not just to an
+		// exact AP URI (which a user might not even know).
 		targetAccount, _, err := p.federator.GetAccountByURI(ctx,
 			account.Username,
 			newAKA.uri,
+			true,
 		)
 		if err != nil {
 			err := fmt.Errorf(

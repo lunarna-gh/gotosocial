@@ -20,9 +20,9 @@ package robots
 import (
 	"net/http"
 
+	apiutil "code.superseriousbusiness.org/gotosocial/internal/api/util"
+	"code.superseriousbusiness.org/gotosocial/internal/config"
 	"github.com/gin-gonic/gin"
-	apiutil "github.com/superseriousbusiness/gotosocial/internal/api/util"
-	"github.com/superseriousbusiness/gotosocial/internal/config"
 )
 
 type Module struct{}
@@ -49,9 +49,29 @@ func (m *Module) Route(attachHandler func(method string, path string, f ...gin.H
 }
 
 func (m *Module) robotsGETHandler(c *gin.Context) {
+	const ETag = "\"" + apiutil.RobotsTxtETag + "\""
+	c.Header("ETag", ETag)
+
+	if c.Request.Header.Get("If-None-Match") == ETag {
+		// Cached.
+		c.AbortWithStatus(http.StatusNotModified)
+		return
+	}
+
+	// Not cached, serve.
 	c.String(http.StatusOK, apiutil.RobotsTxt)
 }
 
 func (m *Module) robotsGETHandlerDisallowNodeInfo(c *gin.Context) {
+	const ETag = "\"" + apiutil.RobotsTxtDisallowNodeInfoETag + "\""
+	c.Header("ETag", ETag)
+
+	if c.Request.Header.Get("If-None-Match") == ETag {
+		// Cached.
+		c.AbortWithStatus(http.StatusNotModified)
+		return
+	}
+
+	// Not cached, serve.
 	c.String(http.StatusOK, apiutil.RobotsTxtDisallowNodeInfo)
 }

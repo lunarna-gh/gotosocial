@@ -20,20 +20,18 @@ package federatingdb
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/url"
 
+	"code.superseriousbusiness.org/activity/streams"
+	"code.superseriousbusiness.org/activity/streams/vocab"
+	"code.superseriousbusiness.org/gotosocial/internal/ap"
+	"code.superseriousbusiness.org/gotosocial/internal/config"
+	"code.superseriousbusiness.org/gotosocial/internal/gtscontext"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/id"
+	"code.superseriousbusiness.org/gotosocial/internal/log"
+	"code.superseriousbusiness.org/gotosocial/internal/uris"
 	"codeberg.org/gruf/go-byteutil"
-	"github.com/superseriousbusiness/activity/streams"
-	"github.com/superseriousbusiness/activity/streams/vocab"
-	"github.com/superseriousbusiness/gotosocial/internal/ap"
-	"github.com/superseriousbusiness/gotosocial/internal/config"
-	"github.com/superseriousbusiness/gotosocial/internal/db"
-	"github.com/superseriousbusiness/gotosocial/internal/gtscontext"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/id"
-	"github.com/superseriousbusiness/gotosocial/internal/log"
-	"github.com/superseriousbusiness/gotosocial/internal/uris"
 )
 
 func typeNames(objects []ap.TypeOrIRI) []string {
@@ -66,16 +64,20 @@ func sameActor(actor1 vocab.ActivityStreamsActorProperty, actor2 vocab.ActivityS
 	}
 
 	for a1Iter := actor1.Begin(); a1Iter != actor1.End(); a1Iter = a1Iter.Next() {
+		a1IRI := a1Iter.GetIRI()
+		if a1IRI == nil {
+			return false
+		}
+
+		a1IRIStr := a1IRI.String()
 		for a2Iter := actor2.Begin(); a2Iter != actor2.End(); a2Iter = a2Iter.Next() {
-			if a1Iter.GetIRI() == nil {
+			a2IRI := a2Iter.GetIRI()
+			if a2IRI == nil {
 				return false
 			}
 
-			if a2Iter.GetIRI() == nil {
-				return false
-			}
-
-			if a1Iter.GetIRI().String() == a2Iter.GetIRI().String() {
+			a2IRIStr := a2IRI.String()
+			if a1IRIStr == a2IRIStr {
 				return true
 			}
 		}
@@ -90,7 +92,7 @@ func sameActor(actor1 vocab.ActivityStreamsActorProperty, actor2 vocab.ActivityS
 //
 // The go-fed library will handle setting the 'id' property on the
 // activity or object provided with the value returned.
-func (f *federatingDB) NewID(ctx context.Context, t vocab.Type) (idURL *url.URL, err error) {
+func (f *DB) NewID(ctx context.Context, t vocab.Type) (idURL *url.URL, err error) {
 	log.DebugKV(ctx, "newID", serialize{t})
 
 	// Most of our types set an ID already
@@ -117,92 +119,38 @@ func (f *federatingDB) NewID(ctx context.Context, t vocab.Type) (idURL *url.URL,
 	}
 
 	// Default fallback behaviour:
-	// {proto}://{host}/{randomID}
-	newID, err := id.NewRandomULID()
-	if err != nil {
-		return nil, err
-	}
-
-	return url.Parse(fmt.Sprintf("%s://%s/%s", config.GetProtocol(), config.GetHost(), newID))
+	// {proto}://{host}/{newULID}
+	return &url.URL{
+		Scheme: config.GetProtocol(),
+		Host:   config.GetHost(),
+		Path:   "/" + id.NewULID(),
+	}, nil
 }
 
-// ActorForOutbox fetches the actor's IRI for the given outbox IRI.
+// ActorForOutbox fetches the local actor's IRI for the given outbox IRI.
 //
 // The library makes this call only after acquiring a lock first.
-func (f *federatingDB) ActorForOutbox(ctx context.Context, outboxIRI *url.URL) (actorIRI *url.URL, err error) {
-	acct, err := f.getAccountForIRI(ctx, outboxIRI)
+func (f *DB) ActorForOutbox(ctx context.Context, outboxIRI *url.URL) (actorIRI *url.URL, err error) {
+	acct, err := f.state.DB.GetOneAccountByOutboxURI(ctx, outboxIRI.String())
 	if err != nil {
 		return nil, err
 	}
 	return url.Parse(acct.URI)
 }
 
-// ActorForInbox fetches the actor's IRI for the given outbox IRI.
+// ActorForInbox fetches the local actor's IRI for the given inbox IRI.
 //
 // The library makes this call only after acquiring a lock first.
-func (f *federatingDB) ActorForInbox(ctx context.Context, inboxIRI *url.URL) (actorIRI *url.URL, err error) {
-	acct, err := f.getAccountForIRI(ctx, inboxIRI)
+func (f *DB) ActorForInbox(ctx context.Context, inboxIRI *url.URL) (actorIRI *url.URL, err error) {
+	acct, err := f.state.DB.GetOneAccountByInboxURI(ctx, inboxIRI.String())
 	if err != nil {
 		return nil, err
 	}
 	return url.Parse(acct.URI)
-}
-
-// getAccountForIRI returns the account that corresponds to or owns the given IRI.
-func (f *federatingDB) getAccountForIRI(ctx context.Context, iri *url.URL) (*gtsmodel.Account, error) {
-	var (
-		acct *gtsmodel.Account
-		err  error
-	)
-
-	switch {
-	case uris.IsUserPath(iri):
-		if acct, err = f.state.DB.GetAccountByURI(ctx, iri.String()); err != nil {
-			if err == db.ErrNoEntries {
-				return nil, fmt.Errorf("no actor found that corresponds to uri %s", iri.String())
-			}
-			return nil, fmt.Errorf("db error searching for actor with uri %s", iri.String())
-		}
-		return acct, nil
-	case uris.IsInboxPath(iri):
-		if acct, err = f.state.DB.GetAccountByInboxURI(ctx, iri.String()); err != nil {
-			if err == db.ErrNoEntries {
-				return nil, fmt.Errorf("no actor found that corresponds to inbox %s", iri.String())
-			}
-			return nil, fmt.Errorf("db error searching for actor with inbox %s", iri.String())
-		}
-		return acct, nil
-	case uris.IsOutboxPath(iri):
-		if acct, err = f.state.DB.GetAccountByOutboxURI(ctx, iri.String()); err != nil {
-			if err == db.ErrNoEntries {
-				return nil, fmt.Errorf("no actor found that corresponds to outbox %s", iri.String())
-			}
-			return nil, fmt.Errorf("db error searching for actor with outbox %s", iri.String())
-		}
-		return acct, nil
-	case uris.IsFollowersPath(iri):
-		if acct, err = f.state.DB.GetAccountByFollowersURI(ctx, iri.String()); err != nil {
-			if err == db.ErrNoEntries {
-				return nil, fmt.Errorf("no actor found that corresponds to followers_uri %s", iri.String())
-			}
-			return nil, fmt.Errorf("db error searching for actor with followers_uri %s", iri.String())
-		}
-		return acct, nil
-	case uris.IsFollowingPath(iri):
-		if acct, err = f.state.DB.GetAccountByFollowingURI(ctx, iri.String()); err != nil {
-			if err == db.ErrNoEntries {
-				return nil, fmt.Errorf("no actor found that corresponds to following_uri %s", iri.String())
-			}
-			return nil, fmt.Errorf("db error searching for actor with following_uri %s", iri.String())
-		}
-		return acct, nil
-	default:
-		return nil, fmt.Errorf("getActorForIRI: iri %s not recognised", iri)
-	}
 }
 
 // collectFollows takes a slice of iris and converts them into ActivityStreamsCollection of IRIs.
-func (f *federatingDB) collectIRIs(ctx context.Context, iris []*url.URL) (vocab.ActivityStreamsCollection, error) {
+func (f *DB) collectIRIs(_ context.Context, iris []*url.URL) (vocab.ActivityStreamsCollection, error) {
 	collection := streams.NewActivityStreamsCollection()
 	items := streams.NewActivityStreamsItemsProperty()
 	for _, i := range iris {

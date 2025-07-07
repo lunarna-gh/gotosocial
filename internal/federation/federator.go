@@ -18,16 +18,16 @@
 package federation
 
 import (
-	"github.com/superseriousbusiness/activity/pub"
-	"github.com/superseriousbusiness/gotosocial/internal/db"
-	"github.com/superseriousbusiness/gotosocial/internal/federation/dereferencing"
-	"github.com/superseriousbusiness/gotosocial/internal/federation/federatingdb"
-	"github.com/superseriousbusiness/gotosocial/internal/filter/interaction"
-	"github.com/superseriousbusiness/gotosocial/internal/filter/visibility"
-	"github.com/superseriousbusiness/gotosocial/internal/media"
-	"github.com/superseriousbusiness/gotosocial/internal/state"
-	"github.com/superseriousbusiness/gotosocial/internal/transport"
-	"github.com/superseriousbusiness/gotosocial/internal/typeutils"
+	"code.superseriousbusiness.org/activity/pub"
+	"code.superseriousbusiness.org/gotosocial/internal/db"
+	"code.superseriousbusiness.org/gotosocial/internal/federation/dereferencing"
+	"code.superseriousbusiness.org/gotosocial/internal/federation/federatingdb"
+	"code.superseriousbusiness.org/gotosocial/internal/filter/interaction"
+	"code.superseriousbusiness.org/gotosocial/internal/filter/visibility"
+	"code.superseriousbusiness.org/gotosocial/internal/media"
+	"code.superseriousbusiness.org/gotosocial/internal/state"
+	"code.superseriousbusiness.org/gotosocial/internal/transport"
+	"code.superseriousbusiness.org/gotosocial/internal/typeutils"
 )
 
 var _ interface {
@@ -37,7 +37,7 @@ var _ interface {
 
 type Federator struct {
 	db           db.DB
-	federatingDB federatingdb.DB
+	federatingDB *federatingdb.DB
 	clock        pub.Clock
 	converter    *typeutils.Converter
 	transport    transport.Controller
@@ -54,7 +54,7 @@ type Federator struct {
 // NewFederator returns a new federator instance.
 func NewFederator(
 	state *state.State,
-	federatingDB federatingdb.DB,
+	federatingDB *federatingdb.DB,
 	transportController transport.Controller,
 	converter *typeutils.Converter,
 	visFilter *visibility.Filter,
@@ -112,7 +112,7 @@ func (f *Federator) FederatingActor() pub.FederatingActor {
 }
 
 // FederatingDB returns the underlying FederatingDB interface.
-func (f *Federator) FederatingDB() federatingdb.DB {
+func (f *Federator) FederatingDB() *federatingdb.DB {
 	return f.federatingDB
 }
 

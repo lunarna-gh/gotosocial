@@ -24,19 +24,19 @@ import (
 	"testing"
 	"time"
 
+	"code.superseriousbusiness.org/gotosocial/internal/ap"
+	"code.superseriousbusiness.org/gotosocial/internal/config"
+	"code.superseriousbusiness.org/gotosocial/internal/db"
+	statusfilter "code.superseriousbusiness.org/gotosocial/internal/filter/status"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/id"
+	"code.superseriousbusiness.org/gotosocial/internal/messages"
+	"code.superseriousbusiness.org/gotosocial/internal/state"
+	"code.superseriousbusiness.org/gotosocial/internal/stream"
+	"code.superseriousbusiness.org/gotosocial/internal/typeutils"
+	"code.superseriousbusiness.org/gotosocial/internal/util"
+	"code.superseriousbusiness.org/gotosocial/testrig"
 	"github.com/stretchr/testify/suite"
-	"github.com/superseriousbusiness/gotosocial/internal/ap"
-	"github.com/superseriousbusiness/gotosocial/internal/config"
-	"github.com/superseriousbusiness/gotosocial/internal/db"
-	statusfilter "github.com/superseriousbusiness/gotosocial/internal/filter/status"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/id"
-	"github.com/superseriousbusiness/gotosocial/internal/messages"
-	"github.com/superseriousbusiness/gotosocial/internal/state"
-	"github.com/superseriousbusiness/gotosocial/internal/stream"
-	"github.com/superseriousbusiness/gotosocial/internal/typeutils"
-	"github.com/superseriousbusiness/gotosocial/internal/util"
-	"github.com/superseriousbusiness/gotosocial/testrig"
 )
 
 type FromClientAPITestSuite struct {
@@ -89,6 +89,7 @@ func (suite *FromClientAPITestSuite) newStatus(
 			OriginAccountID:  account.ID,
 			OriginAccountURI: account.URI,
 			TargetAccountID:  replyToStatus.AccountID,
+			IsNew:            true,
 		}
 
 		if err := state.DB.PutMention(ctx, mention); err != nil {
@@ -117,6 +118,7 @@ func (suite *FromClientAPITestSuite) newStatus(
 			TargetAccountID:  mentionedAccount.ID,
 			TargetAccount:    mentionedAccount,
 			Silent:           util.Ptr(false),
+			IsNew:            true,
 		}
 
 		newStatus.Mentions = append(newStatus.Mentions, newMention)
@@ -366,6 +368,162 @@ func (suite *FromClientAPITestSuite) TestProcessCreateStatusWithNotification() {
 
 	// Check for a Web Push status notification.
 	suite.checkWebPushed(testStructs.WebPushSender, receivingAccount.ID, gtsmodel.NotificationStatus)
+}
+
+// Even with notifications on for a user, backfilling a status should not notify or timeline it.
+func (suite *FromClientAPITestSuite) TestProcessCreateBackfilledStatusWithNotification() {
+	testStructs := testrig.SetupTestStructs(rMediaPath, rTemplatePath)
+	defer testrig.TearDownTestStructs(testStructs)
+
+	var (
+		ctx              = context.Background()
+		postingAccount   = suite.testAccounts["admin_account"]
+		receivingAccount = suite.testAccounts["local_account_1"]
+		testList         = suite.testLists["local_account_1_list_1"]
+		streams          = suite.openStreams(ctx,
+			testStructs.Processor,
+			receivingAccount,
+			[]string{testList.ID},
+		)
+		homeStream  = streams[stream.TimelineHome]
+		listStream  = streams[stream.TimelineList+":"+testList.ID]
+		notifStream = streams[stream.TimelineNotifications]
+
+		// Admin account posts a new top-level status.
+		status = suite.newStatus(
+			ctx,
+			testStructs.State,
+			postingAccount,
+			gtsmodel.VisibilityPublic,
+			nil,
+			nil,
+			nil,
+			false,
+			nil,
+		)
+	)
+
+	// Update the follow from receiving account -> posting account so
+	// that receiving account wants notifs when posting account posts.
+	follow := new(gtsmodel.Follow)
+	*follow = *suite.testFollows["local_account_1_admin_account"]
+
+	follow.Notify = util.Ptr(true)
+	if err := testStructs.State.DB.UpdateFollow(ctx, follow); err != nil {
+		suite.FailNow(err.Error())
+	}
+
+	// Process the new status as a backfill.
+	if err := testStructs.Processor.Workers().ProcessFromClientAPI(
+		ctx,
+		&messages.FromClientAPI{
+			APObjectType:   ap.ObjectNote,
+			APActivityType: ap.ActivityCreate,
+			GTSModel:       &gtsmodel.BackfillStatus{Status: status},
+			Origin:         postingAccount,
+		},
+	); err != nil {
+		suite.FailNow(err.Error())
+	}
+
+	// There should be no message in the home stream.
+	suite.checkStreamed(
+		homeStream,
+		false,
+		"",
+		"",
+	)
+
+	// There should be no message in the list stream.
+	suite.checkStreamed(
+		listStream,
+		false,
+		"",
+		"",
+	)
+
+	// No notification should appear for the status.
+	if testrig.WaitFor(func() bool {
+		var err error
+		_, err = testStructs.State.DB.GetNotification(
+			ctx,
+			gtsmodel.NotificationStatus,
+			receivingAccount.ID,
+			postingAccount.ID,
+			status.ID,
+		)
+		return err == nil
+	}) {
+		suite.FailNow("a status notification was created, but should not have been")
+	}
+
+	// There should be no message in the notification stream.
+	suite.checkStreamed(
+		notifStream,
+		false,
+		"",
+		"",
+	)
+
+	// There should be no Web Push status notification.
+	suite.checkNotWebPushed(testStructs.WebPushSender, receivingAccount.ID)
+}
+
+// Backfilled statuses should not federate when created.
+func (suite *FromClientAPITestSuite) TestProcessCreateBackfilledStatusWithRemoteFollower() {
+	testStructs := testrig.SetupTestStructs(rMediaPath, rTemplatePath)
+	defer testrig.TearDownTestStructs(testStructs)
+
+	var (
+		ctx              = context.Background()
+		postingAccount   = suite.testAccounts["local_account_1"]
+		receivingAccount = suite.testAccounts["remote_account_1"]
+
+		// Local account posts a new top-level status.
+		status = suite.newStatus(
+			ctx,
+			testStructs.State,
+			postingAccount,
+			gtsmodel.VisibilityPublic,
+			nil,
+			nil,
+			nil,
+			false,
+			nil,
+		)
+	)
+
+	// Follow the local account from the remote account.
+	follow := &gtsmodel.Follow{
+		ID:              "01JJHW9RW28SC1NEPZ0WBJQ4ZK",
+		CreatedAt:       testrig.TimeMustParse("2022-05-14T13:21:09+02:00"),
+		UpdatedAt:       testrig.TimeMustParse("2022-05-14T13:21:09+02:00"),
+		AccountID:       receivingAccount.ID,
+		TargetAccountID: postingAccount.ID,
+		ShowReblogs:     util.Ptr(true),
+		URI:             "http://fossbros-anonymous.io/users/foss_satan/follow/01JJHWEVC7F8W2JDW1136K431K",
+		Notify:          util.Ptr(false),
+	}
+
+	if err := testStructs.State.DB.PutFollow(ctx, follow); err != nil {
+		suite.FailNow(err.Error())
+	}
+
+	// Process the new status as a backfill.
+	if err := testStructs.Processor.Workers().ProcessFromClientAPI(
+		ctx,
+		&messages.FromClientAPI{
+			APObjectType:   ap.ObjectNote,
+			APActivityType: ap.ActivityCreate,
+			GTSModel:       &gtsmodel.BackfillStatus{Status: status},
+			Origin:         postingAccount,
+		},
+	); err != nil {
+		suite.FailNow(err.Error())
+	}
+
+	// No deliveries should be queued.
+	suite.Zero(testStructs.State.Workers.Delivery.Queue.Len())
 }
 
 func (suite *FromClientAPITestSuite) TestProcessCreateStatusReply() {
@@ -1989,6 +2147,96 @@ func (suite *FromClientAPITestSuite) TestProcessUpdateStatusWithFollowedHashtag(
 
 	// Check for absence of Web Push notifications.
 	suite.checkNotWebPushed(testStructs.WebPushSender, receivingAccount.ID)
+}
+
+// Test that when someone edits a status that's been interacted with,
+// the interacter gets a notification that the status has been edited.
+func (suite *FromClientAPITestSuite) TestProcessUpdateStatusInteractedWith() {
+	testStructs := testrig.SetupTestStructs(rMediaPath, rTemplatePath)
+	defer testrig.TearDownTestStructs(testStructs)
+
+	var (
+		ctx              = context.Background()
+		postingAccount   = suite.testAccounts["local_account_1"]
+		receivingAccount = suite.testAccounts["admin_account"]
+		streams          = suite.openStreams(ctx,
+			testStructs.Processor,
+			receivingAccount,
+			nil,
+		)
+		notifStream = streams[stream.TimelineNotifications]
+	)
+
+	// Copy the test status.
+	//
+	// This is one that the receiving account
+	// has interacted with (by replying).
+	testStatus := new(gtsmodel.Status)
+	*testStatus = *suite.testStatuses["local_account_1_status_1"]
+
+	// Create + store an edit.
+	edit := &gtsmodel.StatusEdit{
+		// Just set the ID + status ID, other
+		// fields don't matter for this test.
+		ID:       "01JTR74W15VS6A6MK15N5JVJ55",
+		StatusID: testStatus.ID,
+	}
+
+	if err := testStructs.State.DB.PutStatusEdit(ctx, edit); err != nil {
+		suite.FailNow(err.Error())
+	}
+
+	// Set edit on status as
+	// it would be for real.
+	testStatus.EditIDs = []string{edit.ID}
+	testStatus.Edits = []*gtsmodel.StatusEdit{edit}
+
+	// Update the status.
+	if err := testStructs.Processor.Workers().ProcessFromClientAPI(
+		ctx,
+		&messages.FromClientAPI{
+			APObjectType:   ap.ObjectNote,
+			APActivityType: ap.ActivityUpdate,
+			GTSModel:       testStatus,
+			Origin:         postingAccount,
+		},
+	); err != nil {
+		suite.FailNow(err.Error())
+	}
+
+	// Wait for a notification to appear for the status.
+	var notif *gtsmodel.Notification
+	if !testrig.WaitFor(func() bool {
+		var err error
+		notif, err = testStructs.State.DB.GetNotification(
+			ctx,
+			gtsmodel.NotificationUpdate,
+			receivingAccount.ID,
+			postingAccount.ID,
+			edit.ID,
+		)
+		return err == nil
+	}) {
+		suite.FailNow("timed out waiting for edited status notification")
+	}
+
+	apiNotif, err := testStructs.TypeConverter.NotificationToAPINotification(ctx, notif, nil, nil)
+	if err != nil {
+		suite.FailNow(err.Error())
+	}
+
+	notifJSON, err := json.Marshal(apiNotif)
+	if err != nil {
+		suite.FailNow(err.Error())
+	}
+
+	// Check notif in stream.
+	suite.checkStreamed(
+		notifStream,
+		true,
+		string(notifJSON),
+		stream.EventTypeNotification,
+	)
 }
 
 func (suite *FromClientAPITestSuite) TestProcessStatusDelete() {

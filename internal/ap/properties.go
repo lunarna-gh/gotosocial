@@ -22,9 +22,9 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/superseriousbusiness/activity/streams"
-	"github.com/superseriousbusiness/activity/streams/vocab"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/activity/streams"
+	"code.superseriousbusiness.org/activity/streams/vocab"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
 )
 
 // MustGet performs the given 'Get$Property(with) (T, error)' signature function, panicking on error.
@@ -520,11 +520,11 @@ func SetDiscoverable(with WithDiscoverable, discoverable bool) {
 
 // GetManuallyApprovesFollowers returns the boolean contained in the ManuallyApprovesFollowers property of 'with'.
 //
-// Returns default 'true' if property unusable or not set.
+// Returns default 'false' if property unusable or not set.
 func GetManuallyApprovesFollowers(with WithManuallyApprovesFollowers) bool {
 	mafProp := with.GetActivityStreamsManuallyApprovesFollowers()
 	if mafProp == nil || !mafProp.IsXMLSchemaBoolean() {
-		return true
+		return false
 	}
 	return mafProp.Get()
 }
@@ -558,6 +558,70 @@ func SetApprovedBy(with WithApprovedBy, approvedBy *url.URL) {
 		with.SetGoToSocialApprovedBy(abProp)
 	}
 	abProp.Set(approvedBy)
+}
+
+// GetMediaType returns the string contained in
+// the MediaType property of 'with', if set.
+func GetMediaType(with WithMediaType) string {
+	mtProp := with.GetActivityStreamsMediaType()
+	if mtProp == nil || !mtProp.IsRFCRfc2045() {
+		return ""
+	}
+	return mtProp.Get()
+}
+
+// SetMediaType sets the given string
+// on the MediaType property of 'with'.
+func SetMediaType(with WithMediaType, mediaType string) {
+	mtProp := with.GetActivityStreamsMediaType()
+	if mtProp == nil {
+		mtProp = streams.NewActivityStreamsMediaTypeProperty()
+		with.SetActivityStreamsMediaType(mtProp)
+	}
+	mtProp.Set(mediaType)
+}
+
+// AppendName appends the given name
+// vals to the Name property of 'with'.
+func AppendName(with WithName, name ...string) {
+	if len(name) == 0 {
+		return
+	}
+	nameProp := with.GetActivityStreamsName()
+	if nameProp == nil {
+		nameProp = streams.NewActivityStreamsNameProperty()
+		with.SetActivityStreamsName(nameProp)
+	}
+	for _, name := range name {
+		nameProp.AppendXMLSchemaString(name)
+	}
+}
+
+// AppendSummary appends the given summary
+// vals to the Summary property of 'with'.
+func AppendSummary(with WithSummary, summary ...string) {
+	if len(summary) == 0 {
+		return
+	}
+	summaryProp := with.GetActivityStreamsSummary()
+	if summaryProp == nil {
+		summaryProp = streams.NewActivityStreamsSummaryProperty()
+		with.SetActivityStreamsSummary(summaryProp)
+	}
+	for _, summary := range summary {
+		summaryProp.AppendXMLSchemaString(summary)
+	}
+}
+
+// SetBlurhash sets the given string
+// on the Blurhash property of 'with'.
+func SetBlurhash(with WithBlurhash, mediaType string) {
+	bProp := with.GetTootBlurhash()
+	if bProp == nil {
+		bProp = streams.NewTootBlurhashProperty()
+		with.SetTootBlurhash(bProp)
+	}
+	bProp.Set(mediaType)
 }
 
 // extractIRIs extracts just the AP IRIs from an iterable

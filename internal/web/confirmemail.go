@@ -22,10 +22,10 @@ import (
 	"errors"
 	"net/http"
 
+	apimodel "code.superseriousbusiness.org/gotosocial/internal/api/model"
+	apiutil "code.superseriousbusiness.org/gotosocial/internal/api/util"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
 	"github.com/gin-gonic/gin"
-	apimodel "github.com/superseriousbusiness/gotosocial/internal/api/model"
-	apiutil "github.com/superseriousbusiness/gotosocial/internal/api/util"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
 )
 
 func (m *Module) confirmEmailGETHandler(c *gin.Context) {
@@ -77,7 +77,7 @@ func (m *Module) confirmEmailGETHandler(c *gin.Context) {
 	// Serve page where user can click button
 	// to POST confirmation to same endpoint.
 	page := apiutil.WebPage{
-		Template: "confirm_email.tmpl",
+		Template: "confirm-email.tmpl",
 		Instance: instance,
 		Extra: map[string]any{
 			"email":    email,
@@ -127,7 +127,7 @@ func (m *Module) confirmEmailPOSTHandler(c *gin.Context) {
 	// Serve page informing user that their
 	// email address is now confirmed.
 	page := apiutil.WebPage{
-		Template: "confirmed_email.tmpl",
+		Template: "confirmed-email.tmpl",
 		Instance: instance,
 		Extra: map[string]any{
 			"email":    user.Email,

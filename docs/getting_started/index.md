@@ -55,7 +55,7 @@ For media storage, including [storage of remote media files in the cache](../adm
 
 ### Single-board Computers
 
-GoToSocial's light system requirements means that it runs pretty well on decently-specced single-board computers. If running on a single-board computer, you should ensure that GoToSocial is using a USB drive (preferably an SSD) to store its database files and media, not SD card storage, since the latter tends to be too slow to run a database on.
+GoToSocial's light system requirements means that it runs pretty well on decently-specced single-board computers. If running on a single-board computer, you should ensure that GoToSocial is using a USB drive (preferably an SSD) to store its database files and media, not SD card storage, since the latter tends to be too slow to run a database on and can easily get corrupted with write-heavy workloads.
 
 ### VPS
 
@@ -68,7 +68,7 @@ If you decide to use a VPS instead, you can spin yourself up something cheap wit
 !!! warning "Cloud storage volumes"
     Not all cloud VPS storage offerings are equal, and just because something claims to be backed by an SSD doesn't mean that it will necessarily be suitable to run a GoToSocial instance.
     
-    The [performance of Hetzner Cloud Volumes](https://github.com/superseriousbusiness/gotosocial/issues/2471#issuecomment-1891098323) is not guaranteed and seems to have very volatile latency. This will result in your GoToSocial instance performing poorly.
+    The [performance of Hetzner Cloud Volumes](https://codeberg.org/superseriousbusiness/gotosocial/issues/2471#issuecomment-1891098323) is not guaranteed and seems to have very volatile latency. This will result in your GoToSocial instance performing poorly.
 
 !!! danger "Oracle Free Tier"
     [Oracle Cloud Free Tier](https://www.oracle.com/cloud/free/) servers are not suitable for a GoToSocial deployment if you intend to federate with more than a handful of other instances and users.
@@ -149,13 +149,13 @@ If you can't leave `443` and `80` open on the machine, don't worry! You can conf
 
 ## Clustering / multi-node deployments
 
-GoToSocial does not support [clustering or any form of multi-node deployment](https://github.com/superseriousbusiness/gotosocial/issues/1749).
+GoToSocial does not support [clustering or any form of multi-node deployment](https://codeberg.org/superseriousbusiness/gotosocial/issues/1749).
 
 Though multiple GtS instances can use the same Postgres database and either shared local storage or the same object bucket, GtS relies on a lot of internal caching to keep things fast. There is no mechanism for synchronising these caches between instances. Without it, you'll get all kinds of odd and inconsistent behaviour. Don't do this!
 
 ## Tuning
 
-Aside from the many instance tuning options present in the [example config file](https://github.com/superseriousbusiness/gotosocial/blob/main/example/config.yaml) you can do additional tuning on the machine your GoToSocial instance is running on.
+Aside from the many instance tuning options present in the [example config file](https://codeberg.org/superseriousbusiness/gotosocial/src/branch/main/example/config.yaml) you can do additional tuning on the machine your GoToSocial instance is running on.
 
 ### Swap
 

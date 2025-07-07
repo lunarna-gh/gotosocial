@@ -22,17 +22,17 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/superseriousbusiness/activity/streams/vocab"
-	"github.com/superseriousbusiness/gotosocial/internal/ap"
-	"github.com/superseriousbusiness/gotosocial/internal/db"
-	"github.com/superseriousbusiness/gotosocial/internal/gtscontext"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/log"
-	"github.com/superseriousbusiness/gotosocial/internal/messages"
+	"code.superseriousbusiness.org/activity/streams/vocab"
+	"code.superseriousbusiness.org/gotosocial/internal/ap"
+	"code.superseriousbusiness.org/gotosocial/internal/db"
+	"code.superseriousbusiness.org/gotosocial/internal/gtscontext"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/log"
+	"code.superseriousbusiness.org/gotosocial/internal/messages"
 )
 
-func (f *federatingDB) Undo(ctx context.Context, undo vocab.ActivityStreamsUndo) error {
+func (f *DB) Undo(ctx context.Context, undo vocab.ActivityStreamsUndo) error {
 	log.DebugKV(ctx, "undo", serialize{undo})
 
 	activityContext := getActivityContext(ctx)
@@ -111,7 +111,7 @@ func (f *federatingDB) Undo(ctx context.Context, undo vocab.ActivityStreamsUndo)
 	return nil
 }
 
-func (f *federatingDB) undoFollow(
+func (f *DB) undoFollow(
 	ctx context.Context,
 	receivingAcct *gtsmodel.Account,
 	requestingAcct *gtsmodel.Account,
@@ -136,10 +136,7 @@ func (f *federatingDB) undoFollow(
 
 	// Convert AS Follow to barebones *gtsmodel.Follow,
 	// retrieving origin + target accts from the db.
-	follow, err := f.converter.ASFollowToFollow(
-		gtscontext.SetBarebones(ctx),
-		asFollow,
-	)
+	follow, err := f.converter.ASFollowToFollow(ctx, asFollow)
 	if err != nil && !errors.Is(err, db.ErrNoEntries) {
 		err := gtserror.Newf("error converting AS Follow to follow: %w", err)
 		return err
@@ -178,11 +175,20 @@ func (f *federatingDB) undoFollow(
 		return err
 	}
 
-	log.Debug(ctx, "Follow undone")
+	// Send the deleted follow through to
+	// the fedi worker to process side effects.
+	f.state.Workers.Federator.Queue.Push(&messages.FromFediAPI{
+		APObjectType:   ap.ActivityFollow,
+		APActivityType: ap.ActivityUndo,
+		GTSModel:       follow,
+		Receiving:      receivingAcct,
+		Requesting:     requestingAcct,
+	})
+
 	return nil
 }
 
-func (f *federatingDB) undoLike(
+func (f *DB) undoLike(
 	ctx context.Context,
 	receivingAcct *gtsmodel.Account,
 	requestingAcct *gtsmodel.Account,
@@ -269,11 +275,20 @@ func (f *federatingDB) undoLike(
 		return err
 	}
 
-	log.Debug(ctx, "Like undone")
+	// Send the deleted block through to
+	// the fedi worker to process side effects.
+	f.state.Workers.Federator.Queue.Push(&messages.FromFediAPI{
+		APObjectType:   ap.ActivityLike,
+		APActivityType: ap.ActivityUndo,
+		GTSModel:       fave,
+		Receiving:      receivingAcct,
+		Requesting:     requestingAcct,
+	})
+
 	return nil
 }
 
-func (f *federatingDB) undoBlock(
+func (f *DB) undoBlock(
 	ctx context.Context,
 	receivingAcct *gtsmodel.Account,
 	requestingAcct *gtsmodel.Account,
@@ -298,10 +313,7 @@ func (f *federatingDB) undoBlock(
 
 	// Convert AS Block to barebones *gtsmodel.Block,
 	// retrieving origin + target accts from the DB.
-	block, err := f.converter.ASBlockToBlock(
-		gtscontext.SetBarebones(ctx),
-		asBlock,
-	)
+	block, err := f.converter.ASBlockToBlock(ctx, asBlock)
 	if err != nil && !errors.Is(err, db.ErrNoEntries) {
 		err := gtserror.Newf("error converting AS Block to block: %w", err)
 		return err
@@ -333,11 +345,20 @@ func (f *federatingDB) undoBlock(
 		return err
 	}
 
-	log.Debug(ctx, "Block undone")
+	// Send the deleted block through to
+	// the fedi worker to process side effects.
+	f.state.Workers.Federator.Queue.Push(&messages.FromFediAPI{
+		APObjectType:   ap.ActivityBlock,
+		APActivityType: ap.ActivityUndo,
+		GTSModel:       block,
+		Receiving:      receivingAcct,
+		Requesting:     requestingAcct,
+	})
+
 	return nil
 }
 
-func (f *federatingDB) undoAnnounce(
+func (f *DB) undoAnnounce(
 	ctx context.Context,
 	receivingAcct *gtsmodel.Account,
 	requestingAcct *gtsmodel.Account,

@@ -24,15 +24,15 @@ import (
 	"strings"
 	"testing"
 
+	"code.superseriousbusiness.org/gotosocial/internal/api/client/statuses"
+	"code.superseriousbusiness.org/gotosocial/internal/filter/visibility"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/suite"
-	"github.com/superseriousbusiness/gotosocial/internal/api/client/statuses"
-	"github.com/superseriousbusiness/gotosocial/internal/filter/visibility"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
 
-	apiutil "github.com/superseriousbusiness/gotosocial/internal/api/util"
-	"github.com/superseriousbusiness/gotosocial/internal/oauth"
-	"github.com/superseriousbusiness/gotosocial/testrig"
+	apiutil "code.superseriousbusiness.org/gotosocial/internal/api/util"
+	"code.superseriousbusiness.org/gotosocial/internal/oauth"
+	"code.superseriousbusiness.org/gotosocial/testrig"
 )
 
 type StatusFaveTestSuite struct {
@@ -103,7 +103,8 @@ func (suite *StatusFaveTestSuite) TestPostFave() {
   },
   "bookmarked": false,
   "card": null,
-  "content": "🐕🐕🐕🐕🐕",
+  "content": "<p>🐕🐕🐕🐕🐕</p>",
+  "content_type": "text/plain",
   "created_at": "right the hell just now babyee",
   "edited_at": null,
   "emojis": [],
@@ -118,6 +119,11 @@ func (suite *StatusFaveTestSuite) TestPostFave() {
         "public",
         "me"
       ],
+      "automatic_approval": [
+        "public",
+        "me"
+      ],
+      "manual_approval": [],
       "with_approval": []
     },
     "can_reblog": {
@@ -125,6 +131,11 @@ func (suite *StatusFaveTestSuite) TestPostFave() {
         "public",
         "me"
       ],
+      "automatic_approval": [
+        "public",
+        "me"
+      ],
+      "manual_approval": [],
       "with_approval": []
     },
     "can_reply": {
@@ -132,6 +143,11 @@ func (suite *StatusFaveTestSuite) TestPostFave() {
         "public",
         "me"
       ],
+      "automatic_approval": [
+        "public",
+        "me"
+      ],
+      "manual_approval": [],
       "with_approval": []
     }
   },
@@ -228,6 +244,7 @@ func (suite *StatusFaveTestSuite) TestPostFaveImplicitAccept() {
   "bookmarked": false,
   "card": null,
   "content": "<p>Hi <span class=\"h-card\"><a href=\"http://localhost:8080/@1happyturtle\" class=\"u-url mention\" rel=\"nofollow noreferrer noopener\" target=\"_blank\">@<span>1happyturtle</span></a></span>, can I reply?</p>",
+  "content_type": "text/markdown",
   "created_at": "right the hell just now babyee",
   "edited_at": null,
   "emojis": [],
@@ -242,6 +259,11 @@ func (suite *StatusFaveTestSuite) TestPostFaveImplicitAccept() {
         "public",
         "me"
       ],
+      "automatic_approval": [
+        "public",
+        "me"
+      ],
+      "manual_approval": [],
       "with_approval": []
     },
     "can_reblog": {
@@ -249,6 +271,11 @@ func (suite *StatusFaveTestSuite) TestPostFaveImplicitAccept() {
         "public",
         "me"
       ],
+      "automatic_approval": [
+        "public",
+        "me"
+      ],
+      "manual_approval": [],
       "with_approval": []
     },
     "can_reply": {
@@ -256,6 +283,11 @@ func (suite *StatusFaveTestSuite) TestPostFaveImplicitAccept() {
         "public",
         "me"
       ],
+      "automatic_approval": [
+        "public",
+        "me"
+      ],
+      "manual_approval": [],
       "with_approval": []
     }
   },

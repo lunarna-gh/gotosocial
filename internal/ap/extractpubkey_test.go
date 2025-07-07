@@ -22,10 +22,10 @@ import (
 	"encoding/json"
 	"testing"
 
+	"code.superseriousbusiness.org/activity/streams"
+	typepublickey "code.superseriousbusiness.org/activity/streams/impl/w3idsecurityv1/type_publickey"
+	"code.superseriousbusiness.org/gotosocial/internal/ap"
 	"github.com/stretchr/testify/suite"
-	"github.com/superseriousbusiness/activity/streams"
-	typepublickey "github.com/superseriousbusiness/activity/streams/impl/w3idsecurityv1/type_publickey"
-	"github.com/superseriousbusiness/gotosocial/internal/ap"
 )
 
 const (

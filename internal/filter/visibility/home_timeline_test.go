@@ -22,11 +22,11 @@ import (
 	"testing"
 	"time"
 
+	"code.superseriousbusiness.org/gotosocial/internal/ap"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/util"
+	"code.superseriousbusiness.org/gotosocial/testrig"
 	"github.com/stretchr/testify/suite"
-	"github.com/superseriousbusiness/gotosocial/internal/ap"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/util"
-	"github.com/superseriousbusiness/gotosocial/testrig"
 )
 
 type StatusStatusHomeTimelineableTestSuite struct {
@@ -183,7 +183,7 @@ func (suite *StatusStatusHomeTimelineableTestSuite) TestChainReplyFollowersOnly(
 	// THEN, local_account_1 replies to their own reply. None of these statuses should appear to
 	// local_account_2 since they don't follow the original parent.
 	//
-	// See: https://github.com/superseriousbusiness/gotosocial/issues/501
+	// See: https://codeberg.org/superseriousbusiness/gotosocial/issues/501
 
 	originalStatusParent := suite.testAccounts["remote_account_1"]
 	replyingAccount := suite.testAccounts["local_account_1"]

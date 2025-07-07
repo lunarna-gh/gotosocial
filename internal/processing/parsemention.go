@@ -19,15 +19,17 @@ package processing
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
-	"github.com/superseriousbusiness/gotosocial/internal/config"
-	"github.com/superseriousbusiness/gotosocial/internal/federation"
-	"github.com/superseriousbusiness/gotosocial/internal/gtscontext"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/id"
-	"github.com/superseriousbusiness/gotosocial/internal/state"
-	"github.com/superseriousbusiness/gotosocial/internal/util"
+	"code.superseriousbusiness.org/gotosocial/internal/config"
+	"code.superseriousbusiness.org/gotosocial/internal/db"
+	"code.superseriousbusiness.org/gotosocial/internal/federation"
+	"code.superseriousbusiness.org/gotosocial/internal/gtscontext"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/id"
+	"code.superseriousbusiness.org/gotosocial/internal/state"
+	"code.superseriousbusiness.org/gotosocial/internal/util"
 )
 
 // GetParseMentionFunc returns a new ParseMentionFunc using the provided state and federator.
@@ -100,7 +102,29 @@ func GetParseMentionFunc(state *state.State, federator *federation.Federator) gt
 			}
 		}
 
-		// Return mention with useful populated fields,
+		// Check if the mention was
+		// in the database already.
+		if statusID != "" {
+			mention, err := state.DB.GetMentionByTargetAcctStatus(ctx, targetAcct.ID, statusID)
+			if err != nil && !errors.Is(err, db.ErrNoEntries) {
+				return nil, fmt.Errorf(
+					"db error checking for existing mention: %w",
+					err,
+				)
+			}
+
+			if mention != nil {
+				// We had it, return this rather
+				// than creating a new one.
+				mention.NameString = namestring
+				mention.OriginAccountURI = originAcct.URI
+				mention.TargetAccountURI = targetAcct.URI
+				mention.TargetAccountURL = targetAcct.URL
+				return mention, nil
+			}
+		}
+
+		// Return new mention with useful populated fields,
 		// but *don't* store it in the database; that's
 		// up to the calling function to do, if they want.
 		return &gtsmodel.Mention{
@@ -114,6 +138,10 @@ func GetParseMentionFunc(state *state.State, federator *federation.Federator) gt
 			TargetAccountURL: targetAcct.URL,
 			TargetAccount:    targetAcct,
 			NameString:       namestring,
+
+			// Mention wasn't
+			// stored in the db.
+			IsNew: true,
 		}, nil
 	}
 }

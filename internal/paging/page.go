@@ -64,10 +64,11 @@ func (p *Page) GetOrder() Order {
 	if p == nil {
 		return 0
 	}
-	return p.order()
+	return p.Order()
 }
 
-func (p *Page) order() Order {
+// Order is a small helper function to return page sort ordering.
+func (p *Page) Order() Order {
 	switch {
 	case p.Min.Order != 0:
 		return p.Min.Order
@@ -90,7 +91,7 @@ func (p *Page) Page(in []string) []string {
 		return in
 	}
 
-	if p.order().Ascending() {
+	if p.Order().Ascending() {
 		// Sort type is ascending, input
 		// data is assumed to be ascending.
 
@@ -150,7 +151,7 @@ func Page_PageFunc[WithID any](p *Page, in []WithID, get func(WithID) string) []
 		return in
 	}
 
-	if p.order().Ascending() {
+	if p.Order().Ascending() {
 		// Sort type is ascending, input
 		// data is assumed to be ascending.
 
@@ -277,10 +278,10 @@ func (p *Page) ToLinkURL(proto, host, path string, queryParams url.Values) *url.
 
 	if queryParams == nil {
 		// Allocate new query parameters.
-		queryParams = make(url.Values)
+		queryParams = make(url.Values, 2)
 	} else {
 		// Before edit clone existing params.
-		queryParams = cloneQuery(queryParams)
+		queryParams = cloneQuery(queryParams, 2)
 	}
 
 	if p.Min.Value != "" {
@@ -308,8 +309,8 @@ func (p *Page) ToLinkURL(proto, host, path string, queryParams url.Values) *url.
 }
 
 // cloneQuery clones input map of url values.
-func cloneQuery(src url.Values) url.Values {
-	dst := make(url.Values, len(src))
+func cloneQuery(src url.Values, extra int) url.Values {
+	dst := make(url.Values, len(src)+extra)
 	for k, vs := range src {
 		dst[k] = slices.Clone(vs)
 	}

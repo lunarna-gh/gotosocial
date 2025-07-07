@@ -25,16 +25,14 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"code.superseriousbusiness.org/gotosocial/internal/api/client/exports"
+	apiutil "code.superseriousbusiness.org/gotosocial/internal/api/util"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/oauth"
+	"code.superseriousbusiness.org/gotosocial/internal/state"
+	"code.superseriousbusiness.org/gotosocial/testrig"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/suite"
-	"github.com/superseriousbusiness/gotosocial/internal/api/client/exports"
-	apiutil "github.com/superseriousbusiness/gotosocial/internal/api/util"
-	"github.com/superseriousbusiness/gotosocial/internal/filter/visibility"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/oauth"
-	"github.com/superseriousbusiness/gotosocial/internal/state"
-	"github.com/superseriousbusiness/gotosocial/internal/typeutils"
-	"github.com/superseriousbusiness/gotosocial/testrig"
 )
 
 type ExportsTestSuite struct {
@@ -44,7 +42,6 @@ type ExportsTestSuite struct {
 
 	// standard suite models
 	testTokens       map[string]*gtsmodel.Token
-	testClients      map[string]*gtsmodel.Client
 	testApplications map[string]*gtsmodel.Application
 	testUsers        map[string]*gtsmodel.User
 	testAccounts     map[string]*gtsmodel.Account
@@ -55,7 +52,6 @@ type ExportsTestSuite struct {
 
 func (suite *ExportsTestSuite) SetupSuite() {
 	suite.testTokens = testrig.NewTestTokens()
-	suite.testClients = testrig.NewTestClients()
 	suite.testApplications = testrig.NewTestApplications()
 	suite.testUsers = testrig.NewTestUsers()
 	suite.testAccounts = testrig.NewTestAccounts()
@@ -70,12 +66,6 @@ func (suite *ExportsTestSuite) SetupTest() {
 
 	suite.state.DB = testrig.NewTestDB(&suite.state)
 	suite.state.Storage = testrig.NewInMemoryStorage()
-
-	testrig.StartTimelines(
-		&suite.state,
-		visibility.NewFilter(&suite.state),
-		typeutils.NewConverter(&suite.state),
-	)
 
 	testrig.StandardDBSetup(suite.state.DB, nil)
 	testrig.StandardStorageSetup(suite.state.Storage, "../../../../testrig/media")

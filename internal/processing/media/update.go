@@ -22,13 +22,13 @@ import (
 	"errors"
 	"fmt"
 
-	apimodel "github.com/superseriousbusiness/gotosocial/internal/api/model"
-	apiutil "github.com/superseriousbusiness/gotosocial/internal/api/util"
-	"github.com/superseriousbusiness/gotosocial/internal/config"
-	"github.com/superseriousbusiness/gotosocial/internal/db"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/text"
+	apimodel "code.superseriousbusiness.org/gotosocial/internal/api/model"
+	apiutil "code.superseriousbusiness.org/gotosocial/internal/api/util"
+	"code.superseriousbusiness.org/gotosocial/internal/config"
+	"code.superseriousbusiness.org/gotosocial/internal/db"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/text"
 )
 
 // Update updates a media attachment with the given id, using the provided form parameters.
@@ -87,7 +87,7 @@ func (p *Processor) Update(ctx context.Context, account *gtsmodel.Account, media
 
 // processDescription will sanitize and valid description against server configuration.
 func processDescription(description string) (string, gtserror.WithCode) {
-	description = text.SanitizeToPlaintext(description)
+	description = text.StripHTMLFromText(description)
 	chars := len([]rune(description))
 
 	if min := config.GetMediaDescriptionMinChars(); chars < min {

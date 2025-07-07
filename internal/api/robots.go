@@ -18,10 +18,10 @@
 package api
 
 import (
+	"code.superseriousbusiness.org/gotosocial/internal/api/robots"
+	"code.superseriousbusiness.org/gotosocial/internal/middleware"
+	"code.superseriousbusiness.org/gotosocial/internal/router"
 	"github.com/gin-gonic/gin"
-	"github.com/superseriousbusiness/gotosocial/internal/api/robots"
-	"github.com/superseriousbusiness/gotosocial/internal/middleware"
-	"github.com/superseriousbusiness/gotosocial/internal/router"
 )
 
 type Robots struct {
@@ -39,7 +39,7 @@ func (rb *Robots) Route(r *router.Router, m ...gin.HandlerFunc) {
 	// https://www.rfc-editor.org/rfc/rfc9309.html#section-2.4
 	robotsGroup.Use(
 		middleware.CacheControl(middleware.CacheControlConfig{
-			Directives: []string{"public", "max-age=86400"},
+			Directives: []string{"public", "no-cache"},
 			Vary:       []string{"Accept-Encoding"},
 		}),
 	)

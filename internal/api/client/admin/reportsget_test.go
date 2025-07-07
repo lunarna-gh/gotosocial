@@ -25,16 +25,16 @@ import (
 	"strconv"
 	"testing"
 
+	"code.superseriousbusiness.org/gotosocial/internal/api/client/admin"
+	apimodel "code.superseriousbusiness.org/gotosocial/internal/api/model"
+	apiutil "code.superseriousbusiness.org/gotosocial/internal/api/util"
+	"code.superseriousbusiness.org/gotosocial/internal/config"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/oauth"
+	"code.superseriousbusiness.org/gotosocial/internal/util"
+	"code.superseriousbusiness.org/gotosocial/testrig"
 	"github.com/stretchr/testify/suite"
-	"github.com/superseriousbusiness/gotosocial/internal/api/client/admin"
-	apimodel "github.com/superseriousbusiness/gotosocial/internal/api/model"
-	apiutil "github.com/superseriousbusiness/gotosocial/internal/api/util"
-	"github.com/superseriousbusiness/gotosocial/internal/config"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/oauth"
-	"github.com/superseriousbusiness/gotosocial/internal/util"
-	"github.com/superseriousbusiness/gotosocial/testrig"
 )
 
 type ReportsGetTestSuite struct {
@@ -508,7 +508,7 @@ func (suite *ReportsGetTestSuite) TestReportsGetAll() {
         "muted": false,
         "bookmarked": false,
         "pinned": false,
-        "content": "dark souls status bot: \"thoughts of dog\"",
+        "content": "\u003cp\u003edark souls status bot: \"thoughts of dog\"\u003c/p\u003e",
         "reblog": null,
         "account": {
           "id": "01F8MH5ZK5VRH73AKHQM6Y9VNX",
@@ -572,6 +572,11 @@ func (suite *ReportsGetTestSuite) TestReportsGetAll() {
         "poll": null,
         "interaction_policy": {
           "can_favourite": {
+            "automatic_approval": [
+              "public",
+              "me"
+            ],
+            "manual_approval": [],
             "always": [
               "public",
               "me"
@@ -579,6 +584,11 @@ func (suite *ReportsGetTestSuite) TestReportsGetAll() {
             "with_approval": []
           },
           "can_reply": {
+            "automatic_approval": [
+              "public",
+              "me"
+            ],
+            "manual_approval": [],
             "always": [
               "public",
               "me"
@@ -586,6 +596,11 @@ func (suite *ReportsGetTestSuite) TestReportsGetAll() {
             "with_approval": []
           },
           "can_reblog": {
+            "automatic_approval": [
+              "public",
+              "me"
+            ],
+            "manual_approval": [],
             "always": [
               "public",
               "me"
@@ -765,7 +780,7 @@ func (suite *ReportsGetTestSuite) TestReportsGetCreatedByAccount() {
         "muted": false,
         "bookmarked": false,
         "pinned": false,
-        "content": "dark souls status bot: \"thoughts of dog\"",
+        "content": "\u003cp\u003edark souls status bot: \"thoughts of dog\"\u003c/p\u003e",
         "reblog": null,
         "account": {
           "id": "01F8MH5ZK5VRH73AKHQM6Y9VNX",
@@ -829,6 +844,11 @@ func (suite *ReportsGetTestSuite) TestReportsGetCreatedByAccount() {
         "poll": null,
         "interaction_policy": {
           "can_favourite": {
+            "automatic_approval": [
+              "public",
+              "me"
+            ],
+            "manual_approval": [],
             "always": [
               "public",
               "me"
@@ -836,6 +856,11 @@ func (suite *ReportsGetTestSuite) TestReportsGetCreatedByAccount() {
             "with_approval": []
           },
           "can_reply": {
+            "automatic_approval": [
+              "public",
+              "me"
+            ],
+            "manual_approval": [],
             "always": [
               "public",
               "me"
@@ -843,6 +868,11 @@ func (suite *ReportsGetTestSuite) TestReportsGetCreatedByAccount() {
             "with_approval": []
           },
           "can_reblog": {
+            "automatic_approval": [
+              "public",
+              "me"
+            ],
+            "manual_approval": [],
             "always": [
               "public",
               "me"
@@ -1022,7 +1052,7 @@ func (suite *ReportsGetTestSuite) TestReportsGetTargetAccount() {
         "muted": false,
         "bookmarked": false,
         "pinned": false,
-        "content": "dark souls status bot: \"thoughts of dog\"",
+        "content": "\u003cp\u003edark souls status bot: \"thoughts of dog\"\u003c/p\u003e",
         "reblog": null,
         "account": {
           "id": "01F8MH5ZK5VRH73AKHQM6Y9VNX",
@@ -1086,6 +1116,11 @@ func (suite *ReportsGetTestSuite) TestReportsGetTargetAccount() {
         "poll": null,
         "interaction_policy": {
           "can_favourite": {
+            "automatic_approval": [
+              "public",
+              "me"
+            ],
+            "manual_approval": [],
             "always": [
               "public",
               "me"
@@ -1093,6 +1128,11 @@ func (suite *ReportsGetTestSuite) TestReportsGetTargetAccount() {
             "with_approval": []
           },
           "can_reply": {
+            "automatic_approval": [
+              "public",
+              "me"
+            ],
+            "manual_approval": [],
             "always": [
               "public",
               "me"
@@ -1100,6 +1140,11 @@ func (suite *ReportsGetTestSuite) TestReportsGetTargetAccount() {
             "with_approval": []
           },
           "can_reblog": {
+            "automatic_approval": [
+              "public",
+              "me"
+            ],
+            "manual_approval": [],
             "always": [
               "public",
               "me"
@@ -1149,7 +1194,7 @@ func (suite *ReportsGetTestSuite) TestReportsGetNotAdmin() {
 	testToken := suite.testTokens["local_account_1"]
 	testUser := suite.testUsers["local_account_1"]
 
-	reports, _, err := suite.getReports(testAccount, testToken, testUser, http.StatusForbidden, `{"error":"Forbidden: user 01F8MGVGPHQ2D3P3X0454H54Z5 not an admin"}`, nil, "", "", "", "", "", 20)
+	reports, _, err := suite.getReports(testAccount, testToken, testUser, http.StatusForbidden, `{"error":"Forbidden: token has insufficient scope permission"}`, nil, "", "", "", "", "", 20)
 	suite.NoError(err)
 	suite.Empty(reports)
 }

@@ -18,16 +18,16 @@
 package user_test
 
 import (
+	"code.superseriousbusiness.org/gotosocial/internal/admin"
+	"code.superseriousbusiness.org/gotosocial/internal/db"
+	"code.superseriousbusiness.org/gotosocial/internal/email"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/oauth"
+	"code.superseriousbusiness.org/gotosocial/internal/processing/user"
+	"code.superseriousbusiness.org/gotosocial/internal/state"
+	"code.superseriousbusiness.org/gotosocial/internal/typeutils"
+	"code.superseriousbusiness.org/gotosocial/testrig"
 	"github.com/stretchr/testify/suite"
-	"github.com/superseriousbusiness/gotosocial/internal/admin"
-	"github.com/superseriousbusiness/gotosocial/internal/db"
-	"github.com/superseriousbusiness/gotosocial/internal/email"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/oauth"
-	"github.com/superseriousbusiness/gotosocial/internal/processing/user"
-	"github.com/superseriousbusiness/gotosocial/internal/state"
-	"github.com/superseriousbusiness/gotosocial/internal/typeutils"
-	"github.com/superseriousbusiness/gotosocial/testrig"
 )
 
 type UserStandardTestSuite struct {
@@ -54,7 +54,7 @@ func (suite *UserStandardTestSuite) SetupTest() {
 	suite.db = testrig.NewTestDB(&suite.state)
 	suite.state.DB = suite.db
 	suite.state.AdminActions = admin.New(suite.state.DB, &suite.state.Workers)
-	suite.oauthServer = testrig.NewTestOauthServer(suite.state.DB)
+	suite.oauthServer = testrig.NewTestOauthServer(&suite.state)
 
 	suite.sentEmails = make(map[string]string)
 	suite.emailSender = testrig.NewEmailSender("../../../web/template/", suite.sentEmails)
@@ -62,7 +62,7 @@ func (suite *UserStandardTestSuite) SetupTest() {
 	suite.testTokens = testrig.NewTestTokens()
 	suite.testUsers = testrig.NewTestUsers()
 
-	suite.user = user.New(&suite.state, typeutils.NewConverter(&suite.state), testrig.NewTestOauthServer(suite.db), suite.emailSender)
+	suite.user = user.New(&suite.state, typeutils.NewConverter(&suite.state), testrig.NewTestOauthServer(&suite.state), suite.emailSender)
 
 	testrig.StandardDBSetup(suite.db, nil)
 }

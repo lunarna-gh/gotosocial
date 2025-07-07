@@ -23,23 +23,21 @@ import (
 	"net/http"
 	"net/http/httptest"
 
+	adminactions "code.superseriousbusiness.org/gotosocial/internal/admin"
+	"code.superseriousbusiness.org/gotosocial/internal/api/client/admin"
+	"code.superseriousbusiness.org/gotosocial/internal/config"
+	"code.superseriousbusiness.org/gotosocial/internal/db"
+	"code.superseriousbusiness.org/gotosocial/internal/email"
+	"code.superseriousbusiness.org/gotosocial/internal/federation"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/media"
+	"code.superseriousbusiness.org/gotosocial/internal/oauth"
+	"code.superseriousbusiness.org/gotosocial/internal/processing"
+	"code.superseriousbusiness.org/gotosocial/internal/state"
+	"code.superseriousbusiness.org/gotosocial/internal/storage"
+	"code.superseriousbusiness.org/gotosocial/testrig"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/suite"
-	adminactions "github.com/superseriousbusiness/gotosocial/internal/admin"
-	"github.com/superseriousbusiness/gotosocial/internal/api/client/admin"
-	"github.com/superseriousbusiness/gotosocial/internal/config"
-	"github.com/superseriousbusiness/gotosocial/internal/db"
-	"github.com/superseriousbusiness/gotosocial/internal/email"
-	"github.com/superseriousbusiness/gotosocial/internal/federation"
-	"github.com/superseriousbusiness/gotosocial/internal/filter/visibility"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/media"
-	"github.com/superseriousbusiness/gotosocial/internal/oauth"
-	"github.com/superseriousbusiness/gotosocial/internal/processing"
-	"github.com/superseriousbusiness/gotosocial/internal/state"
-	"github.com/superseriousbusiness/gotosocial/internal/storage"
-	"github.com/superseriousbusiness/gotosocial/internal/typeutils"
-	"github.com/superseriousbusiness/gotosocial/testrig"
 )
 
 type AdminStandardTestSuite struct {
@@ -56,7 +54,6 @@ type AdminStandardTestSuite struct {
 
 	// standard suite models
 	testTokens          map[string]*gtsmodel.Token
-	testClients         map[string]*gtsmodel.Client
 	testApplications    map[string]*gtsmodel.Application
 	testUsers           map[string]*gtsmodel.User
 	testAccounts        map[string]*gtsmodel.Account
@@ -72,7 +69,6 @@ type AdminStandardTestSuite struct {
 
 func (suite *AdminStandardTestSuite) SetupSuite() {
 	suite.testTokens = testrig.NewTestTokens()
-	suite.testClients = testrig.NewTestClients()
 	suite.testApplications = testrig.NewTestApplications()
 	suite.testUsers = testrig.NewTestUsers()
 	suite.testAccounts = testrig.NewTestAccounts()
@@ -95,12 +91,6 @@ func (suite *AdminStandardTestSuite) SetupTest() {
 	suite.state.AdminActions = adminactions.New(suite.state.DB, &suite.state.Workers)
 	suite.storage = testrig.NewInMemoryStorage()
 	suite.state.Storage = suite.storage
-
-	testrig.StartTimelines(
-		&suite.state,
-		visibility.NewFilter(&suite.state),
-		typeutils.NewConverter(&suite.state),
-	)
 
 	suite.mediaManager = testrig.NewTestMediaManager(&suite.state)
 	suite.federator = testrig.NewTestFederator(&suite.state, testrig.NewTestTransportController(&suite.state, testrig.NewMockHTTPClient(nil, "../../../../testrig/media")), suite.mediaManager)

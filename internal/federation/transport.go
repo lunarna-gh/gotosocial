@@ -22,8 +22,8 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/superseriousbusiness/activity/pub"
-	"github.com/superseriousbusiness/gotosocial/internal/uris"
+	"code.superseriousbusiness.org/activity/pub"
+	"code.superseriousbusiness.org/gotosocial/internal/uris"
 )
 
 // NewTransport returns a new Transport on behalf of a specific actor.

@@ -18,9 +18,9 @@
 package ap
 
 import (
-	"github.com/superseriousbusiness/activity/streams"
-	"github.com/superseriousbusiness/activity/streams/vocab"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/activity/streams"
+	"code.superseriousbusiness.org/activity/streams/vocab"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
 )
 
 // Serialize is a custom serializer for ActivityStreams types.
@@ -153,7 +153,9 @@ func serializeStatusable(t vocab.Type, includeContext bool) (map[string]interfac
 
 	NormalizeOutgoingAttachmentProp(statusable, data)
 	NormalizeOutgoingContentProp(statusable, data)
-	NormalizeOutgoingInteractionPolicyProp(statusable, data)
+	if ipa, ok := statusable.(InteractionPolicyAware); ok {
+		NormalizeOutgoingInteractionPolicyProp(ipa, data)
+	}
 
 	return data, nil
 }

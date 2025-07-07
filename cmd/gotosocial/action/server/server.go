@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/netip"
 	"os"
 	"os/signal"
 	"runtime"
@@ -29,42 +30,41 @@ import (
 	"syscall"
 	"time"
 
+	"code.superseriousbusiness.org/gotosocial/cmd/gotosocial/action"
+	"code.superseriousbusiness.org/gotosocial/internal/admin"
+	"code.superseriousbusiness.org/gotosocial/internal/api"
+	apiutil "code.superseriousbusiness.org/gotosocial/internal/api/util"
+	"code.superseriousbusiness.org/gotosocial/internal/cleaner"
+	"code.superseriousbusiness.org/gotosocial/internal/config"
+	"code.superseriousbusiness.org/gotosocial/internal/db/bundb"
+	"code.superseriousbusiness.org/gotosocial/internal/email"
+	"code.superseriousbusiness.org/gotosocial/internal/federation"
+	"code.superseriousbusiness.org/gotosocial/internal/federation/federatingdb"
+	"code.superseriousbusiness.org/gotosocial/internal/filter/interaction"
+	"code.superseriousbusiness.org/gotosocial/internal/filter/spam"
+	"code.superseriousbusiness.org/gotosocial/internal/filter/visibility"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/httpclient"
+	"code.superseriousbusiness.org/gotosocial/internal/log"
+	"code.superseriousbusiness.org/gotosocial/internal/media"
+	"code.superseriousbusiness.org/gotosocial/internal/media/ffmpeg"
+	"code.superseriousbusiness.org/gotosocial/internal/messages"
+	"code.superseriousbusiness.org/gotosocial/internal/middleware"
+	"code.superseriousbusiness.org/gotosocial/internal/oauth"
+	"code.superseriousbusiness.org/gotosocial/internal/oauth/handlers"
+	"code.superseriousbusiness.org/gotosocial/internal/observability"
+	"code.superseriousbusiness.org/gotosocial/internal/oidc"
+	"code.superseriousbusiness.org/gotosocial/internal/processing"
+	"code.superseriousbusiness.org/gotosocial/internal/router"
+	"code.superseriousbusiness.org/gotosocial/internal/state"
+	gtsstorage "code.superseriousbusiness.org/gotosocial/internal/storage"
+	"code.superseriousbusiness.org/gotosocial/internal/subscriptions"
+	"code.superseriousbusiness.org/gotosocial/internal/transport"
+	"code.superseriousbusiness.org/gotosocial/internal/typeutils"
+	"code.superseriousbusiness.org/gotosocial/internal/web"
+	"code.superseriousbusiness.org/gotosocial/internal/webpush"
 	"github.com/KimMachineGun/automemlimit/memlimit"
 	"github.com/gin-gonic/gin"
-	"github.com/superseriousbusiness/gotosocial/cmd/gotosocial/action"
-	"github.com/superseriousbusiness/gotosocial/internal/admin"
-	"github.com/superseriousbusiness/gotosocial/internal/api"
-	apiutil "github.com/superseriousbusiness/gotosocial/internal/api/util"
-	"github.com/superseriousbusiness/gotosocial/internal/cleaner"
-	"github.com/superseriousbusiness/gotosocial/internal/config"
-	"github.com/superseriousbusiness/gotosocial/internal/db/bundb"
-	"github.com/superseriousbusiness/gotosocial/internal/email"
-	"github.com/superseriousbusiness/gotosocial/internal/federation"
-	"github.com/superseriousbusiness/gotosocial/internal/federation/federatingdb"
-	"github.com/superseriousbusiness/gotosocial/internal/filter/interaction"
-	"github.com/superseriousbusiness/gotosocial/internal/filter/spam"
-	"github.com/superseriousbusiness/gotosocial/internal/filter/visibility"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/httpclient"
-	"github.com/superseriousbusiness/gotosocial/internal/log"
-	"github.com/superseriousbusiness/gotosocial/internal/media"
-	"github.com/superseriousbusiness/gotosocial/internal/media/ffmpeg"
-	"github.com/superseriousbusiness/gotosocial/internal/messages"
-	"github.com/superseriousbusiness/gotosocial/internal/middleware"
-	"github.com/superseriousbusiness/gotosocial/internal/oauth"
-	"github.com/superseriousbusiness/gotosocial/internal/observability"
-	"github.com/superseriousbusiness/gotosocial/internal/oidc"
-	"github.com/superseriousbusiness/gotosocial/internal/processing"
-	tlprocessor "github.com/superseriousbusiness/gotosocial/internal/processing/timeline"
-	"github.com/superseriousbusiness/gotosocial/internal/router"
-	"github.com/superseriousbusiness/gotosocial/internal/state"
-	gtsstorage "github.com/superseriousbusiness/gotosocial/internal/storage"
-	"github.com/superseriousbusiness/gotosocial/internal/subscriptions"
-	"github.com/superseriousbusiness/gotosocial/internal/timeline"
-	"github.com/superseriousbusiness/gotosocial/internal/transport"
-	"github.com/superseriousbusiness/gotosocial/internal/typeutils"
-	"github.com/superseriousbusiness/gotosocial/internal/web"
-	"github.com/superseriousbusiness/gotosocial/internal/webpush"
 	"go.uber.org/automaxprocs/maxprocs"
 )
 
@@ -116,8 +116,9 @@ var Start action.GTSAction = func(ctx context.Context) error {
 	)
 
 	defer func() {
-		// Stop caches with
-		// background tasks.
+		// Stop any started caches.
+		//
+		// Noop if never started.
 		state.Caches.Stop()
 
 		if route != nil {
@@ -132,21 +133,9 @@ var Start action.GTSAction = func(ctx context.Context) error {
 		// Stop any currently running
 		// worker processes / scheduled
 		// tasks from being executed.
+		//
+		// Noop on unstarted workers.
 		state.Workers.Stop()
-
-		if state.Timelines.Home != nil {
-			// Home timeline mgr was setup, ensure it gets stopped.
-			if err := state.Timelines.Home.Stop(); err != nil {
-				log.Errorf(ctx, "error stopping home timeline: %v", err)
-			}
-		}
-
-		if state.Timelines.List != nil {
-			// List timeline mgr was setup, ensure it gets stopped.
-			if err := state.Timelines.List.Stop(); err != nil {
-				log.Errorf(ctx, "error stopping list timeline: %v", err)
-			}
-		}
 
 		if process != nil {
 			const timeout = time.Minute
@@ -195,13 +184,15 @@ var Start action.GTSAction = func(ctx context.Context) error {
 	}
 
 	// Initialize tracing (noop if not enabled).
-	if err := observability.InitializeTracing(); err != nil {
+	if err := observability.InitializeTracing(ctx); err != nil {
 		return fmt.Errorf("error initializing tracing: %w", err)
 	}
 
 	// Initialize caches
 	state.Caches.Init()
-	state.Caches.Start()
+	if err := state.Caches.Start(); err != nil {
+		return fmt.Errorf("error starting caches: %w", err)
+	}
 
 	// Open connection to the database now caches started.
 	dbService, err := bundb.NewBunDBService(ctx, state)
@@ -239,10 +230,17 @@ var Start action.GTSAction = func(ctx context.Context) error {
 		return fmt.Errorf("error opening storage backend: %w", err)
 	}
 
+	// Parse http client allow
+	// and block range exceptions.
+	ranges, err := parseClientRanges()
+	if err != nil {
+		return err
+	}
+
 	// Prepare wrapped httpclient with config.
 	client := httpclient.New(httpclient.Config{
-		AllowRanges:           config.MustParseIPPrefixes(config.GetHTTPClientAllowIPs()),
-		BlockRanges:           config.MustParseIPPrefixes(config.GetHTTPClientBlockIPs()),
+		AllowRanges:           ranges.allow,
+		BlockRanges:           ranges.block,
 		Timeout:               config.GetHTTPClientTimeout(),
 		TLSInsecureSkipVerify: config.GetHTTPClientTLSInsecureSkipVerify(),
 	})
@@ -260,13 +258,20 @@ var Start action.GTSAction = func(ctx context.Context) error {
 
 	// Build handlers used in later initializations.
 	mediaManager := media.NewManager(state)
-	oauthServer := oauth.New(ctx, dbService)
+	oauthServer := oauth.New(ctx, state,
+		handlers.GetValidateURIHandler(ctx),
+		handlers.GetClientScopeHandler(ctx, state),
+		handlers.GetAuthorizeScopeHandler(),
+		handlers.GetInternalErrorHandler(ctx),
+		handlers.GetResponseErrorHandler(ctx),
+		handlers.GetUserAuthorizationHandler(),
+	)
 	typeConverter := typeutils.NewConverter(state)
 	visFilter := visibility.NewFilter(state)
 	intFilter := interaction.NewFilter(state)
 	spamFilter := spam.NewFilter(state)
 	federatingDB := federatingdb.New(state, typeConverter, visFilter, intFilter, spamFilter)
-	transportController := transport.NewController(state, federatingDB, &federation.Clock{}, client)
+	transportController := transport.NewController(state, federatingDB, client)
 	federator := federation.NewFederator(
 		state,
 		federatingDB,
@@ -301,26 +306,6 @@ var Start action.GTSAction = func(ctx context.Context) error {
 
 	// Create a Web Push notification sender.
 	webPushSender := webpush.NewSender(client, state, typeConverter)
-
-	// Initialize both home / list timelines.
-	state.Timelines.Home = timeline.NewManager(
-		tlprocessor.HomeTimelineGrab(state),
-		tlprocessor.HomeTimelineFilter(state, visFilter),
-		tlprocessor.HomeTimelineStatusPrepare(state, typeConverter),
-		tlprocessor.SkipInsert(),
-	)
-	if err := state.Timelines.Home.Start(); err != nil {
-		return fmt.Errorf("error starting home timeline: %s", err)
-	}
-	state.Timelines.List = timeline.NewManager(
-		tlprocessor.ListTimelineGrab(state),
-		tlprocessor.ListTimelineFilter(state, visFilter),
-		tlprocessor.ListTimelineStatusPrepare(state, typeConverter),
-		tlprocessor.SkipInsert(),
-	)
-	if err := state.Timelines.List.Start(); err != nil {
-		return fmt.Errorf("error starting list timeline: %s", err)
-	}
 
 	// Start the job scheduler
 	// (this is required for cleaner).
@@ -392,7 +377,7 @@ var Start action.GTSAction = func(ctx context.Context) error {
 	}
 
 	// Initialize metrics.
-	if err := observability.InitializeMetrics(state.DB); err != nil {
+	if err := observability.InitializeMetrics(ctx, state.DB); err != nil {
 		return fmt.Errorf("error initializing metrics: %w", err)
 	}
 
@@ -493,26 +478,29 @@ var Start action.GTSAction = func(ctx context.Context) error {
 		return fmt.Errorf("error generating session name for session middleware: %w", err)
 	}
 
+	// Configure our instance cookie policy.
+	cookiePolicy := apiutil.NewCookiePolicy()
+
 	var (
-		authModule        = api.NewAuth(dbService, process, idp, routerSession, sessionName) // auth/oauth paths
-		clientModule      = api.NewClient(state, process)                                    // api client endpoints
-		metricsModule     = api.NewMetrics()                                                 // Metrics endpoints
-		healthModule      = api.NewHealth(dbService.Ready)                                   // Health check endpoints
-		fileserverModule  = api.NewFileserver(process)                                       // fileserver endpoints
-		robotsModule      = api.NewRobots()                                                  // robots.txt endpoint
-		wellKnownModule   = api.NewWellKnown(process)                                        // .well-known endpoints
-		nodeInfoModule    = api.NewNodeInfo(process)                                         // nodeinfo endpoint
-		activityPubModule = api.NewActivityPub(dbService, process)                           // ActivityPub endpoints
-		webModule         = web.New(dbService, process)                                      // web pages + user profiles + settings panels etc
+		authModule        = api.NewAuth(state, process, idp, routerSession, sessionName, cookiePolicy) // auth/oauth paths
+		clientModule      = api.NewClient(state, process)                                              // api client endpoints
+		healthModule      = api.NewHealth(dbService.Ready)                                             // Health check endpoints
+		fileserverModule  = api.NewFileserver(process)                                                 // fileserver endpoints
+		robotsModule      = api.NewRobots()                                                            // robots.txt endpoint
+		wellKnownModule   = api.NewWellKnown(process)                                                  // .well-known endpoints
+		nodeInfoModule    = api.NewNodeInfo(process)                                                   // nodeinfo endpoint
+		activityPubModule = api.NewActivityPub(dbService, process)                                     // ActivityPub endpoints
+		webModule         = web.New(dbService, process, cookiePolicy)                                  // web pages + user profiles + settings panels etc
 	)
 
 	// Create per-route / per-grouping middlewares.
 	// rate limiting
 	rlLimit := config.GetAdvancedRateLimitRequests()
-	clLimit := middleware.RateLimit(rlLimit, config.GetAdvancedRateLimitExceptionsParsed())        // client api
-	s2sLimit := middleware.RateLimit(rlLimit, config.GetAdvancedRateLimitExceptionsParsed())       // server-to-server (AP)
-	fsMainLimit := middleware.RateLimit(rlLimit, config.GetAdvancedRateLimitExceptionsParsed())    // fileserver / web templates
-	fsEmojiLimit := middleware.RateLimit(rlLimit*2, config.GetAdvancedRateLimitExceptionsParsed()) // fileserver (emojis only, use high limit)
+	exceptions := config.GetAdvancedRateLimitExceptions()
+	clLimit := middleware.RateLimit(rlLimit, exceptions)        // client api
+	s2sLimit := middleware.RateLimit(rlLimit, exceptions)       // server-to-server (AP)
+	fsMainLimit := middleware.RateLimit(rlLimit, exceptions)    // fileserver / web templates
+	fsEmojiLimit := middleware.RateLimit(rlLimit*2, exceptions) // fileserver (emojis only, use high limit)
 
 	// throttling
 	cpuMultiplier := config.GetAdvancedThrottlingMultiplier()
@@ -549,7 +537,6 @@ var Start action.GTSAction = func(ctx context.Context) error {
 	// apply throttling *after* rate limiting
 	authModule.Route(route, clLimit, clThrottle, robotsDisallowAll, gzip)
 	clientModule.Route(route, clLimit, clThrottle, robotsDisallowAll, gzip)
-	metricsModule.Route(route, clLimit, clThrottle, robotsDisallowAIOnly)
 	healthModule.Route(route, clLimit, clThrottle, robotsDisallowAIOnly)
 	fileserverModule.Route(route, fsMainLimit, fsThrottle, robotsDisallowAIOnly)
 	fileserverModule.RouteEmojis(route, instanceAccount.ID, fsEmojiLimit, fsThrottle, robotsDisallowAIOnly)
@@ -608,4 +595,45 @@ func compileWASM(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func parseClientRanges() (
+	*struct {
+		allow []netip.Prefix
+		block []netip.Prefix
+	},
+	error,
+) {
+	parseF := func(ips []string, ranges []netip.Prefix, flag string) error {
+		for i, ip := range ips {
+			p, err := netip.ParsePrefix(ip)
+			if err != nil {
+				return fmt.Errorf("error parsing %s value %s: %w", flag, ip, err)
+			}
+			ranges[i] = p
+		}
+		return nil
+	}
+
+	allowIPs := config.GetHTTPClientAllowIPs()
+	allowRanges := make([]netip.Prefix, len(allowIPs))
+	allowFlag := config.HTTPClientAllowIPsFlag()
+	if err := parseF(allowIPs, allowRanges, allowFlag); err != nil {
+		return nil, err
+	}
+
+	blockIPs := config.GetHTTPClientBlockIPs()
+	blockRanges := make([]netip.Prefix, len(blockIPs))
+	blockFlag := config.HTTPClientBlockIPsFlag()
+	if err := parseF(blockIPs, blockRanges, blockFlag); err != nil {
+		return nil, err
+	}
+
+	return &struct {
+		allow []netip.Prefix
+		block []netip.Prefix
+	}{
+		allow: allowRanges,
+		block: blockRanges,
+	}, nil
 }

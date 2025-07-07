@@ -23,15 +23,16 @@ import (
 	"fmt"
 	"time"
 
-	apimodel "github.com/superseriousbusiness/gotosocial/internal/api/model"
-	"github.com/superseriousbusiness/gotosocial/internal/config"
-	"github.com/superseriousbusiness/gotosocial/internal/db"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/id"
-	"github.com/superseriousbusiness/gotosocial/internal/text"
-	"github.com/superseriousbusiness/gotosocial/internal/util/xslices"
-	"github.com/superseriousbusiness/gotosocial/internal/validate"
+	apimodel "code.superseriousbusiness.org/gotosocial/internal/api/model"
+	"code.superseriousbusiness.org/gotosocial/internal/config"
+	"code.superseriousbusiness.org/gotosocial/internal/db"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/id"
+	"code.superseriousbusiness.org/gotosocial/internal/text"
+	"code.superseriousbusiness.org/gotosocial/internal/typeutils"
+	"code.superseriousbusiness.org/gotosocial/internal/util/xslices"
+	"code.superseriousbusiness.org/gotosocial/internal/validate"
 )
 
 // validateStatusContent will validate the common
@@ -106,11 +107,39 @@ type statusContent struct {
 	Tags           []*gtsmodel.Tag
 }
 
+// Returns the final content type to use when creating or editing a status.
+func processContentType(
+	requestContentType apimodel.StatusContentType,
+	existingStatus *gtsmodel.Status,
+	accountDefaultContentType string,
+) gtsmodel.StatusContentType {
+	switch {
+	// Content type set in the request, return the new value.
+	case requestContentType != "":
+		return typeutils.APIContentTypeToContentType(requestContentType)
+
+	// No content type in the request, return the existing
+	// status's current content type if we know of one.
+	case existingStatus != nil && existingStatus.ContentType != 0:
+		return existingStatus.ContentType
+
+	// We aren't editing an existing status, or if we are
+	// it's an old one that doesn't have a saved content
+	// type. Use the user's default content type setting.
+	case accountDefaultContentType != "":
+		return typeutils.APIContentTypeToContentType(apimodel.StatusContentType(accountDefaultContentType))
+
+	// uhh.. Fall back to global default.
+	default:
+		return gtsmodel.StatusContentTypeDefault
+	}
+}
+
 func (p *Processor) processContent(
 	ctx context.Context,
 	author *gtsmodel.Account,
 	statusID string,
-	contentType string,
+	contentType gtsmodel.StatusContentType,
 	content string,
 	contentWarning string,
 	language string,
@@ -142,25 +171,25 @@ func (p *Processor) processContent(
 		)
 	}
 
-	// format is the currently set text formatting
-	// function, according to the provided content-type.
-	var format text.FormatFunc
-
-	if contentType == "" {
-		// If content type wasn't specified, use
-		// the author's preferred content-type.
-		contentType = author.Settings.StatusContentType
-	}
+	var (
+		// format is the currently set text formatting
+		// function, according to the provided content-type.
+		format text.FormatFunc
+		// formatCW is like format, but for content warning.
+		formatCW text.FormatFunc
+	)
 
 	switch contentType {
 
 	// Format status according to text/plain.
-	case "", string(apimodel.StatusContentTypePlain):
+	case gtsmodel.StatusContentTypePlain:
 		format = p.formatter.FromPlain
+		formatCW = p.formatter.FromPlainBasic
 
 	// Format status according to text/markdown.
-	case string(apimodel.StatusContentTypeMarkdown):
+	case gtsmodel.StatusContentTypeMarkdown:
 		format = p.formatter.FromMarkdown
+		formatCW = p.formatter.FromMarkdownBasic
 
 	// Unknown.
 	default:
@@ -192,26 +221,23 @@ func (p *Processor) processContent(
 	status.Emojis = contentRes.Emojis
 	status.Tags = contentRes.Tags
 
-	// From here-on-out just use emoji-only
-	// plain-text formatting as the FormatFunc.
-	format = p.formatter.FromPlainEmojiOnly
-
 	// Sanitize content warning and format.
-	warning := text.SanitizeToPlaintext(contentWarning)
-	warningRes := formatInput(format, warning)
+	cwRes := formatInput(formatCW, contentWarning)
 
 	// Gather results of the formatted.
-	status.ContentWarning = warningRes.HTML
-	status.Emojis = append(status.Emojis, warningRes.Emojis...)
+	status.ContentWarning = cwRes.HTML
+	status.Emojis = append(status.Emojis, cwRes.Emojis...)
 
 	if poll != nil {
 		// Pre-allocate slice of poll options of expected length.
 		status.PollOptions = make([]string, len(poll.Options))
 		for i, option := range poll.Options {
 
-			// Sanitize each poll option and format.
-			option = text.SanitizeToPlaintext(option)
-			optionRes := formatInput(format, option)
+			// Strip each poll option and format.
+			//
+			// For polls just use basic formatting.
+			option = text.StripHTMLFromText(option)
+			optionRes := formatInput(p.formatter.FromPlainBasic, option)
 
 			// Gather results of the formatted.
 			status.PollOptions[i] = optionRes.HTML

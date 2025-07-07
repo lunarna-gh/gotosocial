@@ -27,14 +27,14 @@ import (
 	"strings"
 	"testing"
 
+	"code.superseriousbusiness.org/gotosocial/internal/api/client/accounts"
+	apimodel "code.superseriousbusiness.org/gotosocial/internal/api/model"
+	apiutil "code.superseriousbusiness.org/gotosocial/internal/api/util"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/oauth"
+	"code.superseriousbusiness.org/gotosocial/testrig"
 	"github.com/stretchr/testify/suite"
-	"github.com/superseriousbusiness/gotosocial/internal/api/client/accounts"
-	apimodel "github.com/superseriousbusiness/gotosocial/internal/api/model"
-	apiutil "github.com/superseriousbusiness/gotosocial/internal/api/util"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/oauth"
-	"github.com/superseriousbusiness/gotosocial/testrig"
 )
 
 type AccountSearchTestSuite struct {
@@ -369,16 +369,16 @@ func (suite *AccountSearchTestSuite) TestSearchAFollowing() {
 		suite.FailNow(err.Error())
 	}
 
-	if l := len(accounts); l != 5 {
-		suite.FailNow("", "expected length %d got %d", 5, l)
+	if l := len(accounts); l != 6 {
+		suite.FailNow("", "expected length %d got %d", 6, l)
 	}
 
-	usernames := make([]string, 0, 5)
+	usernames := make([]string, 0, 6)
 	for _, account := range accounts {
 		usernames = append(usernames, account.Username)
 	}
 
-	suite.EqualValues([]string{"her_fuckin_maj", "foss_satan", "1happyturtle", "the_mighty_zork", "admin"}, usernames)
+	suite.EqualValues([]string{"her_fuckin_maj", "media_mogul", "foss_satan", "1happyturtle", "the_mighty_zork", "admin"}, usernames)
 }
 
 func (suite *AccountSearchTestSuite) TestSearchANotFollowing() {

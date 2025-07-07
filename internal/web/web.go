@@ -22,14 +22,14 @@ import (
 	"net/http"
 	"net/url"
 
+	apiutil "code.superseriousbusiness.org/gotosocial/internal/api/util"
+	"code.superseriousbusiness.org/gotosocial/internal/db"
+	"code.superseriousbusiness.org/gotosocial/internal/middleware"
+	"code.superseriousbusiness.org/gotosocial/internal/processing"
+	"code.superseriousbusiness.org/gotosocial/internal/router"
+	"code.superseriousbusiness.org/gotosocial/internal/uris"
 	"codeberg.org/gruf/go-cache/v3"
 	"github.com/gin-gonic/gin"
-	apiutil "github.com/superseriousbusiness/gotosocial/internal/api/util"
-	"github.com/superseriousbusiness/gotosocial/internal/db"
-	"github.com/superseriousbusiness/gotosocial/internal/middleware"
-	"github.com/superseriousbusiness/gotosocial/internal/processing"
-	"github.com/superseriousbusiness/gotosocial/internal/router"
-	"github.com/superseriousbusiness/gotosocial/internal/uris"
 )
 
 const (
@@ -56,30 +56,34 @@ const (
 	eTagHeader            = "ETag"              // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/ETag
 	lastModifiedHeader    = "Last-Modified"     // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Last-Modified
 
-	cssFA        = assetsPathPrefix + "/Fork-Awesome/css/fork-awesome.min.css"
-	cssAbout     = distPathPrefix + "/about.css"
-	cssIndex     = distPathPrefix + "/index.css"
-	cssLoginInfo = distPathPrefix + "/login-info.css"
-	cssStatus    = distPathPrefix + "/status.css"
-	cssThread    = distPathPrefix + "/thread.css"
-	cssProfile   = distPathPrefix + "/profile.css"
-	cssSettings  = distPathPrefix + "/settings-style.css"
-	cssTag       = distPathPrefix + "/tag.css"
+	cssFA             = assetsPathPrefix + "/Fork-Awesome/css/fork-awesome.min.css"
+	cssAbout          = distPathPrefix + "/about.css"
+	cssIndex          = distPathPrefix + "/index.css"
+	cssLoginInfo      = distPathPrefix + "/login-info.css"
+	cssStatus         = distPathPrefix + "/status.css"
+	cssThread         = distPathPrefix + "/thread.css"
+	cssProfile        = distPathPrefix + "/profile.css"
+	cssProfileGallery = distPathPrefix + "/profile-gallery.css"
+	cssSettings       = distPathPrefix + "/settings-style.css"
+	cssTag            = distPathPrefix + "/tag.css"
 
-	jsFrontend = distPathPrefix + "/frontend.js" // Progressive enhancement frontend JS.
-	jsSettings = distPathPrefix + "/settings.js" // Settings panel React application.
+	jsFrontend          = distPathPrefix + "/frontend.js"           // Progressive enhancement frontend JS.
+	jsFrontendPrerender = distPathPrefix + "/frontend_prerender.js" // Frontend JS that should run before page renders.
+	jsSettings          = distPathPrefix + "/settings.js"           // Settings panel React application.
 )
 
 type Module struct {
 	processor    *processing.Processor
 	eTagCache    cache.Cache[string, eTagCacheEntry]
+	cookiePolicy apiutil.CookiePolicy
 	isURIBlocked func(context.Context, *url.URL) (bool, error)
 }
 
-func New(db db.DB, processor *processing.Processor) *Module {
+func New(db db.DB, processor *processing.Processor, cookiePolicy apiutil.CookiePolicy) *Module {
 	return &Module{
 		processor:    processor,
 		eTagCache:    newETagCache(),
+		cookiePolicy: cookiePolicy,
 		isURIBlocked: db.IsURIBlocked,
 	}
 }
@@ -97,12 +101,16 @@ func (m *Module) Route(r *router.Router, mi ...gin.HandlerFunc) {
 
 	// Handlers that serve profiles and statuses should use
 	// the SignatureCheck middleware, so that requests with
-	// content-type application/activity+json can be served
+	// content-type application/activity+json can be served,
+	// and (if enabled) the nollamas middleware, to protect
+	// against scraping by shitty LLM bullshit.
 	profileGroup := r.AttachGroup(profileGroupPath)
 	profileGroup.Use(mi...)
 	profileGroup.Use(middleware.SignatureCheck(m.isURIBlocked), middleware.CacheControl(middleware.CacheControlConfig{
 		Directives: []string{"no-store"},
 	}))
+	nollamas := middleware.NoLLaMas(m.cookiePolicy, m.processor.InstanceGetV1)
+	profileGroup.Use(nollamas)
 	profileGroup.Handle(http.MethodGet, "", m.profileGETHandler) // use empty path here since it's the base of the group
 	profileGroup.Handle(http.MethodGet, statusPath, m.threadGETHandler)
 
@@ -119,7 +127,8 @@ func (m *Module) Route(r *router.Router, mi ...gin.HandlerFunc) {
 	everythingElseGroup.Handle(http.MethodPost, confirmEmailPath, m.confirmEmailPOSTHandler)
 	everythingElseGroup.Handle(http.MethodGet, aboutPath, m.aboutGETHandler)
 	everythingElseGroup.Handle(http.MethodGet, loginPath, m.loginGETHandler)
-	everythingElseGroup.Handle(http.MethodGet, domainBlockListPath, m.domainBlockListGETHandler)
+	everythingElseGroup.Handle(http.MethodGet, domainBlocklistPath, m.domainBlocklistGETHandler)
+	everythingElseGroup.Handle(http.MethodGet, domainAllowlistPath, m.domainAllowlistGETHandler)
 	everythingElseGroup.Handle(http.MethodGet, tagsPath, m.tagGETHandler)
 	everythingElseGroup.Handle(http.MethodGet, signupPath, m.signupGETHandler)
 	everythingElseGroup.Handle(http.MethodPost, signupPath, m.signupPOSTHandler)

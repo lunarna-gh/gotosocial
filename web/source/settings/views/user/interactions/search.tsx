@@ -174,20 +174,29 @@ function ReqsListEntry({ req, linkTo, backLocation }: ReqsListEntryProps) {
 	const ourContent = useContent(req.status);
 	const theirContent = useContent(req.reply);
 
+	const onClick = (e) => {
+		e.preventDefault();
+		// When clicking on a request, direct
+		// to the detail view for that request.
+		setLocation(linkTo, {
+			// Store the back location in history so
+			// the detail view can use it to return to
+			// this page (including query parameters).
+			state: { backLocation: backLocation }
+		});
+	};
+
 	return (
 		<span
 			className={`pseudolink entry interaction-request`}
 			aria-label={label}
 			title={label}
-			onClick={() => {
-				// When clicking on a request, direct
-				// to the detail view for that request.
-				setLocation(linkTo, {
-					// Store the back location in history so
-					// the detail view can use it to return to
-					// this page (including query parameters).
-					state: { backLocation: backLocation }
-				});
+			onClick={onClick}
+			onKeyDown={(e) => {
+				if (e.key === "Enter") {
+					e.preventDefault();
+					onClick(e);
+				}
 			}}
 			role="link"
 			tabIndex={0}

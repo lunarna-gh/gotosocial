@@ -1,0 +1,76 @@
+# https://woodpecker-ci.org/docs/usage/workflow-syntax#when---global-workflow-conditions
+when:
+  - event: push
+    branch: main
+
+# https://goreleaser.com/ci/woodpecker/
+# https://woodpecker-ci.org/docs/usage/workflow-syntax#clone
+clone:
+  git:
+    image: woodpeckerci/plugin-git
+    settings:
+      tags: true
+
+steps:
+  snapshot:
+    # Snapshot only if some interesting
+    # source code files have changed.
+    #
+    # CI_PIPELINE_FILES is undefined if
+    # files changed > 500, so account for
+    # this and snapshot anyway if so.
+    when:
+      # https://woodpecker-ci.org/docs/usage/workflow-syntax#evaluate
+      # https://woodpecker-ci.org/docs/usage/environment#built-in-environment-variables
+      - evaluate: >-
+          (not ("CI_PIPELINE_FILES" in $env)) ||
+          CI_PIPELINE_FILES == "[]" ||
+          any(fromJSON(CI_PIPELINE_FILES), { # startsWith "internal/" || # startsWith "cmd/" || # startsWith "testrig/" || # startsWith "vendor/" || # startsWith "web/" || # == "Dockerfile" }) ||
+          len(fromJSON(CI_PIPELINE_FILES)) == 0
+
+    # https://codeberg.org/superseriousbusiness/gotosocial-woodpecker-build
+    image: superseriousbusiness/gotosocial-woodpecker-build:0.11.0
+    pull: true
+
+    # https://woodpecker-ci.org/docs/usage/volumes
+    volumes:
+      - /woodpecker/gotosocial/go-build-cache-root:/root/.cache/go-build
+      - /woodpecker/gotosocial/go-pkg-cache-root:/go/pkg
+      - /var/run/docker.sock:/var/run/docker.sock
+
+    # https://woodpecker-ci.org/docs/usage/environment
+    # https://woodpecker-ci.org/docs/usage/secrets#usage
+    environment:
+      # Needed to push snapshot
+      # manifests + containers.
+      DOCKER_USERNAME: gotosocial
+      DOCKER_PASSWORD:
+        from_secret: gts_docker_password
+
+      # Needed for snapshot script
+      # to publish artifacts to S3.
+      S3_ACCESS_KEY_ID:
+        from_secret: gts_s3_access_key_id
+      S3_SECRET_ACCESS_KEY:
+        from_secret: gts_s3_secret_access_key
+      S3_HOSTNAME: "https://s3.superseriousbusiness.org"
+      S3_BUCKET_NAME: "gotosocial-snapshots"
+    
+    # https://woodpecker-ci.org/docs/usage/workflow-syntax#commands
+    commands:
+      # Create a snapshot build with GoReleaser.
+      - git fetch --tags
+      - goreleaser release --clean --snapshot
+      
+      # Login to Docker, push Docker image snapshots + manifests.
+      - /go/dockerlogin.sh
+      - docker push superseriousbusiness/gotosocial:snapshot-arm64v8
+      - docker push superseriousbusiness/gotosocial:snapshot-amd64
+      - |
+          docker manifest create superseriousbusiness/gotosocial:snapshot \
+          superseriousbusiness/gotosocial:snapshot-amd64 \
+          superseriousbusiness/gotosocial:snapshot-arm64v8
+      - docker manifest push superseriousbusiness/gotosocial:snapshot
+      
+      # Publish binary .tar.gz snapshots to S3.
+      - /go/snapshot_publish.sh

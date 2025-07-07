@@ -141,8 +141,8 @@ trusted-proxies:
 
 # String. Database type.
 # Options: ["postgres","sqlite"]
-# Default: "postgres"
-db-type: "postgres"
+# Default: "sqlite"
+db-type: "sqlite"
 
 # String. Database address or parameters.
 #
@@ -157,29 +157,29 @@ db-type: "postgres"
 #
 # Examples: ["localhost","my.db.host","127.0.0.1","192.111.39.110",":memory:", "sqlite.db"]
 # Default: ""
-db-address: ""
+db-address: "sqlite.db"
 
-# Int. Port for database connection.
+# Int. Port for postgres database connection; ignored for sqlite.
 # Examples: [5432, 1234, 6969]
 # Default: 5432
 db-port: 5432
 
-# String. Username for the database connection.
+# String. Username for postgres database connection.
 # Examples: ["mydbuser","postgres","gotosocial"]
 # Default: ""
 db-user: ""
 
-# String. Password to use for the database connection
+# String. Password to use for postgres database connection.
 # Examples: ["password123","verysafepassword","postgres"]
 # Default: ""
 db-password: ""
 
-# String. Name of the database to use within the provided database type.
+# String. Name of the database to use for postgres database connection.
 # Examples: ["mydb","postgres","gotosocial"]
 # Default: "gotosocial"
 db-database: "gotosocial"
 
-# String. Disable, enable, or require SSL/TLS connection to the database.
+# String. Disable, enable, or require SSL/TLS connection to postgres.
 # If "disable" then no TLS connection will be attempted.
 # If "enable" then TLS will be tried, but the database certificate won't be checked (for self-signed certs).
 # If "require" then TLS will be required to make a connection, and a valid certificate must be presented.
@@ -362,29 +362,61 @@ instance-federation-mode: "blocklist"
 # Default: false
 instance-federation-spam-filter: false
 
-# Bool. Allow unauthenticated users to make queries to /api/v1/instance/peers?filter=open in order
-# to see a list of instances that this instance 'peers' with. Even if set to 'false', then authenticated
-# users (members of the instance) will still be able to query the endpoint.
+# Bool. Allow unauthenticated users to make queries to /api/v1/instance/peers?filter=open
+# in order to see a list of domains that this instance 'peers' with.
+#
+# Even if set to 'false', then authenticated users (members of the instance)
+# will still be able to query these endpoints using an OAuth token.
+#
 # Options: [true, false]
 # Default: false
 instance-expose-peers: false
 
-# Bool. Allow unauthenticated users to make queries to /api/v1/instance/peers?filter=suspended in order
-# to see a list of instances that this instance blocks/suspends. Even if set to 'false', then authenticated
-# users (members of the instance) will still be able to query the endpoint.
+# Bool. Allow unauthenticated users to make queries to the following instance API
+# endpoints in order to see a list of domains that this instance explicitly blocks,
+# including the public reason for each block:
 #
-# WARNING: Setting this variable to 'true' may result in your instance being scraped by blocklist scrapers.
+# - /api/v1/instance/peers?filter=blocklist
+# - /api/v1/instance/peers?filter=suspended (deprecated)
+# - /api/v1/instance/domain_blocks
+#
+# Even if set to 'false', then authenticated users (members of the instance)
+# will still be able to query these endpoints using an OAuth token.
+#
+# WARNING: Setting to 'true' may result in your instance being targeted by blocklist scrapers.
 # See: https://docs.gotosocial.org/en/latest/admin/domain_blocks/#block-announce-bots
 #
 # Options: [true, false]
 # Default: false
-instance-expose-suspended: false
+instance-expose-blocklist: false
 
-# Bool. Allow unauthenticated users to view /about/suspended,
-# showing the HTML rendered list of instances that this instance blocks/suspends.
+# Bool. Allow unauthenticated users to view /about/domain_blocks,
+# which shows an HTML-rendered list of domains that this instance blocks,
+# including the public reason for each block.
 # Options: [true, false]
 # Default: false
-instance-expose-suspended-web: false
+instance-expose-blocklist-web: false
+
+# Bool. Allow unauthenticated users to make queries to the following instance API
+# endpoints in order to see a list of domains that this instance explicitly allows
+# including the public reason for each allow:
+#
+# - /api/v1/instance/peers?filter=allowlist
+# - /api/v1/instance/domain_allows
+#
+# Even if set to 'false', then authenticated users (members of the instance)
+# will still be able to query these endpoints using an OAuth token.
+#
+# Options: [true, false]
+# Default: false
+instance-expose-allowlist: false
+
+# Bool. Allow unauthenticated users to view /about/domain_allows,
+# which shows an HTML-rendered list of domains that this instance allows,
+# including the public reason for each allow.
+# Options: [true, false]
+# Default: false
+instance-expose-blocklist-web: false
 
 # Bool. Allow unauthenticated users to make queries to /api/v1/timelines/public in order
 # to see a list of public posts on this server. Even if set to 'false', then authenticated
@@ -458,6 +490,19 @@ instance-subscriptions-process-every: "24h"
 # Default: ""
 instance-stats-mode: ""
 
+# Bool. This flag controls whether local accounts may backdate statuses
+# using past dates with the scheduled_at param to /api/v1/statuses.
+# This flag does not affect scheduling posts in the future
+# (which is currently not implemented anyway),
+# nor can it prevent remote accounts from backdating their own statuses.
+#
+# If true, all local accounts may backdate statuses.
+# If false, status backdating will be disabled and an error will be returned if it's used.
+#
+# Options: [true, false]
+# Default: true
+instance-allow-backdating-statuses: true
+
 ###########################
 ##### ACCOUNTS CONFIG #####
 ###########################
@@ -474,6 +519,28 @@ accounts-registration-open: false
 # Options: [true, false]
 # Default: true
 accounts-reason-required: true
+
+# Int. Number of approved sign-ups allowed within
+# 24hrs before new account registration is closed.
+#
+# Leaving this count at the default essentially limits
+# your instance to growing by 10 accounts per day.
+#
+# Setting this number to 0 or less removes the limit.
+#
+# Default: 10
+accounts-registration-daily-limit: 10
+
+# Int. Number of new account sign-ups allowed in the pending
+# approval queue before new account registration is closed.
+#
+# This can be used to essentially "throttle" the sign-up
+# queue to prevent instance admins becoming overwhelmed.
+#
+# Setting this number to 0 or less removes the limit.
+#
+# Default: 20
+accounts-registration-backlog-limit: 20
 
 # Bool. Allow accounts on this instance to set custom CSS for their profile pages and statuses.
 # Enabling this setting will allow accounts to upload custom CSS via the /user settings page,
@@ -497,6 +564,14 @@ accounts-allow-custom-css: false
 # Examples: [500, 5000, 9999]
 # Default: 10000
 accounts-custom-css-length: 10000
+
+# Int. The maximum number of profile fields allowed for each account.
+#
+# Note that going way higher than the default might break federation.
+#
+# Examples: [4, 6, 12]
+# Default: 6
+accounts-max-profile-fields: 6
 
 ########################
 ##### MEDIA CONFIG #####
@@ -545,9 +620,9 @@ media-remote-max-size: 40MiB
 media-description-min-chars: 0
 
 # Int. Maximum amount of characters permitted in an image or video description.
-# Examples: [1000, 1500, 3000]
-# Default: 1500
-media-description-max-chars: 1500
+# Examples: [1000, 5000, 10000]
+# Default: 5000
+media-description-max-chars: 5000
 
 # Size. Max size in bytes of emojis uploaded to this instance via the admin API.
 #
@@ -713,6 +788,19 @@ storage-s3-secret-key: ""
 # Examples: ["gts","cool-instance"]
 # Default: ""
 storage-s3-bucket: ""
+
+# String. Bucket lookup type.
+#
+# If you know what kind of bucket lookup type you need you can specify it here.
+#
+# Many providers are no longer offering path-style bucket access and only subdomain-style. Then,
+# you will need to specify "dns" here instead of the default "auto".
+#
+# If your provider only supports path-style bucket access, specify "path".
+#
+# Examples: ["path", "dns", "auto"]
+# Default: "auto"
+storage-s3-bucket-lookup: "auto"
 
 ###########################
 ##### STATUSES CONFIG #####
@@ -958,37 +1046,9 @@ request-id-header: "X-Request-Id"
 # Default: false
 tracing-enabled: false
 
-# String. Set the transport protocol for the tracing system. Can either be "grpc"
-# for OTLP gRPC, or "http" for OTLP HTTP.
-# Options: ["grpc", "http"]
-# Default: "grpc"
-tracing-transport: "grpc"
-
-# String. Endpoint of the trace ingester. When using the gRPC or HTTP based transports,
-# provide the endpoint as a single address/port combination without a protocol scheme.
-# Examples: ["localhost:4317"]
-# Default: ""
-tracing-endpoint: ""
-
-# Bool. Disable TLS for the gRPC and HTTP transport protocols.
-# Default: false
-tracing-insecure-transport: false
-
 # Bool. Enable OpenTelemetry based metrics support.
 # Default: false
 metrics-enabled: false
-
-# Bool. Enable HTTP Basic Authentication for Prometheus metrics endpoint.
-# Default: false
-metrics-auth-enabled: false
-
-# String. Username for Prometheus metrics endpoint.
-# Default: ""
-metrics-auth-username: ""
-
-# String. Password for Prometheus metrics endpoint.
-# Default: ""
-metrics-auth-password: ""
 
 ################################
 ##### HTTP CLIENT SETTINGS #####
@@ -1226,3 +1286,41 @@ advanced-csp-extra-uris: []
 # Options: ["block", "allow", ""]
 # Default: ""
 advanced-header-filter-mode: ""
+
+# Bool. Enables a proof-of-work based deterrence against scrapers
+# on profile and status web pages. This will generate a unique but
+# deterministic challenge for each HTTP client to complete before
+# accessing the above mentioned endpoints, on success being given
+# a cookie that permits challenge-less access within a 1hr window.
+#
+# The outcome of this is that it should make scraping of these
+# endpoints economically unfeasible, while having a negligible
+# performance impact on your own instance.
+#
+# The downside is that it requires javascript to be enabled.
+#
+# For more details please check the documentation at:
+# https://docs.gotosocial.org/en/latest/advanced/scraper_deterrence
+#
+# Options: [true, false]
+# Default: true
+advanced-scraper-deterrence-enabled: false
+
+# Uint. Allows tweaking the difficulty of the proof-of-work algorithm
+# used in the scraper deterrence. This determines how many leading '0'
+# characters are required to be generated in each solution. Higher
+# values will on-average take longer to find solutions for, and the
+# inverse is also true.
+#
+# The downside is that if your deterrence takes too long to solve,
+# it may deter some users from viewing your web status / profile page.
+# And conversely, the longer it takes for a solution to be found, the
+# more you'll be incurring increased CPU usage for scrapers, and possibly
+# even cause their operation to time out before completion.
+#
+# For more details please check the documentation at:
+# https://docs.gotosocial.org/en/latest/advanced/scraper_deterrence
+#
+# Examples: [3, 4, 5]
+# Default: 4
+advanced-scraper-deterrence-difficulty: 4

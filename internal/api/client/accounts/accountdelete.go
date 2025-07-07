@@ -21,11 +21,11 @@ import (
 	"errors"
 	"net/http"
 
+	apimodel "code.superseriousbusiness.org/gotosocial/internal/api/model"
+	apiutil "code.superseriousbusiness.org/gotosocial/internal/api/util"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"codeberg.org/gruf/go-byteutil"
 	"github.com/gin-gonic/gin"
-	apimodel "github.com/superseriousbusiness/gotosocial/internal/api/model"
-	apiutil "github.com/superseriousbusiness/gotosocial/internal/api/util"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/oauth"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -66,9 +66,12 @@ import (
 //		'500':
 //			description: internal server error
 func (m *Module) AccountDeletePOSTHandler(c *gin.Context) {
-	authed, err := oauth.Authed(c, true, true, true, true)
-	if err != nil {
-		apiutil.ErrorHandler(c, gtserror.NewErrorUnauthorized(err, err.Error()), m.processor.InstanceGetV1)
+	authed, errWithCode := apiutil.TokenAuth(c,
+		true, true, true, true,
+		apiutil.ScopeWriteAccounts,
+	)
+	if errWithCode != nil {
+		apiutil.ErrorHandler(c, errWithCode, m.processor.InstanceGetV1)
 		return
 	}
 
@@ -80,12 +83,15 @@ func (m *Module) AccountDeletePOSTHandler(c *gin.Context) {
 
 	// Self account delete requires password to ensure it's for real.
 	if form.Password == "" {
-		err = errors.New("no password provided in account delete request")
+		err := errors.New("no password provided in account delete request")
 		apiutil.ErrorHandler(c, gtserror.NewErrorBadRequest(err, err.Error()), m.processor.InstanceGetV1)
 		return
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(authed.User.EncryptedPassword), []byte(form.Password)); err != nil {
+	if err := bcrypt.CompareHashAndPassword(
+		byteutil.S2B(authed.User.EncryptedPassword),
+		byteutil.S2B(form.Password),
+	); err != nil {
 		err = errors.New("invalid password provided in account delete request")
 		apiutil.ErrorHandler(c, gtserror.NewErrorForbidden(err, err.Error()), m.processor.InstanceGetV1)
 		return

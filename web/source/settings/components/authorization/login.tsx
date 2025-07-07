@@ -19,7 +19,7 @@
 
 import React from "react";
 
-import { useAuthorizeFlowMutation } from "../../lib/query/oauth";
+import { useAuthorizeFlowMutation } from "../../lib/query/login";
 import { useTextInput, useValue } from "../../lib/form";
 import useFormSubmit from "../../lib/form/submit";
 import MutationButton from "../form/mutation-button";
@@ -31,7 +31,7 @@ export default function Login({ }) {
 		instance: useTextInput("instance", {
 			defaultValue: window.location.origin
 		}),
-		scopes: useValue("scopes", "user admin"),
+		scopes: useValue("scopes", "read write admin"),
 	};
 
 	const [formSubmit, result] = useFormSubmit(form, useAuthorizeFlowMutation(), { 

@@ -27,13 +27,13 @@ import (
 	"strconv"
 	"strings"
 
-	filtersV2 "github.com/superseriousbusiness/gotosocial/internal/api/client/filters/v2"
-	apimodel "github.com/superseriousbusiness/gotosocial/internal/api/model"
-	"github.com/superseriousbusiness/gotosocial/internal/config"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/oauth"
-	"github.com/superseriousbusiness/gotosocial/internal/stream"
-	"github.com/superseriousbusiness/gotosocial/testrig"
+	filtersV2 "code.superseriousbusiness.org/gotosocial/internal/api/client/filters/v2"
+	apimodel "code.superseriousbusiness.org/gotosocial/internal/api/model"
+	"code.superseriousbusiness.org/gotosocial/internal/config"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/oauth"
+	"code.superseriousbusiness.org/gotosocial/internal/stream"
+	"code.superseriousbusiness.org/gotosocial/testrig"
 )
 
 func (suite *FiltersTestSuite) postFilter(title *string, context *[]string, action *string, expiresIn *int, expiresInStr *string, keywordsAttributesWholeWord *[]bool, statusesAttributesStatusID *[]string, requestJson *string, expectedHTTPStatus int, expectedBody string, keywordsAttributesKeyword *[]string) (*apimodel.FilterV2, error) {
@@ -319,7 +319,7 @@ func (suite *FiltersTestSuite) postFilterWithExpiration(title *string, expiresIn
 	return filter
 }
 
-// Regression test for https://github.com/superseriousbusiness/gotosocial/issues/3497
+// Regression test for https://codeberg.org/superseriousbusiness/gotosocial/issues/3497
 func (suite *FiltersTestSuite) TestPostFilterWithEmptyStringExpiration() {
 	title := "Form Crimes"
 	expiresInStr := ""
@@ -327,7 +327,7 @@ func (suite *FiltersTestSuite) TestPostFilterWithEmptyStringExpiration() {
 	suite.Nil(filter.ExpiresAt)
 }
 
-// Regression test related to https://github.com/superseriousbusiness/gotosocial/issues/3497
+// Regression test related to https://codeberg.org/superseriousbusiness/gotosocial/issues/3497
 func (suite *FiltersTestSuite) TestPostFilterWithNullExpirationJSON() {
 	requestJson := `{
 		"title": "JSON Crimes",

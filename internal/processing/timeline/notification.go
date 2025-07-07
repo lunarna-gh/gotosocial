@@ -23,22 +23,23 @@ import (
 	"fmt"
 	"net/url"
 
-	apimodel "github.com/superseriousbusiness/gotosocial/internal/api/model"
-	"github.com/superseriousbusiness/gotosocial/internal/db"
-	"github.com/superseriousbusiness/gotosocial/internal/filter/status"
-	"github.com/superseriousbusiness/gotosocial/internal/filter/usermute"
-	"github.com/superseriousbusiness/gotosocial/internal/gtscontext"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/log"
-	"github.com/superseriousbusiness/gotosocial/internal/oauth"
-	"github.com/superseriousbusiness/gotosocial/internal/paging"
-	"github.com/superseriousbusiness/gotosocial/internal/util"
+	apimodel "code.superseriousbusiness.org/gotosocial/internal/api/model"
+	apiutil "code.superseriousbusiness.org/gotosocial/internal/api/util"
+	"code.superseriousbusiness.org/gotosocial/internal/db"
+	"code.superseriousbusiness.org/gotosocial/internal/filter/status"
+	"code.superseriousbusiness.org/gotosocial/internal/filter/usermute"
+	"code.superseriousbusiness.org/gotosocial/internal/gtscontext"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/log"
+	"code.superseriousbusiness.org/gotosocial/internal/paging"
+	"code.superseriousbusiness.org/gotosocial/internal/util"
 )
 
+// NotificationsGet ...
 func (p *Processor) NotificationsGet(
 	ctx context.Context,
-	authed *oauth.Auth,
+	authed *apiutil.Auth,
 	page *paging.Page,
 	types []gtsmodel.NotificationType,
 	excludeTypes []gtsmodel.NotificationType,
@@ -164,7 +165,7 @@ func (p *Processor) NotificationGet(ctx context.Context, account *gtsmodel.Accou
 	return apiNotif, nil
 }
 
-func (p *Processor) NotificationsClear(ctx context.Context, authed *oauth.Auth) gtserror.WithCode {
+func (p *Processor) NotificationsClear(ctx context.Context, authed *apiutil.Auth) gtserror.WithCode {
 	// Delete all notifications of all types that target the authorized account.
 	if err := p.state.DB.DeleteNotifications(ctx, nil, authed.Account.ID, ""); err != nil && !errors.Is(err, db.ErrNoEntries) {
 		return gtserror.NewErrorInternalError(err)

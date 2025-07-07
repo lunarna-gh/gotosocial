@@ -31,6 +31,30 @@ To choose a theme, just select it from the profile settings page, and click/tap 
 !!! tip "Adding more themes"
     Instance admins can add more themes by dropping css files into the `web/assets/themes` folder. See the [themes](../admin/themes.md) part of the admin docs for more information.
 
+### Select Layout
+
+GoToSocial lets you choose from two different layouts for the web view of your profile.
+
+The setting does not affect how the API behaves or how client applications look or work, it's purely a cosmetic change for the web view.
+
+In both cases, only top-level posts (or media from top-level posts) is shown, not replies or boosts, and the [Visibility Level of Posts to Show on Your Profile](#visibility-level-of-posts-to-show-on-your-profile) setting is respected.
+
+#### Microblog
+
+The GtS classic microblog layout. Your profile is split into two columns with your bio and recent/pinned posts.
+
+This is a good choice if you primarily post text, or a mixture of text and media.
+
+![Microblog layout](../public/user-settings-layout-microblog.png)
+
+#### Gallery
+
+'Gram-style layout. Posts are not shown directly on your profile. Instead, your recent/pinned media is shown in a gallery grid view. Posts (with their replies) can still be accessed via link.
+
+This is a good choice if you primarily post media.
+
+![Gallery layout](../public/user-settings-layout-gallery.png)
+
 ### Basic Information
 
 #### Display Name
@@ -201,7 +225,9 @@ If you want to reset all your policies to the initial defaults, you can click on
     
     As more ActivityPub servers roll out support for interaction policies, this issue will hopefully diminish, but in the meantime GoToSocial can offer only a "best effort" attempt to restrict interactions with your posts according to the policies you have set.
 
-## Email & Password
+## Account
+
+In the "Account" section, you can set your email and password, and set up two-factor authentication for your account.
 
 ### Email Change
 
@@ -220,6 +246,24 @@ You can use the Password Change section of the panel to set a new password for y
     If your instance is using OIDC as its authorization/identity provider, you will not be able to change your password via the GoToSocial settings panel, and you should contact your OIDC provider instead.
 
 For more information on the way GoToSocial manages passwords, please see the [Password management document](./password_management.md).
+
+### Two-Factor Authentication
+
+You can use this section of the panel to enable two-factor authentication (2FA) for your account.
+
+With 2FA enabled, you will have to provide a code from your configured authenticator app (Google authenticator, LastPass authenticator, etc) when you want to log in, in addition to your password.
+
+To enable 2FA, install an authenticator app on your mobile device, and use it to scan the QR code. You can also copy the 2FA secret manually and paste it into your authenticator. Once you've done that, enter a code from your authenticator to verify that the authenticator and the server are synced up correctly.
+
+On success, you will be shown a list of eight 2FA backup/recovery codes. Save these codes in a safe place (eg., in a password manager). If you lose access to your authenticator app, for example if you lose your device, then you can use one of these codes instead of a 2FA code when logging in. Once you have used a code, you will not be able to use it again. Should you use up all eight recovery codes, you should disable and reenable 2FA to generate new ones.
+
+To disable two-factor authentication, enter your current password in the form, and click the "Disable 2FA" button.
+
+!!! tip
+    Two-factor authentication is recommended, as it makes it more difficult for baddies to log in to your account by guessing your password, since they would also need access to your authenticator device. For more information on different types of 2FA, see [A Guide to Common Types of Two-Factor Authentication on the Web](https://www.eff.org/deeplinks/2017/09/guide-common-types-two-factor-authentication-web).
+
+!!! info
+    If your instance is using OIDC as its authorization/identity provider, you will not be able to enable 2FA in the settings panel, and you should contact your OIDC provider instead.
 
 ## Migration
 
@@ -266,3 +310,91 @@ Both merge and overwrite operations are idempotent, which basically means that d
 
 !!! info
     For a variety of reasons, it will not always be possible to recreate every entry in an uploaded CSV file via importing. For example, say you are trying to import a CSV of follows containing `example_account`, but `example_account`'s instance has gone offline, or their instance blocks yours, or your instance blocks theirs, etc. In this case, the follow of `example_account` would not be created.
+
+!!! warning
+    The CSV format for mutes does not contain expiration data, so temporary mutes are exported (and imported) as permanent mutes.
+
+## Access Tokens
+
+In the access tokens section, you can review and invalidate [OAuth access tokens](https://www.oauth.com/oauth2-servers/access-tokens/) owned by applications that you have authorized to access your account and/or perform actions on your behalf.
+
+![The access tokens page.](../public/user-settings-access-tokens.png)
+
+In cases where you've logged in with an application multiple times, or logged in with multiple devices or browsers, you may see multiple tokens with the same application name. This is normal! For example, say you have logged in with Pinafore on both your phone and your laptop browser, you will see two different tokens owned by Pinafore.
+
+You can invalidate a token by clicking on the "Invalidate token" button under a token. This will remove the token from the database. The application that was authorized to access your account with that token will then no longer be authorized to do so, and you will need to log out and/or log in again with that application.
+
+Logging out of an application does not necessarily remove the token from the GoToSocial database, so old tokens may linger from applications you used a long time ago. So, feel free to invalidate tokens that have never been used, or haven't been used in a long time; it's good security practice to keep only the tokens that you need, and it's fun to click the big red button.
+
+!!! danger
+    If you see any tokens from applications that you do not recognize, or do not remember authorizing to access your account, then you should invalidate them, and consider changing your password as soon as possible.
+
+!!! note
+    Token "Last used" time is approximate and may be off by an hour in either direction.
+
+## Applications
+
+In the applications section, you can create a new managed OAuth client application, and search through applications that you've created.
+
+### What is an OAuth client application?
+
+A GoToSocial OAuth client application is equivalent to an OAuth 2.0 client as described in [the Auth0 roles docs](https://auth0.com/intro-to-iam/what-is-oauth-2#oauth20-roles).
+
+When you create an application, you can then, as the "Resource Owner" of your account, give the application access to your account via an access token, which the application can use to interact with the GoToSocial client API "as you", or "on your behalf".
+
+For example, when you log in to your GoToSocial account using Tusky, Tusky first registers itself with your instance as an OAuth client application, and then requests the instance to redirect you to a page where you can sign in with your GoToSocial email address and password in order to authorize Tusky to get an access code. Tusky then stores and uses that access code in all further requests, to do what you tell it to do: post statuses, read timelines, etc.
+
+The advantage of OAuth client applications is that they never store (or even see) your password: they only ever act as you using their access token, which can be invalidated so that the application cannot access your account anymore, without you having to change your password (see [Access Tokens](#access-tokens)).
+
+!!! note "Managed vs unmanaged applications"
+    A *managed* application is one that you created yourself via the settings panel, and have the ability to request tokens for, and delete. This differs somewhat from applications like Tusky, which are not considered to be *managed* applications, as they were not created by a user in the settings panel.
+
+### What is a redirect URI?
+
+Redirect URIs offer a security measure that prevents applications from being to redirect to malicious addresses after authorization. This is best explained in the OAuth 2.0 documentation, see:
+
+- [Redirect URIs](https://www.oauth.com/oauth2-servers/redirect-uris/)
+- [Redirect URL Registration](https://www.oauth.com/oauth2-servers/redirect-uris/redirect-uri-registration/)
+
+Whatever service you are trying to create an application for will usually tell you what redirect URI(s) you need to enter when creating an application.
+
+### What is a scope?
+
+Scopes are a space-separated list of identifiers that can be specified when creating an application (or getting a token for that application) in order to prevent the application or its access token from accessing more data than it needs to do its job.
+
+For example, if you create an application with only scope `read`, then any tokens owned by that application will have only `read` access to your account: they will not be able to post, delete, or take other *write*-type actions as you.
+
+GoToSocial offers a range of scopes very similar to what the Mastodon API offers. You can see a list of scopes (and what they do) here: https://docs.gotosocial.org/en/latest/api/swagger/.
+
+Like Mastodon, GoToSocial allows you to specify scopes both when you create an application, *and* when you subsequently request a token. So you could create an application with scope `read write`, but request a token with only `read` scope, or with an even narrower scope like `read:accounts`. Any scopes specified when requesting a token must be covered by the scopes permitted to the application. For example, you cannot request a token with scope `write` if your application only has scope `read`.
+
+For more information on scopes in general, see the OAuth 2.0 docs:
+
+- [Scope](https://www.oauth.com/oauth2-servers/scope/)
+- [Defining Scopes](https://www.oauth.com/oauth2-servers/scope/defining-scopes/)
+
+### Search Applications
+
+Using this section, you can see an overview of applications that you've created via the settings panel, and click on an application to go to the details view for that application.
+
+### New Application
+
+![The new application form.](../public/user-settings-applications-new.png)
+
+To create a new managed OAuth application, you must provide at least a name for your application. If you want, you can provide a website too.
+
+If you don't provide any scopes, then the application will have scope `read` by default.
+
+If you don't specify any redirect URIs, then the application will have the out-of-band redirect URI `urn:ietf:wg:oauth:2.0:oob` by default.
+
+If you want to be able to use the settings panel to easily get an access token for the application that you create, then you must include the given settings panel callback URL in your redirect URIs list. This will be in the form `https://[your_instance_host]/settings/user/applications/callback`.
+
+### Application Details
+
+![The details view for an application.](../public/user-settings-applications-details.png)
+
+On the details page for an application, you can view the application's client ID and client secret, which you can use in a command-line tool like `curl` to manually get an authorization code + access token for the application.
+
+If you included the settings panel callback URL in your redirect URIs list, you can also use this page to request an access token for your account. This will redirect you to the sign in page for your instance, where you must provide your credentials in order to authorize your application. You will then be redirected again to the settings panel callback URL, where you can receive your access token. 
+
+You can also use this page to delete your application. When a managed application is deleted, all tokens that were created via that application will also be deleted, so ensure you only do this when your application is not being used.

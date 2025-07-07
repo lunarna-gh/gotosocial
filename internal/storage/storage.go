@@ -28,6 +28,9 @@ import (
 	"path"
 	"time"
 
+	"code.superseriousbusiness.org/gotosocial/internal/config"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/log"
 	"codeberg.org/gruf/go-bytesize"
 	"codeberg.org/gruf/go-cache/v3/ttl"
 	"codeberg.org/gruf/go-storage"
@@ -35,9 +38,6 @@ import (
 	"codeberg.org/gruf/go-storage/s3"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
-	"github.com/superseriousbusiness/gotosocial/internal/config"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/log"
 )
 
 const (
@@ -315,11 +315,25 @@ func NewS3Storage() (*Driver, error) {
 	bucket := config.GetStorageS3BucketName()
 	redirectURL := config.GetStorageS3RedirectURL()
 
+	var bucketLookup minio.BucketLookupType
+	switch s := config.GetStorageS3BucketLookup(); s {
+	case "auto":
+		bucketLookup = minio.BucketLookupAuto
+	case "dns":
+		bucketLookup = minio.BucketLookupDNS
+	case "path":
+		bucketLookup = minio.BucketLookupPath
+	default:
+		log.Warnf(nil, "%s set to %s which is not recognized, defaulting to 'auto'", config.StorageS3BucketLookupFlag(), s)
+		bucketLookup = minio.BucketLookupAuto
+	}
+
 	// Open the s3 storage implementation
 	s3, err := s3.Open(endpoint, bucket, &s3.Config{
 		CoreOpts: minio.Options{
-			Creds:  credentials.NewStaticV4(access, secret, ""),
-			Secure: secure,
+			Creds:        credentials.NewStaticV4(access, secret, ""),
+			Secure:       secure,
+			BucketLookup: bucketLookup,
 		},
 		PutChunkSize: 5 * 1024 * 1024, // 5MiB
 		ListSize:     200,

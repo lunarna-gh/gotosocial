@@ -20,7 +20,7 @@ package db
 import (
 	"context"
 
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
 )
 
 type Poll interface {
@@ -57,6 +57,9 @@ type Poll interface {
 
 	// PutPollVote puts the given PollVote in the database.
 	PutPollVote(ctx context.Context, vote *gtsmodel.PollVote) error
+
+	// UpdatePollVote updates the given poll vote in the database, using only given columns (else, all).
+	UpdatePollVote(ctx context.Context, vote *gtsmodel.PollVote, cols ...string) error
 
 	// DeletePollVoteBy deletes the PollVote in Poll with ID, by account ID, from the database.
 	DeletePollVoteBy(ctx context.Context, pollID string, accountID string) error

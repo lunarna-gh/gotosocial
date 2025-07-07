@@ -23,10 +23,10 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/superseriousbusiness/gotosocial/internal/ap"
-	"github.com/superseriousbusiness/gotosocial/internal/db"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/uris"
+	"code.superseriousbusiness.org/gotosocial/internal/ap"
+	"code.superseriousbusiness.org/gotosocial/internal/db"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/uris"
 )
 
 // UserGet handles the getting of a fedi/activitypub representation of a user/account,
@@ -51,7 +51,7 @@ func (p *Processor) UserGet(ctx context.Context, requestedUsername string, reque
 		// authenticate this request. However, we'll only serve
 		// the bare minimum user profile needed for the pubkey.
 		//
-		// TODO: https://github.com/superseriousbusiness/gotosocial/issues/1186
+		// TODO: https://codeberg.org/superseriousbusiness/gotosocial/issues/1186
 		minimalPerson, err := p.converter.AccountToASMinimal(ctx, receiver)
 		if err != nil {
 			err := gtserror.Newf("error converting to minimal account: %w", err)

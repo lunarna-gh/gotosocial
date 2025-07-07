@@ -22,11 +22,11 @@ import (
 	"fmt"
 	"net/http"
 
+	apimodel "code.superseriousbusiness.org/gotosocial/internal/api/model"
+	apiutil "code.superseriousbusiness.org/gotosocial/internal/api/util"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/util"
 	"github.com/gin-gonic/gin"
-	apimodel "github.com/superseriousbusiness/gotosocial/internal/api/model"
-	apiutil "github.com/superseriousbusiness/gotosocial/internal/api/util"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/oauth"
 )
 
 // DomainPermissionDraftsPOSTHandler swagger:operation POST /api/v1/admin/domain_permission_drafts domainPermissionDraftCreate
@@ -79,7 +79,7 @@ import (
 //
 //	security:
 //	- OAuth2 Bearer:
-//		- admin
+//		- admin:write
 //
 //	responses:
 //		'200':
@@ -99,9 +99,12 @@ import (
 //		'500':
 //			description: internal server error
 func (m *Module) DomainPermissionDraftsPOSTHandler(c *gin.Context) {
-	authed, err := oauth.Authed(c, true, true, true, true)
-	if err != nil {
-		apiutil.ErrorHandler(c, gtserror.NewErrorUnauthorized(err, err.Error()), m.processor.InstanceGetV1)
+	authed, errWithCode := apiutil.TokenAuth(c,
+		true, true, true, true,
+		apiutil.ScopeAdminWrite,
+	)
+	if errWithCode != nil {
+		apiutil.ErrorHandler(c, errWithCode, m.processor.InstanceGetV1)
 		return
 	}
 
@@ -146,9 +149,9 @@ func (m *Module) DomainPermissionDraftsPOSTHandler(c *gin.Context) {
 		authed.Account,
 		form.Domain,
 		permType,
-		form.Obfuscate,
-		form.PublicComment,
-		form.PrivateComment,
+		util.PtrOrZero(form.Obfuscate),
+		util.PtrOrZero(form.PublicComment),
+		util.PtrOrZero(form.PrivateComment),
 	)
 	if errWithCode != nil {
 		apiutil.ErrorHandler(c, errWithCode, m.processor.InstanceGetV1)

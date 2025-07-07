@@ -21,12 +21,12 @@ import (
 	"context"
 	"testing"
 
+	apimodel "code.superseriousbusiness.org/gotosocial/internal/api/model"
+	"code.superseriousbusiness.org/gotosocial/internal/config"
+	"code.superseriousbusiness.org/gotosocial/internal/db"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/util"
 	"github.com/stretchr/testify/suite"
-	apimodel "github.com/superseriousbusiness/gotosocial/internal/api/model"
-	"github.com/superseriousbusiness/gotosocial/internal/config"
-	"github.com/superseriousbusiness/gotosocial/internal/db"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/util"
 )
 
 type StatusCreateTestSuite struct {
@@ -48,34 +48,7 @@ func (suite *StatusCreateTestSuite) TestProcessContentWarningWithQuotationMarks(
 		SpoilerText: "\"test\"", // these should not be html-escaped when the final text is rendered
 		Visibility:  apimodel.VisibilityPublic,
 		LocalOnly:   util.Ptr(false),
-		ScheduledAt: "",
-		Language:    "en",
-		ContentType: apimodel.StatusContentTypePlain,
-	}
-
-	apiStatus, err := suite.status.Create(ctx, creatingAccount, creatingApplication, statusCreateForm)
-	suite.NoError(err)
-	suite.NotNil(apiStatus)
-
-	suite.Equal("\"test\"", apiStatus.SpoilerText)
-}
-
-func (suite *StatusCreateTestSuite) TestProcessContentWarningWithHTMLEscapedQuotationMarks() {
-	ctx := context.Background()
-
-	creatingAccount := suite.testAccounts["local_account_1"]
-	creatingApplication := suite.testApplications["application_1"]
-
-	statusCreateForm := &apimodel.StatusCreateRequest{
-		Status:      "poopoo peepee",
-		MediaIDs:    []string{},
-		Poll:        nil,
-		InReplyToID: "",
-		Sensitive:   false,
-		SpoilerText: "&#34test&#34", // the html-escaped quotation marks should appear as normal quotation marks in the finished text
-		Visibility:  apimodel.VisibilityPublic,
-		LocalOnly:   util.Ptr(false),
-		ScheduledAt: "",
+		ScheduledAt: nil,
 		Language:    "en",
 		ContentType: apimodel.StatusContentTypePlain,
 	}
@@ -106,7 +79,7 @@ func (suite *StatusCreateTestSuite) TestProcessStatusMarkdownWithUnderscoreEmoji
 		Sensitive:   false,
 		Visibility:  apimodel.VisibilityPublic,
 		LocalOnly:   util.Ptr(false),
-		ScheduledAt: "",
+		ScheduledAt: nil,
 		Language:    "en",
 		ContentType: apimodel.StatusContentTypeMarkdown,
 	}
@@ -133,7 +106,7 @@ func (suite *StatusCreateTestSuite) TestProcessStatusMarkdownWithSpoilerTextEmoj
 		Sensitive:   false,
 		Visibility:  apimodel.VisibilityPublic,
 		LocalOnly:   util.Ptr(false),
-		ScheduledAt: "",
+		ScheduledAt: nil,
 		Language:    "en",
 		ContentType: apimodel.StatusContentTypeMarkdown,
 	}
@@ -164,7 +137,7 @@ func (suite *StatusCreateTestSuite) TestProcessMediaDescriptionTooShort() {
 		SpoilerText: "",
 		Visibility:  apimodel.VisibilityPublic,
 		LocalOnly:   util.Ptr(false),
-		ScheduledAt: "",
+		ScheduledAt: nil,
 		Language:    "en",
 		ContentType: apimodel.StatusContentTypePlain,
 	}
@@ -189,7 +162,7 @@ func (suite *StatusCreateTestSuite) TestProcessLanguageWithScriptPart() {
 		SpoilerText: "",
 		Visibility:  apimodel.VisibilityPublic,
 		LocalOnly:   util.Ptr(false),
-		ScheduledAt: "",
+		ScheduledAt: nil,
 		Language:    "zh-Hans",
 		ContentType: apimodel.StatusContentTypePlain,
 	}
@@ -219,7 +192,7 @@ func (suite *StatusCreateTestSuite) TestProcessReplyToUnthreadedRemoteStatus() {
 		SpoilerText: "this is a reply",
 		Visibility:  apimodel.VisibilityPublic,
 		LocalOnly:   util.Ptr(false),
-		ScheduledAt: "",
+		ScheduledAt: nil,
 		Language:    "en",
 		ContentType: apimodel.StatusContentTypePlain,
 	}
@@ -236,6 +209,36 @@ func (suite *StatusCreateTestSuite) TestProcessReplyToUnthreadedRemoteStatus() {
 		suite.FailNow(err.Error())
 	}
 	suite.NotEmpty(dbStatus.ThreadID)
+}
+
+func (suite *StatusCreateTestSuite) TestProcessNoContentTypeUsesDefault() {
+	ctx := context.Background()
+	creatingAccount := suite.testAccounts["local_account_1"]
+	creatingApplication := suite.testApplications["application_1"]
+
+	statusCreateForm := &apimodel.StatusCreateRequest{
+		Status:      "poopoo peepee",
+		SpoilerText: "",
+		MediaIDs:    []string{},
+		Poll:        nil,
+		InReplyToID: "",
+		Sensitive:   false,
+		Visibility:  apimodel.VisibilityPublic,
+		LocalOnly:   util.Ptr(false),
+		ScheduledAt: nil,
+		Language:    "en",
+		ContentType: "",
+	}
+
+	apiStatus, errWithCode := suite.status.Create(ctx, creatingAccount, creatingApplication, statusCreateForm)
+	suite.NoError(errWithCode)
+	suite.NotNil(apiStatus)
+
+	suite.Equal("<p>poopoo peepee</p>", apiStatus.Content)
+
+	// the test accounts don't have settings, so we're comparing to
+	// the global default value instead of the requester's default
+	suite.Equal(apimodel.StatusContentTypeDefault, apiStatus.ContentType)
 }
 
 func TestStatusCreateTestSuite(t *testing.T) {

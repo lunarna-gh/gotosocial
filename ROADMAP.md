@@ -47,13 +47,13 @@ What follows is a rough timeline of features that will be implemented on the roa
 
 ### Mid 2023
 
-- [x] **Hashtags** -- implement federating hashtags and viewing hashtags to allow users to discover posts that they might be interested in. (Done! https://github.com/superseriousbusiness/gotosocial/pull/2032).
+- [x] **Hashtags** -- implement federating hashtags and viewing hashtags to allow users to discover posts that they might be interested in. (Done! https://codeberg.org/superseriousbusiness/gotosocial/pulls/2032).
 
 ### Mid/late 2023
 
-- [x] **Polls** -- implementing parsing, creating, and voting in polls. (Done! https://github.com/superseriousbusiness/gotosocial/pull/2330)
-- [x] **Mute posts/threads** -- opt-out of notifications for replies to a thread; no longer show a given post in your timeline. (Done! https://github.com/superseriousbusiness/gotosocial/pull/2278)
-- [x] **Limited peering/allowlists** -- allow instance admins to limit federation with other instances by default. (Done! https://github.com/superseriousbusiness/gotosocial/pull/2200)
+- [x] **Polls** -- implementing parsing, creating, and voting in polls. (Done! https://codeberg.org/superseriousbusiness/gotosocial/pulls/2330)
+- [x] **Mute posts/threads** -- opt-out of notifications for replies to a thread; no longer show a given post in your timeline. (Done! https://codeberg.org/superseriousbusiness/gotosocial/pulls/2278)
+- [x] **Limited peering/allowlists** -- allow instance admins to limit federation with other instances by default. (Done! https://codeberg.org/superseriousbusiness/gotosocial/pulls/2200)
 
 ### Early 2024
 
@@ -73,10 +73,10 @@ These are provided in no specific order.
 - [x] **Non-replyable posts** -- design a non-replyable post path for GoToSocial based on https://github.com/mastodon/mastodon/issues/14762#issuecomment-1196889788; allow users to create non-replyable posts.
 - [x] **Block + allow list subscriptions** -- allow instance admins to subscribe their instance to domain block/allow lists.
 - [x] **Direct conversation view** -- allow users to easily page through all direct-message conversations they're a part of.
-- [ ] **Oauth token management** -- create / view / invalidate OAuth tokens via the settings panel.
-- [ ] **Status EDIT support** -- edit statuses that you've created, without having to delete + redraft. Federate edits out properly.
+- [x] **Oauth token management** -- create / view / invalidate OAuth tokens via the settings panel.
+- [x] **Status EDIT support** -- edit statuses that you've created, without having to delete + redraft. Federate edits out properly.
 - [ ] **Fediverse relay support** -- publish posts to relays, pull posts from relays.
-- [ ] **Two factor authentication (2fa)** -- allow users to enable 2FA for their account via the settings panel, enforce 2FA on login.
+- [x] **Two factor authentication (2fa)** -- allow users to enable 2FA for their account via the settings panel, enforce 2FA on login.
 - [ ] **Moderation: Append content warning / mark-as-sensitive all content from an instance/account**.
 
 More tbd!

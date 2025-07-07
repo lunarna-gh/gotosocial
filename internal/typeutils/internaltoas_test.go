@@ -23,12 +23,11 @@ import (
 	"errors"
 	"testing"
 
+	"code.superseriousbusiness.org/gotosocial/internal/ap"
+	"code.superseriousbusiness.org/gotosocial/internal/db"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/testrig"
 	"github.com/stretchr/testify/suite"
-	"github.com/superseriousbusiness/gotosocial/internal/ap"
-	"github.com/superseriousbusiness/gotosocial/internal/db"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/util"
-	"github.com/superseriousbusiness/gotosocial/testrig"
 )
 
 type InternalToASTestSuite struct {
@@ -85,7 +84,7 @@ func (suite *InternalToASTestSuite) TestAccountToAS() {
   "publicKey": {
     "id": "http://localhost:8080/users/the_mighty_zork/main-key",
     "owner": "http://localhost:8080/users/the_mighty_zork",
-    "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwXTcOAvM1Jiw5Ffpk0qn\nr0cwbNvFe/5zQ+Tp7tumK/ZnT37o7X0FUEXrxNi+dkhmeJ0gsaiN+JQGNUewvpSk\nPIAXKvi908aSfCGjs7bGlJCJCuDuL5d6m7hZnP9rt9fJc70GElPpG0jc9fXwlz7T\nlsPb2ecatmG05Y4jPwdC+oN4MNCv9yQzEvCVMzl76EJaM602kIHC1CISn0rDFmYd\n9rSN7XPlNJw1F6PbpJ/BWQ+pXHKw3OEwNTETAUNYiVGnZU+B7a7bZC9f6/aPbJuV\nt8Qmg+UnDvW1Y8gmfHnxaWG2f5TDBvCHmcYtucIZPLQD4trAozC4ryqlmCWQNKbt\n0wIDAQAB\n-----END PUBLIC KEY-----\n"
+    "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqtQQjwFLHPez+7uF9AX7\nuvLFHm3SyNIozhhVmGhxHIs0xdgRnZKmzmZkFdrFuXddBTAglU4C2u3dw10jJO1a\nWIFQF8bGkRHZG7Pd25/XmWWBRPmOJxNLeWBqpj0G+2zTMgnAV72hALSDFY2/QDsx\nUthenKw0Srpj1LUwvRbyVQQ8fGu4v0HACFnlOX2hCQwhfAnGrb0V70Y2IJu++MP7\n6i49md0vR0Mv3WbsEJUNp1fTIUzkgWB31icvfrNmaaAxw5FkAE+KfkkylhRxi5i5\nRR1XQUINWc2Kj2Kro+CJarKG+9zasMyN7+D230gpESi8rXv1SwRu865FR3gANdDS\nMwIDAQAB\n-----END PUBLIC KEY-----\n"
   },
   "published": "2022-05-20T11:09:18Z",
   "summary": "\u003cp\u003ehey yo this is my profile!\u003c/p\u003e",
@@ -100,7 +99,7 @@ func (suite *InternalToASTestSuite) TestAccountToASBot() {
 	*testAccount = *suite.testAccounts["local_account_1"] // take zork for this test
 
 	// Update zork to be a bot.
-	testAccount.Bot = util.Ptr(true)
+	testAccount.ActorType = gtsmodel.AccountActorTypeApplication
 	if err := suite.state.DB.UpdateAccount(context.Background(), testAccount); err != nil {
 		suite.FailNow(err.Error())
 	}
@@ -151,12 +150,12 @@ func (suite *InternalToASTestSuite) TestAccountToASBot() {
   "publicKey": {
     "id": "http://localhost:8080/users/the_mighty_zork/main-key",
     "owner": "http://localhost:8080/users/the_mighty_zork",
-    "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwXTcOAvM1Jiw5Ffpk0qn\nr0cwbNvFe/5zQ+Tp7tumK/ZnT37o7X0FUEXrxNi+dkhmeJ0gsaiN+JQGNUewvpSk\nPIAXKvi908aSfCGjs7bGlJCJCuDuL5d6m7hZnP9rt9fJc70GElPpG0jc9fXwlz7T\nlsPb2ecatmG05Y4jPwdC+oN4MNCv9yQzEvCVMzl76EJaM602kIHC1CISn0rDFmYd\n9rSN7XPlNJw1F6PbpJ/BWQ+pXHKw3OEwNTETAUNYiVGnZU+B7a7bZC9f6/aPbJuV\nt8Qmg+UnDvW1Y8gmfHnxaWG2f5TDBvCHmcYtucIZPLQD4trAozC4ryqlmCWQNKbt\n0wIDAQAB\n-----END PUBLIC KEY-----\n"
+    "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqtQQjwFLHPez+7uF9AX7\nuvLFHm3SyNIozhhVmGhxHIs0xdgRnZKmzmZkFdrFuXddBTAglU4C2u3dw10jJO1a\nWIFQF8bGkRHZG7Pd25/XmWWBRPmOJxNLeWBqpj0G+2zTMgnAV72hALSDFY2/QDsx\nUthenKw0Srpj1LUwvRbyVQQ8fGu4v0HACFnlOX2hCQwhfAnGrb0V70Y2IJu++MP7\n6i49md0vR0Mv3WbsEJUNp1fTIUzkgWB31icvfrNmaaAxw5FkAE+KfkkylhRxi5i5\nRR1XQUINWc2Kj2Kro+CJarKG+9zasMyN7+D230gpESi8rXv1SwRu865FR3gANdDS\nMwIDAQAB\n-----END PUBLIC KEY-----\n"
   },
   "published": "2022-05-20T11:09:18Z",
   "summary": "\u003cp\u003ehey yo this is my profile!\u003c/p\u003e",
   "tag": [],
-  "type": "Service",
+  "type": "Application",
   "url": "http://localhost:8080/@the_mighty_zork"
 }`, string(bytes))
 }
@@ -216,7 +215,7 @@ func (suite *InternalToASTestSuite) TestAccountToASWithFields() {
   "publicKey": {
     "id": "http://localhost:8080/users/1happyturtle#main-key",
     "owner": "http://localhost:8080/users/1happyturtle",
-    "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtTc6Jpg6LrRPhVQG4KLz\n2+YqEUUtZPd4YR+TKXuCnwEG9ZNGhgP046xa9h3EWzrZXaOhXvkUQgJuRqPrAcfN\nvc8jBHV2xrUeD8pu/MWKEabAsA/tgCv3nUC47HQ3/c12aHfYoPz3ufWsGGnrkhci\nv8PaveJ3LohO5vjCn1yZ00v6osMJMViEZvZQaazyE9A8FwraIexXabDpoy7tkHRg\nA1fvSkg4FeSG1XMcIz2NN7xyUuFACD+XkuOk7UqzRd4cjPUPLxiDwIsTlcgGOd3E\nUFMWVlPxSGjY2hIKa3lEHytaYK9IMYdSuyCsJshd3/yYC9LqxZY2KdlKJ80VOVyh\nyQIDAQAB\n-----END PUBLIC KEY-----\n"
+    "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwXTcOAvM1Jiw5Ffpk0qn\nr0cwbNvFe/5zQ+Tp7tumK/ZnT37o7X0FUEXrxNi+dkhmeJ0gsaiN+JQGNUewvpSk\nPIAXKvi908aSfCGjs7bGlJCJCuDuL5d6m7hZnP9rt9fJc70GElPpG0jc9fXwlz7T\nlsPb2ecatmG05Y4jPwdC+oN4MNCv9yQzEvCVMzl76EJaM602kIHC1CISn0rDFmYd\n9rSN7XPlNJw1F6PbpJ/BWQ+pXHKw3OEwNTETAUNYiVGnZU+B7a7bZC9f6/aPbJuV\nt8Qmg+UnDvW1Y8gmfHnxaWG2f5TDBvCHmcYtucIZPLQD4trAozC4ryqlmCWQNKbt\n0wIDAQAB\n-----END PUBLIC KEY-----\n"
   },
   "published": "2022-06-04T13:12:00Z",
   "summary": "\u003cp\u003ei post about things that concern me\u003c/p\u003e",
@@ -298,7 +297,7 @@ func (suite *InternalToASTestSuite) TestAccountToASAliasedAndMoved() {
   "publicKey": {
     "id": "http://localhost:8080/users/the_mighty_zork/main-key",
     "owner": "http://localhost:8080/users/the_mighty_zork",
-    "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwXTcOAvM1Jiw5Ffpk0qn\nr0cwbNvFe/5zQ+Tp7tumK/ZnT37o7X0FUEXrxNi+dkhmeJ0gsaiN+JQGNUewvpSk\nPIAXKvi908aSfCGjs7bGlJCJCuDuL5d6m7hZnP9rt9fJc70GElPpG0jc9fXwlz7T\nlsPb2ecatmG05Y4jPwdC+oN4MNCv9yQzEvCVMzl76EJaM602kIHC1CISn0rDFmYd\n9rSN7XPlNJw1F6PbpJ/BWQ+pXHKw3OEwNTETAUNYiVGnZU+B7a7bZC9f6/aPbJuV\nt8Qmg+UnDvW1Y8gmfHnxaWG2f5TDBvCHmcYtucIZPLQD4trAozC4ryqlmCWQNKbt\n0wIDAQAB\n-----END PUBLIC KEY-----\n"
+    "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqtQQjwFLHPez+7uF9AX7\nuvLFHm3SyNIozhhVmGhxHIs0xdgRnZKmzmZkFdrFuXddBTAglU4C2u3dw10jJO1a\nWIFQF8bGkRHZG7Pd25/XmWWBRPmOJxNLeWBqpj0G+2zTMgnAV72hALSDFY2/QDsx\nUthenKw0Srpj1LUwvRbyVQQ8fGu4v0HACFnlOX2hCQwhfAnGrb0V70Y2IJu++MP7\n6i49md0vR0Mv3WbsEJUNp1fTIUzkgWB31icvfrNmaaAxw5FkAE+KfkkylhRxi5i5\nRR1XQUINWc2Kj2Kro+CJarKG+9zasMyN7+D230gpESi8rXv1SwRu865FR3gANdDS\nMwIDAQAB\n-----END PUBLIC KEY-----\n"
   },
   "published": "2022-05-20T11:09:18Z",
   "summary": "\u003cp\u003ehey yo this is my profile!\u003c/p\u003e",
@@ -360,7 +359,7 @@ func (suite *InternalToASTestSuite) TestAccountToASWithOneField() {
   "publicKey": {
     "id": "http://localhost:8080/users/1happyturtle#main-key",
     "owner": "http://localhost:8080/users/1happyturtle",
-    "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtTc6Jpg6LrRPhVQG4KLz\n2+YqEUUtZPd4YR+TKXuCnwEG9ZNGhgP046xa9h3EWzrZXaOhXvkUQgJuRqPrAcfN\nvc8jBHV2xrUeD8pu/MWKEabAsA/tgCv3nUC47HQ3/c12aHfYoPz3ufWsGGnrkhci\nv8PaveJ3LohO5vjCn1yZ00v6osMJMViEZvZQaazyE9A8FwraIexXabDpoy7tkHRg\nA1fvSkg4FeSG1XMcIz2NN7xyUuFACD+XkuOk7UqzRd4cjPUPLxiDwIsTlcgGOd3E\nUFMWVlPxSGjY2hIKa3lEHytaYK9IMYdSuyCsJshd3/yYC9LqxZY2KdlKJ80VOVyh\nyQIDAQAB\n-----END PUBLIC KEY-----\n"
+    "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwXTcOAvM1Jiw5Ffpk0qn\nr0cwbNvFe/5zQ+Tp7tumK/ZnT37o7X0FUEXrxNi+dkhmeJ0gsaiN+JQGNUewvpSk\nPIAXKvi908aSfCGjs7bGlJCJCuDuL5d6m7hZnP9rt9fJc70GElPpG0jc9fXwlz7T\nlsPb2ecatmG05Y4jPwdC+oN4MNCv9yQzEvCVMzl76EJaM602kIHC1CISn0rDFmYd\n9rSN7XPlNJw1F6PbpJ/BWQ+pXHKw3OEwNTETAUNYiVGnZU+B7a7bZC9f6/aPbJuV\nt8Qmg+UnDvW1Y8gmfHnxaWG2f5TDBvCHmcYtucIZPLQD4trAozC4ryqlmCWQNKbt\n0wIDAQAB\n-----END PUBLIC KEY-----\n"
   },
   "published": "2022-06-04T13:12:00Z",
   "summary": "\u003cp\u003ei post about things that concern me\u003c/p\u003e",
@@ -422,7 +421,7 @@ func (suite *InternalToASTestSuite) TestAccountToASWithEmoji() {
   "publicKey": {
     "id": "http://localhost:8080/users/the_mighty_zork/main-key",
     "owner": "http://localhost:8080/users/the_mighty_zork",
-    "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwXTcOAvM1Jiw5Ffpk0qn\nr0cwbNvFe/5zQ+Tp7tumK/ZnT37o7X0FUEXrxNi+dkhmeJ0gsaiN+JQGNUewvpSk\nPIAXKvi908aSfCGjs7bGlJCJCuDuL5d6m7hZnP9rt9fJc70GElPpG0jc9fXwlz7T\nlsPb2ecatmG05Y4jPwdC+oN4MNCv9yQzEvCVMzl76EJaM602kIHC1CISn0rDFmYd\n9rSN7XPlNJw1F6PbpJ/BWQ+pXHKw3OEwNTETAUNYiVGnZU+B7a7bZC9f6/aPbJuV\nt8Qmg+UnDvW1Y8gmfHnxaWG2f5TDBvCHmcYtucIZPLQD4trAozC4ryqlmCWQNKbt\n0wIDAQAB\n-----END PUBLIC KEY-----\n"
+    "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqtQQjwFLHPez+7uF9AX7\nuvLFHm3SyNIozhhVmGhxHIs0xdgRnZKmzmZkFdrFuXddBTAglU4C2u3dw10jJO1a\nWIFQF8bGkRHZG7Pd25/XmWWBRPmOJxNLeWBqpj0G+2zTMgnAV72hALSDFY2/QDsx\nUthenKw0Srpj1LUwvRbyVQQ8fGu4v0HACFnlOX2hCQwhfAnGrb0V70Y2IJu++MP7\n6i49md0vR0Mv3WbsEJUNp1fTIUzkgWB31icvfrNmaaAxw5FkAE+KfkkylhRxi5i5\nRR1XQUINWc2Kj2Kro+CJarKG+9zasMyN7+D230gpESi8rXv1SwRu865FR3gANdDS\nMwIDAQAB\n-----END PUBLIC KEY-----\n"
   },
   "published": "2022-05-20T11:09:18Z",
   "summary": "\u003cp\u003ehey yo this is my profile!\u003c/p\u003e",
@@ -497,7 +496,7 @@ func (suite *InternalToASTestSuite) TestAccountToASWithSharedInbox() {
   "publicKey": {
     "id": "http://localhost:8080/users/the_mighty_zork/main-key",
     "owner": "http://localhost:8080/users/the_mighty_zork",
-    "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwXTcOAvM1Jiw5Ffpk0qn\nr0cwbNvFe/5zQ+Tp7tumK/ZnT37o7X0FUEXrxNi+dkhmeJ0gsaiN+JQGNUewvpSk\nPIAXKvi908aSfCGjs7bGlJCJCuDuL5d6m7hZnP9rt9fJc70GElPpG0jc9fXwlz7T\nlsPb2ecatmG05Y4jPwdC+oN4MNCv9yQzEvCVMzl76EJaM602kIHC1CISn0rDFmYd\n9rSN7XPlNJw1F6PbpJ/BWQ+pXHKw3OEwNTETAUNYiVGnZU+B7a7bZC9f6/aPbJuV\nt8Qmg+UnDvW1Y8gmfHnxaWG2f5TDBvCHmcYtucIZPLQD4trAozC4ryqlmCWQNKbt\n0wIDAQAB\n-----END PUBLIC KEY-----\n"
+    "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqtQQjwFLHPez+7uF9AX7\nuvLFHm3SyNIozhhVmGhxHIs0xdgRnZKmzmZkFdrFuXddBTAglU4C2u3dw10jJO1a\nWIFQF8bGkRHZG7Pd25/XmWWBRPmOJxNLeWBqpj0G+2zTMgnAV72hALSDFY2/QDsx\nUthenKw0Srpj1LUwvRbyVQQ8fGu4v0HACFnlOX2hCQwhfAnGrb0V70Y2IJu++MP7\n6i49md0vR0Mv3WbsEJUNp1fTIUzkgWB31icvfrNmaaAxw5FkAE+KfkkylhRxi5i5\nRR1XQUINWc2Kj2Kro+CJarKG+9zasMyN7+D230gpESi8rXv1SwRu865FR3gANdDS\nMwIDAQAB\n-----END PUBLIC KEY-----\n"
   },
   "published": "2022-05-20T11:09:18Z",
   "summary": "\u003cp\u003ehey yo this is my profile!\u003c/p\u003e",
@@ -531,9 +530,9 @@ func (suite *InternalToASTestSuite) TestStatusToAS() {
   "attachment": [],
   "attributedTo": "http://localhost:8080/users/the_mighty_zork",
   "cc": "http://localhost:8080/users/the_mighty_zork/followers",
-  "content": "hello everyone!",
+  "content": "\u003cp\u003ehello everyone!\u003c/p\u003e",
   "contentMap": {
-    "en": "hello everyone!"
+    "en": "\u003cp\u003ehello everyone!\u003c/p\u003e"
   },
   "id": "http://localhost:8080/users/the_mighty_zork/statuses/01F8MHAMCHF6Y650WCRSCP4WMY",
   "interactionPolicy": {
@@ -541,19 +540,31 @@ func (suite *InternalToASTestSuite) TestStatusToAS() {
       "always": [
         "https://www.w3.org/ns/activitystreams#Public"
       ],
-      "approvalRequired": []
+      "approvalRequired": [],
+      "automaticApproval": [
+        "https://www.w3.org/ns/activitystreams#Public"
+      ],
+      "manualApproval": []
     },
     "canLike": {
       "always": [
         "https://www.w3.org/ns/activitystreams#Public"
       ],
-      "approvalRequired": []
+      "approvalRequired": [],
+      "automaticApproval": [
+        "https://www.w3.org/ns/activitystreams#Public"
+      ],
+      "manualApproval": []
     },
     "canReply": {
       "always": [
         "https://www.w3.org/ns/activitystreams#Public"
       ],
-      "approvalRequired": []
+      "approvalRequired": [],
+      "automaticApproval": [
+        "https://www.w3.org/ns/activitystreams#Public"
+      ],
+      "manualApproval": []
     }
   },
   "published": "2021-10-20T12:40:37+02:00",
@@ -598,6 +609,10 @@ func (suite *InternalToASTestSuite) TestStatusWithTagsToASWithIDs() {
       "Emoji": "toot:Emoji",
       "Hashtag": "as:Hashtag",
       "blurhash": "toot:blurhash",
+      "focalPoint": {
+        "@container": "@list",
+        "@id": "toot:focalPoint"
+      },
       "sensitive": "as:sensitive",
       "toot": "http://joinmastodon.org/ns#"
     }
@@ -605,17 +620,21 @@ func (suite *InternalToASTestSuite) TestStatusWithTagsToASWithIDs() {
   "attachment": [
     {
       "blurhash": "LIIE|gRj00WB-;j[t7j[4nWBj[Rj",
+      "focalPoint": [
+        -0.5,
+        0.5
+      ],
       "mediaType": "image/jpeg",
-      "name": "Black and white image of some 50's style text saying: Welcome On Board",
-      "type": "Document",
+      "summary": "Black and white image of some 50's style text saying: Welcome On Board",
+      "type": "Image",
       "url": "http://localhost:8080/fileserver/01F8MH17FWEB39HZJ76B6VXSKF/attachment/original/01F8MH6NEM8D7527KZAECTCR76.jpg"
     }
   ],
   "attributedTo": "http://localhost:8080/users/admin",
   "cc": "http://localhost:8080/users/admin/followers",
-  "content": "hello world! #welcome ! first post on the instance :rainbow: !",
+  "content": "\u003cp\u003ehello world! \u003ca href=\"http://localhost:8080/tags/welcome\" class=\"mention hashtag\" rel=\"tag nofollow noreferrer noopener\" target=\"_blank\"\u003e#\u003cspan\u003ewelcome\u003c/span\u003e\u003c/a\u003e ! first post on the instance :rainbow: !\u003c/p\u003e",
   "contentMap": {
-    "en": "hello world! #welcome ! first post on the instance :rainbow: !"
+    "en": "\u003cp\u003ehello world! \u003ca href=\"http://localhost:8080/tags/welcome\" class=\"mention hashtag\" rel=\"tag nofollow noreferrer noopener\" target=\"_blank\"\u003e#\u003cspan\u003ewelcome\u003c/span\u003e\u003c/a\u003e ! first post on the instance :rainbow: !\u003c/p\u003e"
   },
   "id": "http://localhost:8080/users/admin/statuses/01F8MH75CBF9JFX4ZAD54N0W0R",
   "interactionPolicy": {
@@ -623,19 +642,31 @@ func (suite *InternalToASTestSuite) TestStatusWithTagsToASWithIDs() {
       "always": [
         "https://www.w3.org/ns/activitystreams#Public"
       ],
-      "approvalRequired": []
+      "approvalRequired": [],
+      "automaticApproval": [
+        "https://www.w3.org/ns/activitystreams#Public"
+      ],
+      "manualApproval": []
     },
     "canLike": {
       "always": [
         "https://www.w3.org/ns/activitystreams#Public"
       ],
-      "approvalRequired": []
+      "approvalRequired": [],
+      "automaticApproval": [
+        "https://www.w3.org/ns/activitystreams#Public"
+      ],
+      "manualApproval": []
     },
     "canReply": {
       "always": [
         "https://www.w3.org/ns/activitystreams#Public"
       ],
-      "approvalRequired": []
+      "approvalRequired": [],
+      "automaticApproval": [
+        "https://www.w3.org/ns/activitystreams#Public"
+      ],
+      "manualApproval": []
     }
   },
   "published": "2021-10-20T11:36:45Z",
@@ -698,6 +729,10 @@ func (suite *InternalToASTestSuite) TestStatusWithTagsToASFromDB() {
       "Emoji": "toot:Emoji",
       "Hashtag": "as:Hashtag",
       "blurhash": "toot:blurhash",
+      "focalPoint": {
+        "@container": "@list",
+        "@id": "toot:focalPoint"
+      },
       "sensitive": "as:sensitive",
       "toot": "http://joinmastodon.org/ns#"
     }
@@ -705,17 +740,21 @@ func (suite *InternalToASTestSuite) TestStatusWithTagsToASFromDB() {
   "attachment": [
     {
       "blurhash": "LIIE|gRj00WB-;j[t7j[4nWBj[Rj",
+      "focalPoint": [
+        -0.5,
+        0.5
+      ],
       "mediaType": "image/jpeg",
-      "name": "Black and white image of some 50's style text saying: Welcome On Board",
-      "type": "Document",
+      "summary": "Black and white image of some 50's style text saying: Welcome On Board",
+      "type": "Image",
       "url": "http://localhost:8080/fileserver/01F8MH17FWEB39HZJ76B6VXSKF/attachment/original/01F8MH6NEM8D7527KZAECTCR76.jpg"
     }
   ],
   "attributedTo": "http://localhost:8080/users/admin",
   "cc": "http://localhost:8080/users/admin/followers",
-  "content": "hello world! #welcome ! first post on the instance :rainbow: !",
+  "content": "\u003cp\u003ehello world! \u003ca href=\"http://localhost:8080/tags/welcome\" class=\"mention hashtag\" rel=\"tag nofollow noreferrer noopener\" target=\"_blank\"\u003e#\u003cspan\u003ewelcome\u003c/span\u003e\u003c/a\u003e ! first post on the instance :rainbow: !\u003c/p\u003e",
   "contentMap": {
-    "en": "hello world! #welcome ! first post on the instance :rainbow: !"
+    "en": "\u003cp\u003ehello world! \u003ca href=\"http://localhost:8080/tags/welcome\" class=\"mention hashtag\" rel=\"tag nofollow noreferrer noopener\" target=\"_blank\"\u003e#\u003cspan\u003ewelcome\u003c/span\u003e\u003c/a\u003e ! first post on the instance :rainbow: !\u003c/p\u003e"
   },
   "id": "http://localhost:8080/users/admin/statuses/01F8MH75CBF9JFX4ZAD54N0W0R",
   "interactionPolicy": {
@@ -723,19 +762,31 @@ func (suite *InternalToASTestSuite) TestStatusWithTagsToASFromDB() {
       "always": [
         "https://www.w3.org/ns/activitystreams#Public"
       ],
-      "approvalRequired": []
+      "approvalRequired": [],
+      "automaticApproval": [
+        "https://www.w3.org/ns/activitystreams#Public"
+      ],
+      "manualApproval": []
     },
     "canLike": {
       "always": [
         "https://www.w3.org/ns/activitystreams#Public"
       ],
-      "approvalRequired": []
+      "approvalRequired": [],
+      "automaticApproval": [
+        "https://www.w3.org/ns/activitystreams#Public"
+      ],
+      "manualApproval": []
     },
     "canReply": {
       "always": [
         "https://www.w3.org/ns/activitystreams#Public"
       ],
-      "approvalRequired": []
+      "approvalRequired": [],
+      "automaticApproval": [
+        "https://www.w3.org/ns/activitystreams#Public"
+      ],
+      "manualApproval": []
     }
   },
   "published": "2021-10-20T11:36:45Z",
@@ -805,9 +856,9 @@ func (suite *InternalToASTestSuite) TestStatusToASWithMentions() {
     "http://localhost:8080/users/admin/followers",
     "http://localhost:8080/users/the_mighty_zork"
   ],
-  "content": "hi @the_mighty_zork welcome to the instance!",
+  "content": "\u003cp\u003ehi \u003cspan class=\"h-card\"\u003e\u003ca href=\"http://localhost:8080/@1happyturtle\" class=\"u-url mention\" rel=\"nofollow noreferrer noopener\" target=\"_blank\"\u003e@\u003cspan\u003ethe_mighty_zork\u003c/span\u003e\u003c/a\u003e\u003c/span\u003e welcome to the instance!\u003c/p\u003e",
   "contentMap": {
-    "en": "hi @the_mighty_zork welcome to the instance!"
+    "en": "\u003cp\u003ehi \u003cspan class=\"h-card\"\u003e\u003ca href=\"http://localhost:8080/@1happyturtle\" class=\"u-url mention\" rel=\"nofollow noreferrer noopener\" target=\"_blank\"\u003e@\u003cspan\u003ethe_mighty_zork\u003c/span\u003e\u003c/a\u003e\u003c/span\u003e welcome to the instance!\u003c/p\u003e"
   },
   "id": "http://localhost:8080/users/admin/statuses/01FF25D5Q0DH7CHD57CTRS6WK0",
   "inReplyTo": "http://localhost:8080/users/the_mighty_zork/statuses/01F8MHAMCHF6Y650WCRSCP4WMY",
@@ -816,19 +867,31 @@ func (suite *InternalToASTestSuite) TestStatusToASWithMentions() {
       "always": [
         "https://www.w3.org/ns/activitystreams#Public"
       ],
-      "approvalRequired": []
+      "approvalRequired": [],
+      "automaticApproval": [
+        "https://www.w3.org/ns/activitystreams#Public"
+      ],
+      "manualApproval": []
     },
     "canLike": {
       "always": [
         "https://www.w3.org/ns/activitystreams#Public"
       ],
-      "approvalRequired": []
+      "approvalRequired": [],
+      "automaticApproval": [
+        "https://www.w3.org/ns/activitystreams#Public"
+      ],
+      "manualApproval": []
     },
     "canReply": {
       "always": [
         "https://www.w3.org/ns/activitystreams#Public"
       ],
-      "approvalRequired": []
+      "approvalRequired": [],
+      "automaticApproval": [
+        "https://www.w3.org/ns/activitystreams#Public"
+      ],
+      "manualApproval": []
     }
   },
   "published": "2021-11-20T13:32:16Z",

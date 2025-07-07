@@ -3,23 +3,23 @@
 
 **有关企业赞助的更新：我们欢迎与符合我们价值观的组织建立赞助关系；请查看下述条件**
 
-GoToSocial 是一个用 Golang 编写的 [ActivityPub](https://activitypub.rocks/) 社交网络服务端。
+🏳️‍🌈 GoToSocial 是一个用 Golang 编写的 [ActivityPub](https://activitypub.rocks/) 社交网络服务端。 🏳️‍⚧️
 
 通过 GoToSocial，你可以与朋友保持联系，发帖、阅读和分享图片及文章，且不会被追踪或广告打扰！
 
 <p align="middle">
-  <img src="https://raw.githubusercontent.com/superseriousbusiness/gotosocial/main/docs/overrides/public/sloth.webp" width="300"/>
+  <img src="https://codeberg.org/superseriousbusiness/gotosocial/raw/branch/main/docs/overrides/public/sloth.webp" width="300"/>
 </p>
 
 **GoToSocial 仍然是 [BETA 软件](https://en.wikipedia.org/wiki/Software_release_life_cycle#Beta)**。它已经可被部署和使用，并能与许多其他 Fediverse 服务端顺利联合（但还不是与所有服务端）。然而，许多功能尚未实现，而且还有不少漏洞！我们在 2024 年 9 月/10 月离开了 Alpha 阶段，并计划于 2026 年结束 Beta。
 
 文档位于 [docs.gotosocial.org](https://docs.gotosocial.org/zh-cn/)。你可以直接跳至 [API 文档](https://docs.gotosocial.org/zh-cn/latest/api/swagger/)。
 
-要从源代码构建，请查看 [CONTRIBUTING.md](https://github.com/superseriousbusiness/gotosocial/blob/main/docs/locales/zh/repo/CONTRIBUTING.md) 文件。
+要从源代码构建，请查看 [CONTRIBUTING.md](https://codeberg.org/superseriousbusiness/gotosocial/src/branch/main/docs/locales/zh/repo/CONTRIBUTING.md) 文件。
 
 这是实例首页的截图！你也可以看一看本项目在 GoToSocial 上的官方账号: [https://gts.superseriousbusiness.org/@gotosocial](https://gts.superseriousbusiness.org/@gotosocial)。
 
-![GoToSocial 实例 goblin.technology 的首页截图。它展示了实例的基本信息，如用户数和贴文数等。](https://raw.githubusercontent.com/superseriousbusiness/gotosocial/main/docs/overrides/public/instancesplash.png)
+![GoToSocial 实例 goblin.technology 的首页截图。它展示了实例的基本信息，如用户数和贴文数等。](https://codeberg.org/superseriousbusiness/gotosocial/raw/branch/main/docs/overrides/public/instancesplash.png)
 <!--overview-end-->
 
 ## 目录 <!-- omit in toc -->
@@ -40,10 +40,12 @@ GoToSocial 是一个用 Golang 编写的 [ActivityPub](https://activitypub.rocks
   - [多种联合模式](#多种联合模式)
   - [OIDC 集成](#oidc-集成)
   - [后端优先设计](#后端优先设计)
+- [替代实现](#替代实现)
 - [已知问题](#已知问题)
 - [安装 GoToSocial](#安装-gotosocial)
   - [支持的平台](#支持的平台)
-    - [FreeBSD](#freebsd)
+    - [64位](#64位)
+    - [BSD系](#bsd系)
     - [32位](#32位)
     - [OpenBSD](#openbsd)
   - [稳定版本](#稳定版本)
@@ -72,7 +74,7 @@ GoToSocial 提供了一个轻量级、可定制且注重安全的进入 [联邦�
 
 如果你曾使用过 Twitter 或 Tumblr（甚至是 Myspace）等服务，GoToSocial 可能会让你感到熟悉：你可以关注他人并拥有粉丝，发布贴文，点赞、回复和分享他人的帖子，并通过时间线浏览你关注的人的贴文。你可以撰写长篇或短篇贴文，或者仅发布图片，一切随你选择。当然，你也可以屏蔽他人，或通过选择仅向朋友发布来限制不想要的互动。
 
-![GoToSocial 中的网页版账户页截图，显示了头像、简介和粉丝/关注人数。](https://raw.githubusercontent.com/superseriousbusiness/gotosocial/main/docs/overrides/public/profile1.png)
+![GoToSocial 中的网页版账户页截图，显示了头像、简介和粉丝/关注人数。](https://codeberg.org/superseriousbusiness/gotosocial/raw/branch/main/docs/overrides/public/profile1.png)
 
 **GoToSocial 不使用推荐算法，也不收集你的数据来推荐内容或“改善你的体验”**。时间线是按时间顺序排列的：你在时间线顶部看到的内容是*刚刚发布的*，而不是根据你的个人资料选择的“有趣”或“有争议”的内容。
 
@@ -84,7 +86,7 @@ GoToSocial 不会宣称比其他应用更“好”，但它提供了一些可能
 
 因为 GoToSocial 使用 [ActivityPub](https://activitypub.rocks/)，你不仅可以与本站上的人交流，还可以无缝与 [联邦宇宙](https://en.wikipedia.org/wiki/Fediverse) 上的人交流。
 
-![activitypub 标志](https://raw.githubusercontent.com/superseriousbusiness/gotosocial/main/docs/overrides/public/ap_logo.svg)
+![activitypub 标志](https://codeberg.org/superseriousbusiness/gotosocial/raw/branch/main/docs/overrides/public/ap_logo.svg)
 
 联合意味着你的实例是一个遍布世界的、使用相同协议通信的服务器网络的一部分。你的数据不再集中在一家公司服务器上，而是在你自己的服务器上，根据你的意愿，跨越由其他人运行的服务器组成的弹性网络实现共享。
 
@@ -100,7 +102,7 @@ GoToSocial 的愿景是让许多小而特别的实例遍布联邦宇宙，让人
 
 我们在 2021 年 11 月进行了首次 Alpha 发布。我们于 2024 年 9 月/10 月离开 Alpha，进入 Beta 阶段。
 
-要详细了解已实现和未实现的内容，以及 [稳定发布](https://en.wikipedia.org/wiki/Software_release_life_cycle#Stable_release) 的进展，请查看 [路线图](https://github.com/superseriousbusiness/gotosocial/blob/main/docs/locales/zh/repo/ROADMAP.md)。
+要详细了解已实现和未实现的内容，以及 [稳定发布](https://en.wikipedia.org/wiki/Software_release_life_cycle#Stable_release) 的进展，请查看 [路线图](https://codeberg.org/superseriousbusiness/gotosocial/src/branch/main/docs/locales/zh/repo/ROADMAP.md)。
 
 ---
 
@@ -128,7 +130,7 @@ GoToSocial 提供公开、不列出/悄悄公开、仅粉丝和私信（最好�
 
 GoToSocial 允许你通过 [互动规则](https://docs.gotosocial.org/zh-cn/latest/user_guide/settings/#默认互动规则) 选择谁可以回复你的贴文。你可以选择允许任何人回复贴文，仅允许朋友回复，等等。
 
-![互动规则设置](https://raw.githubusercontent.com/superseriousbusiness/gotosocial/main/docs/overrides/public/user-settings-interaction-policy-1.png)
+![互动规则设置](https://codeberg.org/superseriousbusiness/gotosocial/raw/branch/main/docs/overrides/public/user-settings-interaction-policy-1.png)
 
 ### 仅本站贴文
 
@@ -142,7 +144,7 @@ GoToSocial 允许你选择将个人资料暴露为 RSS 订阅源，这样人们�
 
 使用 GoToSocial，你可以使用流行且易用的 Markdown 标记语言来撰写帖子，从而生成丰富的 HTML 贴文，支持引用段落、语法高亮代码块、列表、内嵌链接等。
 
-![markdown 格式化贴文](https://raw.githubusercontent.com/superseriousbusiness/gotosocial/main/docs/overrides/public/markdown-post.png)
+![markdown 格式化贴文](https://codeberg.org/superseriousbusiness/gotosocial/raw/branch/main/docs/overrides/public/markdown-post.png)
 
 ### 主题与自定义 CSS
 
@@ -153,61 +155,61 @@ GoToSocial 允许你选择将个人资料暴露为 RSS 订阅源，这样人们�
 <details>
 <summary>显示主题示例</summary>
 <figure>
-  <img src="https://raw.githubusercontent.com/superseriousbusiness/gotosocial/main/docs/overrides/public/theme-blurple-dark.png"/>
+  <img src="https://codeberg.org/superseriousbusiness/gotosocial/raw/branch/main/docs/overrides/public/theme-blurple-dark.png"/>
   <figcaption>Blurple dark</figcaption>
 </figure>
 <hr/>
 <figure>
-  <img src="https://raw.githubusercontent.com/superseriousbusiness/gotosocial/main/docs/overrides/public/theme-blurple-light.png"/>
+  <img src="https://codeberg.org/superseriousbusiness/gotosocial/raw/branch/main/docs/overrides/public/theme-blurple-light.png"/>
   <figcaption>Blurple light</figcaption>
 </figure>
 <hr/>
 <figure>
-  <img src="https://raw.githubusercontent.com/superseriousbusiness/gotosocial/main/docs/overrides/public/theme-brutalist-light.png"/>
+  <img src="https://codeberg.org/superseriousbusiness/gotosocial/raw/branch/main/docs/overrides/public/theme-brutalist-light.png"/>
   <figcaption>Brutalist light</figcaption>
 </figure>
 <hr/>
 <figure>
-  <img src="https://raw.githubusercontent.com/superseriousbusiness/gotosocial/main/docs/overrides/public/theme-brutalist-dark.png"/>
+  <img src="https://codeberg.org/superseriousbusiness/gotosocial/raw/branch/main/docs/overrides/public/theme-brutalist-dark.png"/>
   <figcaption>Brutalist dark</figcaption>
 </figure>
 <hr/>
 <figure>
-  <img src="https://raw.githubusercontent.com/superseriousbusiness/gotosocial/main/docs/overrides/public/theme-ecks-pee.png"/>
+  <img src="https://codeberg.org/superseriousbusiness/gotosocial/raw/branch/main/docs/overrides/public/theme-ecks-pee.png"/>
   <figcaption>Ecks pee</figcaption>
 </figure>
 <hr/>
 <figure>
-  <img src="https://raw.githubusercontent.com/superseriousbusiness/gotosocial/main/docs/overrides/public/theme-midnight-trip.png"/>
+  <img src="https://codeberg.org/superseriousbusiness/gotosocial/raw/branch/main/docs/overrides/public/theme-midnight-trip.png"/>
   <figcaption>Midnight trip</figcaption>
 </figure>
 <figure>
-  <img src="https://raw.githubusercontent.com/superseriousbusiness/gotosocial/main/docs/overrides/public/theme-moonlight-hunt.png"/>
+  <img src="https://codeberg.org/superseriousbusiness/gotosocial/raw/branch/main/docs/overrides/public/theme-moonlight-hunt.png"/>
   <figcaption>Moonlight hunt</figcaption>
 </figure>
 <hr/>
 <figure>
-  <img src="https://raw.githubusercontent.com/superseriousbusiness/gotosocial/main/docs/overrides/public/theme-rainforest.png"/>
+  <img src="https://codeberg.org/superseriousbusiness/gotosocial/raw/branch/main/docs/overrides/public/theme-rainforest.png"/>
   <figcaption>Rainforest</figcaption>
 </figure>
 <hr/>
 <figure>
-  <img src="https://raw.githubusercontent.com/superseriousbusiness/gotosocial/main/docs/overrides/public/theme-soft.png"/>
+  <img src="https://codeberg.org/superseriousbusiness/gotosocial/raw/branch/main/docs/overrides/public/theme-soft.png"/>
   <figcaption>Soft</figcaption>
 </figure>
 <hr/>
 <figure>
-  <img src="https://raw.githubusercontent.com/superseriousbusiness/gotosocial/main/docs/overrides/public/theme-solarized-dark.png"/>
+  <img src="https://codeberg.org/superseriousbusiness/gotosocial/raw/branch/main/docs/overrides/public/theme-solarized-dark.png"/>
   <figcaption>Solarized dark</figcaption>
 </figure>
 <hr/>
 <figure>
-  <img src="https://raw.githubusercontent.com/superseriousbusiness/gotosocial/main/docs/overrides/public/theme-solarized-light.png"/>
+  <img src="https://codeberg.org/superseriousbusiness/gotosocial/raw/branch/main/docs/overrides/public/theme-solarized-light.png"/>
   <figcaption>Solarized light</figcaption>
 </figure>
 <hr/>
 <figure>
-  <img src="https://raw.githubusercontent.com/superseriousbusiness/gotosocial/main/docs/overrides/public/theme-sunset.png"/>
+  <img src="https://codeberg.org/superseriousbusiness/gotosocial/raw/branch/main/docs/overrides/public/theme-sunset.png"/>
   <figcaption>Sunset</figcaption>
 </figure>
 <hr/>
@@ -217,7 +219,7 @@ GoToSocial 允许你选择将个人资料暴露为 RSS 订阅源，这样人们�
 
 GoToSocial 仅需约 250-350MiB 的 RAM，并且只要求极少的 CPU 频率，因此非常适合单板计算机、旧笔记本和每月 5 美元的小 VPS。
 
-![Grafana 图标显示 GoToSocial 堆占用约为 250MB，偶尔飙升至 400MB-500MB。](https://raw.githubusercontent.com/superseriousbusiness/gotosocial/main/docs/overrides/public/getting-started-memory-graph.png)
+![Grafana 图标显示 GoToSocial 堆占用约为 250MB，偶尔飙升至 400MB-500MB。](https://codeberg.org/superseriousbusiness/gotosocial/raw/branch/main/docs/overrides/public/getting-started-memory-graph.png)
 
 除数据库外无需其他依赖（也可以仅使用 SQLite！）。
 
@@ -230,6 +232,7 @@ GoToSocial 仅需约 250-350MiB 的 RAM，并且只要求极少的 CPU 频率，
 - [导入/导出](https://docs.gotosocial.org/zh-cn/latest/admin/settings/#导入导出) 社区创建的域名允许和域名阻止列表，并[订阅](https://docs.gotosocial.org/zh-cn/latest/admin/domain_permission_subscriptions)这些列表。
 - HTTP 签名认证：GoToSocial 在发送和接收消息时要求 [HTTP 签名](https://datatracker.ietf.org/doc/html/draft-cavage-http-signatures-12)，以确保消息不能被篡改，身份不能被伪造。
 - 内置 [Let's Encrypt](https://letsencrypt.org/) 的自动使用 HTTPS 支持。
+- 支持基于时间的一次性双因素认证代码（Google 认证器，LastPass 认证器等）。
 
 ### 多种联合模式
 
@@ -255,17 +258,29 @@ GoToSocial 支持 [OpenID Connect (OIDC)](https://openid.net/connect/) 身份提
 
 ---
 
+## 替代实现
+
+不喜欢 GtS 但还是想搭建联邦宇宙服务？喜欢 GtS 但不想用测试版软件？有很多替代实现可能更适合你！这里列出一些我们知道的使用效果不错的实现（按字母顺序排列）：
+
+- [Akkoma](https://akkoma.social/)：功能齐全的 ActivityPub 微博客，支持表情反应和引用贴文（Elixir）。
+- [Honk](https://humungus.tedunangst.com/r/honk/m/activitypub.7)：极简、有特点的微博客服务端，特点是“没有点赞、没有收藏、没有投票、没有加星、没有鼓掌、没有互动计数”（Go）。
+- [Iceshrimp.net](https://iceshrimp.dev/iceshrimp/Iceshrimp.NET)：Iceshrimp 的全新重写版本（.Net）。
+- [Mastodon](https://joinmastodon.org/)：积极开发、广为人知、可扩展的 ActivityPub 微博客服务端（Ruby）。
+- [Snac2](https://codeberg.org/grunfink/snac2)：简约、最小化的实例，系统要求非常低（可移植 C）。
+
+---
+
 ## 已知问题
 
-由于 GoToSocial 仍处于测试阶段，存在很多错误。我们使用 [GitHub issues](https://github.com/superseriousbusiness/gotosocial/issues?q=is%3Aissue+is%3Aopen+label%3Abug) 跟踪这些问题。
+由于 GoToSocial 仍处于测试阶段，存在很多错误。我们使用 [Codeberg issues](https://codeberg.org/superseriousbusiness/gotosocial/issues?q=is%3Aissue+is%3Aopen+label%3Abug) 跟踪这些问题。
 
-由于每个 ActivityPub 服务端实现对协议的解释略有不同，有些服务端尚未与 GoToSocial 正常联合。我们在 [这个项目](https://github.com/superseriousbusiness/gotosocial/projects/4) 中跟踪这些问题。最终，我们希望确保任何可以与 Mastodon 正确联合的 ActivityPub 实现也能够与 GoToSocial 联合。
+由于每个 ActivityPub 服务端实现对协议的解释略有不同，有些服务端尚未与 GoToSocial 正常联合。我们在 [这个项目](https://codeberg.org/superseriousbusiness/gotosocial/projects/4) 中跟踪这些问题。最终，我们希望确保任何可以与 Mastodon 正确联合的 ActivityPub 实现也能够与 GoToSocial 联合。
 
 ---
 
 ## 安装 GoToSocial
 
-查看我们的 [入门文档](https://docs.gotosocial.org/zh-cn/latest/getting_started/)，并浏览我们的 [发布页面](https://github.com/superseriousbusiness/gotosocial/releases)。
+查看我们的 [入门文档](https://docs.gotosocial.org/zh-cn/latest/getting_started/)，并浏览我们的 [发布页面](https://codeberg.org/superseriousbusiness/gotosocial/releases)。
 
 <!--releases-start-->
 ### 支持的平台
@@ -276,19 +291,34 @@ GoToSocial 支持 [OpenID Connect (OIDC)](https://openid.net/connect/) 身份提
 
 以下是 GoToSocial 当前针对不同平台的支持状态（如果某个平台未列出，则表示我们尚未检查，因此我们不清楚）：
 
+
+
 | 操作系统 | 架构                  | 支持程度                            | 二进制文件 | Docker 容器     |
 | ------- | --------------------- | ---------------------------------- | ---------- | --------------- |
 | Linux   | x86-64/AMD64 (64位)   | 🟢 完全支持                         | 是         | 是              |
 | Linux   | Armv8/ARM64 (64位)    | 🟢 完全支持                         | 是         | 是              |
 | FreeBSD | x86-64/AMD64 (64位)   | 🟢 完全支持<sup>[1](#freebsd)</sup> | 是         | 否              |
-| Linux   | x86-32/i386 (32位)    | 🟡 部分支持<sup>[2](#32-bit)</sup>  | 是         | 是              |
-| Linux   | Armv7/ARM32 (32位)    | 🟡 部分支持<sup>[2](#32-bit)</sup>  | 是         | 是              |
-| Linux   | Armv6/ARM32 (32位)    | 🟡 部分支持<sup>[2](#32-bit)</sup>  | 是         | 是              |
-| OpenBSD | 任何架构                  | 🔴 不支持<sup>[3](#openbsd)</sup>   | 否         | 否              |
+| FreeBSD | Armv8/ARM64 (64位)    | 🟢 完全支持<sup>[1](#freebsd)</sup> | 是         | 否              |
+| NetBSD  | x86-64/AMD64 (64位)   | 🟢 完全支持<sup>[1](#netbsd)</sup> | 是         | 否              |
+| NetBSD  | Armv8/ARM64 (64位)    | 🟢 完全支持<sup>[1](#netbsd)</sup> | 是         | 否              |
+| Linux   | x86-32/i386 (32位)    | 🟡 部分支持<sup>[2](#32位)</sup>         | 是         | 是              |
+| Linux   | Armv7/ARM32 (32位)    | 🟡 部分支持<sup>[2](#32位)</sup>         | 是         | 是              |
+| Linux   | Armv6/ARM32 (32位)    | 🟡 部分支持<sup>[2](#32位)</sup>         | 是         | 是              |
+| OpenBSD | Any                     | 🔴 不支持<sup>[3](#openbsd)</sup>           | 否         | 否              |
 
-#### FreeBSD
+#### 64位
 
-大多数情况下可用，只是在 WASM SQLite 上有一些问题；在 FreeBSD 上安装时请仔细查看发行说明。如果使用 Postgres，则不应出现问题。
+对 64 位 CPU 的特性要求注释：
+
+- x86_64 需要支持 SSE4.1 指令集 (自2010年左右起生产的CPU大多支持)
+
+- ARM64 没有特定指令集要求， ARMv8 CPU（及后续版本）已支持全部所需特性。
+
+如果没有这些指令集，媒体处理性能将会受到影响（多数情况下，SQLite性能也会收到影响）。在这些情况下,您可以尝试使用完全**不受支持、实验性的**[nowasm](https://docs.gotosocial.org/zh-cn/latest/advanced/builds/nowasm/)标签自行构建二进制文件。
+
+#### BSD系
+
+大部分可以正常工作,只是使用WASM SQLite时需要[注意几个事项](https://github.com/ncruces/go-sqlite3/wiki/Support-matrix);在NetBSD或FreeBSD上安装时请仔细查看发行说明。如果使用Postgres运行,您应该不会有任何问题。
 
 #### 32位
 
@@ -300,7 +330,7 @@ GtS 在像 i386 或 Armv6/v7 这样的 32 位系统上表现不佳，这主要�
 
 #### OpenBSD
 
-由于性能问题（空闲时的高内存占用，在处理媒体时崩溃），此系统被标记为不支持。
+由于性能问题（不支持 WASM 编译器，空闲时的高内存占用，在处理媒体时崩溃），此系统被标记为不支持。
 
 虽然我们不支持在 OpenBSD 上运行 GtS，但你可以尝试使用完全**不受支持、实验性**的 [nowasm](https://docs.gotosocial.org/zh-cn/latest/advanced/builds/nowasm/) 标签自行构建二进制文件。
 
@@ -308,7 +338,7 @@ GtS 在像 i386 或 Armv6/v7 这样的 32 位系统上表现不佳，这主要�
 
 我们为二进制构建和 Docker 容器打包稳定版本，这样你就不需要自己从源代码构建。
 
-Docker 镜像 `superseriousbusiness/gotosocial:latest` 始终对应于最新稳定版本。由于此标签经常被覆盖，你可能希望使用 Docker CLI 标志 `--pull always` 确保每次运行此标签时都有最新的镜像，或者也可在使用前手动运行 `docker pull superseriousbusiness/gotosocial:latest`。
+Docker 镜像 `docker.io/superseriousbusiness/gotosocial:latest` 始终对应于最新稳定版本。由于此标签经常被覆盖，你可能希望使用 Docker CLI 标志 `--pull always` 确保每次运行此标签时都有最新的镜像，或者也可在使用前手动运行 `docker pull docker.io/superseriousbusiness/gotosocial:latest`。
 
 ### 快照版本
 
@@ -318,17 +348,17 @@ Docker 镜像 `superseriousbusiness/gotosocial:latest` 始终对应于最新稳�
 
 #### Docker
 
-要使用 Docker 从主分支运行，请使用 `snapshot` Docker 标签。Docker 镜像 `superseriousbusiness/gotosocial:snapshot` 始终对应主分支上的最新提交。由于此标签经常被覆盖，你可能希望使用 Docker CLI 标志 `--pull always` 确保每次运行此标签时都有最新的镜像，或者也可在使用前手动运行 `docker pull superseriousbusiness/gotosocial:snapshot`。
+要使用 Docker 从主分支运行，请使用 `snapshot` Docker 标签。Docker 镜像 `docker.io/superseriousbusiness/gotosocial:snapshot` 始终对应主分支上的最新提交。由于此标签经常被覆盖，你可能希望使用 Docker CLI 标志 `--pull always` 确保每次运行此标签时都有最新的镜像，或者也可在使用前手动运行 `docker pull docker.io/superseriousbusiness/gotosocial:snapshot`。
 
 #### 二进制发布 .tar.gz
 
 要使用二进制发布从主分支运行，请从我们的 [自托管 Minio S3 仓库](https://minio.s3.superseriousbusiness.org/browser/gotosocial-snapshots)下载适合你架构的 .tar.gz 文件。
 
-S3 存储桶中的快照版二进制发布由 Github 提交哈希控制。要获取最新的，请按上次修改时间排序，或者查看 [这里的提交列表](https://github.com/superseriousbusiness/gotosocial/commits/main)，复制最新的 SHA，并在 Minio 控制台过滤器中粘贴。快照二进制发布会在 28 天后过期，以降低我们的托管成本。
+S3 存储桶中的快照版二进制发布由代码提交哈希控制。要获取最新的，请按上次修改时间排序，或者查看 [这里的提交列表](https://codeberg.org/superseriousbusiness/gotosocial/commits/main)，复制最新的 SHA，并在 Minio 控制台过滤器中粘贴。快照二进制发布会在 28 天后过期，以降低我们的托管成本。
 
 ### 从源代码构建
 
-有关从源代码构建 GoToSocial 的说明，请参见 [CONTRIBUTING.md](https://github.com/superseriousbusiness/gotosocial/blob/main/docs/locales/zh/repo/CONTRIBUTING.md) 文件。
+有关从源代码构建 GoToSocial 的说明，请参见 [CONTRIBUTING.md](https://codeberg.org/superseriousbusiness/gotosocial/src/branch/main/docs/locales/zh/repo/CONTRIBUTING.md) 文件。
 
 ### 第三方打包
 
@@ -349,7 +379,7 @@ S3 存储桶中的快照版二进制发布由 Github 提交哈希控制。要获
 
 ## 参与贡献
 
-你想为 GtS 作出贡献吗？太好了！❤️❤️❤️ 请查看问题页面，看看是否有你想参与的内容，并阅读 [CONTRIBUTING.md](https://github.com/superseriousbusiness/gotosocial/blob/main/docs/locales/zh/repo/CONTRIBUTING.md) 文件以获取指南并配置开发环境。
+你想为 GtS 作出贡献吗？太好了！❤️❤️❤️ 请查看问题页面，看看是否有你想参与的内容，并阅读 [CONTRIBUTING.md](https://codeberg.org/superseriousbusiness/gotosocial/src/branch/main/docs/locales/zh/repo/CONTRIBUTING.md) 文件以获取指南并配置开发环境。
 
 ---
 
@@ -357,7 +387,7 @@ S3 存储桶中的快照版二进制发布由 Github 提交哈希控制。要获
 
 如果你有问题或反馈，可以[加入我们的 Matrix 空间](https://matrix.to/#/#gotosocial-space:superseriousbusiness.org)，地址是 `#gotosocial-space:superseriousbusiness.org`。这是联系开发人员的最快方式。你也可以发送邮件至 [admin@gotosocial.org](mailto:admin@gotosocial.org)。
 
-对于错误和功能请求，请先查看是否[已有相应问题](https://github.com/superseriousbusiness/gotosocial/issues)，如果没有，可以开一个新问题工单(issue)，或者使用上述渠道提出请求（如果你没有 Github 账户的话）。
+对于错误和功能请求，请先查看是否[已有相应问题](https://codeberg.org/superseriousbusiness/gotosocial/issues)，如果没有，可以开一个新问题工单(issue)，或者使用上述渠道提出请求（如果你没有 Github 账户的话）。
 
 ---
 
@@ -412,15 +442,17 @@ GoToSocial 使用以下开源库、框架和工具，在此声明并致谢 💕
 - [mvdan.cc/xurls](https://github.com/mvdan/xurls); URL 解析正则表达式。 [BSD-3-Clause 许可证](https://spdx.org/licenses/BSD-3-Clause.html)。
 - [oklog/ulid](https://github.com/oklog/ulid); 顺序友好的数据库 ID 生成。 [Apache-2.0 许可证](https://spdx.org/licenses/Apache-2.0.html)。
 - [open-telemetry/opentelemetry-go](https://github.com/open-telemetry/opentelemetry-go); OpenTelemetry API + SDK。 [Apache-2.0 许可证](https://spdx.org/licenses/Apache-2.0.html)。
+- [pquerna/otp](https://github.com/pquerna/otp); 一次性代码工具。 [Apache-2.0 许可证](https://spdx.org/licenses/Apache-2.0.html)。
 - spf13:
   - [spf13/cobra](https://github.com/spf13/cobra); 命令行工具。 [Apache-2.0 许可证](https://spdx.org/licenses/Apache-2.0.html)。
   - [spf13/viper](https://github.com/spf13/viper); 配置管理。 [Apache-2.0 许可证](https://spdx.org/licenses/Apache-2.0.html)。
 - [stretchr/testify](https://github.com/stretchr/testify); 测试框架。 [MIT 许可证](https://spdx.org/licenses/MIT.html)。
 - superseriousbusiness:
-  - [superseriousbusiness/activity](https://github.com/superseriousbusiness/activity) 从 [go-fed/activity](https://github.com/go-fed/activity) 派生; Golang ActivityPub/ActivityStreams 库。 [BSD-3-Clause 许可证](https://spdx.org/licenses/BSD-3-Clause.html)。
-  - [superseriousbusiness/exif-terminator](https://codeberg.org/superseriousbusiness/exif-terminator); EXIF 数据擦除。 [GNU AGPL v3 许可证](https://spdx.org/licenses/AGPL-3.0-or-later.html)。
-  - [superseriousbusiness/httpsig](https://github.com/superseriousbusiness/httpsig) 从 [go-fed/httpsig](https://github.com/go-fed/httpsig) 派生; 安全 HTTP 签名库。 [BSD-3-Clause 许可证](https://spdx.org/licenses/BSD-3-Clause.html)。
-  - [superseriousbusiness/oauth2](https://github.com/superseriousbusiness/oauth2) 从 [go-oauth2/oauth2](https://github.com/go-oauth2/oauth2) 派生; OAuth 服务器框架和令牌处理。 [MIT 许可证](https://spdx.org/licenses/MIT.html)。
+  - [superseriousbusiness/activity](https://code.superseriousbusiness.org/activity) 从 [go-fed/activity](https://github.com/go-fed/activity) 派生; Golang ActivityPub/ActivityStreams 库。 [BSD-3-Clause 许可证](https://spdx.org/licenses/BSD-3-Clause.html)。
+  - [superseriousbusiness/exif-terminator](https://code.superseriousbusiness.org/exif-terminator); EXIF 数据擦除。 [GNU AGPL v3 许可证](https://spdx.org/licenses/AGPL-3.0-or-later.html)。
+  - [superseriousbusiness/httpsig](https://code.superseriousbusiness.org/httpsig) 从 [go-fed/httpsig](https://github.com/go-fed/httpsig) 派生; 安全 HTTP 签名库。 [BSD-3-Clause 许可证](https://spdx.org/licenses/BSD-3-Clause.html)。
+  - [superseriousbusiness/oauth2](https://code.superseriousbusiness.org/oauth2) 从 [go-oauth2/oauth2](https://github.com/go-oauth2/oauth2) 派生; OAuth 服务器框架和令牌处理。 [MIT 许可证](https://spdx.org/licenses/MIT.html)。
+- [temoto/robotstxt](https://github.com/temoto/robotstxt); robots.txt 解析。 [MIT 许可证](https://spdx.org/licenses/MIT.html)。
 - [tdewolff/minify](https://github.com/tdewolff/minify); Markdown 帖文的 HTML 压缩。 [MIT 许可证](https://spdx.org/licenses/MIT.html)。
 - [uber-go/automaxprocs](https://github.com/uber-go/automaxprocs); GOMAXPROCS 自动化。 [MIT 许可证](https://spdx.org/licenses/MIT.html)。
 - [ulule/limiter](https://github.com/ulule/limiter); http 流量限制中间件。 [MIT 许可证](https://spdx.org/licenses/MIT.html)。
@@ -437,10 +469,10 @@ GoToSocial 使用以下开源库、框架和工具，在此声明并致谢 💕
 
 该许可具体适用于以下存储库内的文件和子目录：
 
-- [树懒标志 png](https://github.com/superseriousbusiness/gotosocial/blob/main/web/assets/logo.png)
-- [树懒标志 webp](https://github.com/superseriousbusiness/gotosocial/blob/main/web/assets/logo.webp)
-- [树懒标志 svg](https://github.com/superseriousbusiness/gotosocial/blob/main/web/assets/logo.svg)
-- [所有默认头像](https://github.com/superseriousbusiness/gotosocial/blob/main/web/assets/default_avatars)
+- [树懒标志 png](https://codeberg.org/superseriousbusiness/gotosocial/src/branch/main/web/assets/logo.png)
+- [树懒标志 webp](https://codeberg.org/superseriousbusiness/gotosocial/src/branch/main/web/assets/logo.webp)
+- [树懒标志 svg](https://codeberg.org/superseriousbusiness/gotosocial/src/branch/main/web/assets/logo.svg)
+- [所有默认头像](https://codeberg.org/superseriousbusiness/gotosocial/src/branch/main/web/assets/default_avatars)
 
 根据许可证条款，你可以：
 
@@ -497,7 +529,7 @@ GoToSocial 欢迎与符合我们价值观的组织进行合作。在此对您的
 
 <img src="https://nlnet.nl/logo/NGI/NGIZero-green.hex.svg" width="75" alt="NGIZero logo"/>
 
-结合以上众筹来源，2023 年 GoToSocial Alpha 阶段的开发得到了 [NGI0 Entrust Fund](https://nlnet.nl/entrust/) 旗下的 [NLnet](https://nlnet.nl/) 提供的 50,000 欧元资助。详情请见[此处](https://nlnet.nl/project/GoToSocial/#ack)。成功的资助申请存档在[此处](https://github.com/superseriousbusiness/gotosocial/blob/main/archive/nlnet/2022-next-generation-internet-zero.md)。
+结合以上众筹来源，2023 年 GoToSocial Alpha 阶段的开发得到了 [NGI0 Entrust Fund](https://nlnet.nl/entrust/) 旗下的 [NLnet](https://nlnet.nl/) 提供的 50,000 欧元资助。详情请见[此处](https://nlnet.nl/project/GoToSocial/#ack)。成功的资助申请存档在[此处](https://codeberg.org/superseriousbusiness/gotosocial/src/branch/main/archive/nlnet/2022-next-generation-internet-zero.md)。
 
 2024 年 GoToSocial Beta 阶段的开发将从 [NGI0 Entrust Fund](https://nlnet.nl/entrust/) 旗下的 [NLnet](https://nlnet.nl/) 那里再获得 50,000 欧元的资助。
 
@@ -507,7 +539,7 @@ GoToSocial 欢迎与符合我们价值观的组织进行合作。在此对您的
 
 ![GNU AGPL 徽标](https://www.gnu.org/graphics/agplv3-155x51.png)
 
-GoToSocial 是自由软件，采用 [GNU AGPL v3 许可](https://github.com/superseriousbusiness/gotosocial/blob/main/LICENSE)。我们鼓励你对代码进行派生和修改，进行各种实验。
+GoToSocial 是自由软件，采用 [GNU AGPL v3 许可](https://codeberg.org/superseriousbusiness/gotosocial/src/branch/main/LICENSE)。我们鼓励你对代码进行派生和修改，进行各种实验。
 
 有关 AGPL 和 GPL 许可之间的区别，请参阅[这里](https://www.gnu.org/licenses/why-affero-gpl.html)，关于 GPL 许可（包括 AGPL）的常见问题解答，请参阅[这里](https://www.gnu.org/licenses/gpl-faq.html)。
 

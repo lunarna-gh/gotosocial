@@ -20,8 +20,8 @@ package db
 import (
 	"context"
 
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/paging"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/paging"
 )
 
 type List interface {
@@ -33,6 +33,9 @@ type List interface {
 
 	// GetListsByAccountID gets all lists owned by the given accountID.
 	GetListsByAccountID(ctx context.Context, accountID string) ([]*gtsmodel.List, error)
+
+	// GetListIDsByAccountID gets the IDs of all lists owned by the given accountID.
+	GetListIDsByAccountID(ctx context.Context, accountID string) ([]string, error)
 
 	// CountListsByAccountID counts the number of lists owned by the given accountID.
 	CountListsByAccountID(ctx context.Context, accountID string) (int, error)

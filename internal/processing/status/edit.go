@@ -24,16 +24,16 @@ import (
 	"slices"
 	"time"
 
-	"github.com/superseriousbusiness/gotosocial/internal/ap"
-	apimodel "github.com/superseriousbusiness/gotosocial/internal/api/model"
-	apiutil "github.com/superseriousbusiness/gotosocial/internal/api/util"
-	"github.com/superseriousbusiness/gotosocial/internal/db"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/id"
-	"github.com/superseriousbusiness/gotosocial/internal/log"
-	"github.com/superseriousbusiness/gotosocial/internal/messages"
-	"github.com/superseriousbusiness/gotosocial/internal/util/xslices"
+	"code.superseriousbusiness.org/gotosocial/internal/ap"
+	apimodel "code.superseriousbusiness.org/gotosocial/internal/api/model"
+	apiutil "code.superseriousbusiness.org/gotosocial/internal/api/util"
+	"code.superseriousbusiness.org/gotosocial/internal/db"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/id"
+	"code.superseriousbusiness.org/gotosocial/internal/log"
+	"code.superseriousbusiness.org/gotosocial/internal/messages"
+	"code.superseriousbusiness.org/gotosocial/internal/util/xslices"
 )
 
 // Edit ...
@@ -84,11 +84,18 @@ func (p *Processor) Edit(
 		return nil, errWithCode
 	}
 
+	// Process incoming content type.
+	contentType := processContentType(
+		form.ContentType,
+		status,
+		requester.Settings.StatusContentType,
+	)
+
 	// Process incoming status edit content fields.
 	content, errWithCode := p.processContent(ctx,
 		requester,
 		statusID,
-		string(form.ContentType),
+		contentType,
 		form.Status,
 		form.SpoilerText,
 		form.Language,
@@ -256,6 +263,7 @@ func (p *Processor) Edit(
 	edit.Content = status.Content
 	edit.ContentWarning = status.ContentWarning
 	edit.Text = status.Text
+	edit.ContentType = status.ContentType
 	edit.Language = status.Language
 	edit.Sensitive = status.Sensitive
 	edit.StatusID = status.ID
@@ -297,12 +305,20 @@ func (p *Processor) Edit(
 	// update the other necessary status fields.
 	status.Content = content.Content
 	status.ContentWarning = content.ContentWarning
-	status.Text = form.Status
+	status.Text = form.Status // raw
+	status.ContentType = contentType
 	status.Language = content.Language
 	status.Sensitive = &form.Sensitive
 	status.AttachmentIDs = form.MediaIDs
 	status.Attachments = media
 	status.EditedAt = now
+
+	// Only store ContentWarningText if the parsed
+	// result is different from the given SpoilerText,
+	// otherwise skip to avoid duplicating db columns.
+	if content.ContentWarning != form.SpoilerText {
+		status.ContentWarningText = form.SpoilerText
+	}
 
 	if poll != nil {
 		// Set relevent fields for latest with poll.

@@ -18,14 +18,16 @@
 package apps
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
+	"slices"
+	"strings"
 
+	apimodel "code.superseriousbusiness.org/gotosocial/internal/api/model"
+	apiutil "code.superseriousbusiness.org/gotosocial/internal/api/util"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
 	"github.com/gin-gonic/gin"
-	apimodel "github.com/superseriousbusiness/gotosocial/internal/api/model"
-	apiutil "github.com/superseriousbusiness/gotosocial/internal/api/util"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/oauth"
 )
 
 // these consts are used to ensure users can't spam huge entries into our database
@@ -41,8 +43,10 @@ const (
 // The registered application can be used to obtain an application token.
 // This can then be used to register a new account, or (through user auth) obtain an access token.
 //
-// The parameters can also be given in the body of the request, as JSON, if the content-type is set to 'application/json'.
-// The parameters can also be given in the body of the request, as XML, if the content-type is set to 'application/xml'.
+// If the application was registered with a Bearer token passed in the Authorization header, the created application will be managed by the authenticated user (must have scope write:applications).
+//
+// Parameters can also be given in the body of the request, as JSON, if the content-type is set to 'application/json'.
+// Parameters can also be given in the body of the request, as XML, if the content-type is set to 'application/xml'.
 //
 //	---
 //	tags:
@@ -74,52 +78,88 @@ const (
 //		'500':
 //			description: internal server error
 func (m *Module) AppsPOSTHandler(c *gin.Context) {
-	authed, err := oauth.Authed(c, false, false, false, false)
-	if err != nil {
-		apiutil.ErrorHandler(c, gtserror.NewErrorUnauthorized(err, err.Error()), m.processor.InstanceGetV1)
+	authed, errWithCode := apiutil.TokenAuth(c,
+		false, false, false, false,
+	)
+	if errWithCode != nil {
+		apiutil.ErrorHandler(c, errWithCode, m.processor.InstanceGetV1)
+		return
+	}
+
+	if authed.Token != nil {
+		// If a token has been passed, user
+		// needs write perm on applications.
+		if !slices.ContainsFunc(
+			strings.Split(authed.Token.GetScope(), " "),
+			func(hasScope string) bool {
+				return apiutil.Scope(hasScope).Permits(apiutil.ScopeWriteApplications)
+			},
+		) {
+			const errText = "token has insufficient scope permission"
+			errWithCode := gtserror.NewErrorForbidden(errors.New(errText), errText)
+			apiutil.ErrorHandler(c, errWithCode, m.processor.InstanceGetV1)
+			return
+		}
+	}
+
+	if authed.Account != nil && authed.Account.IsMoving() {
+		apiutil.ForbiddenAfterMove(c)
 		return
 	}
 
 	if _, err := apiutil.NegotiateAccept(c, apiutil.JSONAcceptHeaders...); err != nil {
-		apiutil.ErrorHandler(c, gtserror.NewErrorNotAcceptable(err, err.Error()), m.processor.InstanceGetV1)
+		errWithCode := gtserror.NewErrorNotAcceptable(err, err.Error())
+		apiutil.ErrorHandler(c, errWithCode, m.processor.InstanceGetV1)
 		return
 	}
 
 	form := &apimodel.ApplicationCreateRequest{}
 	if err := c.ShouldBind(form); err != nil {
-		apiutil.ErrorHandler(c, gtserror.NewErrorBadRequest(err, err.Error()), m.processor.InstanceGetV1)
+		errWithCode := gtserror.NewErrorBadRequest(err, err.Error())
+		apiutil.ErrorHandler(c, errWithCode, m.processor.InstanceGetV1)
 		return
 	}
 
-	if len([]rune(form.ClientName)) > formFieldLen {
-		err := fmt.Errorf("client_name must be less than %d characters", formFieldLen)
-		apiutil.ErrorHandler(c, gtserror.NewErrorBadRequest(err, err.Error()), m.processor.InstanceGetV1)
+	if l := len([]rune(form.ClientName)); l > formFieldLen {
+		m.fieldTooLong(c, "client_name", formFieldLen, l)
 		return
 	}
 
-	if len([]rune(form.RedirectURIs)) > formRedirectLen {
-		err := fmt.Errorf("redirect_uris must be less than %d characters", formRedirectLen)
-		apiutil.ErrorHandler(c, gtserror.NewErrorBadRequest(err, err.Error()), m.processor.InstanceGetV1)
+	if l := len([]rune(form.RedirectURIs)); l > formRedirectLen {
+		m.fieldTooLong(c, "redirect_uris", formRedirectLen, l)
 		return
 	}
 
-	if len([]rune(form.Scopes)) > formFieldLen {
-		err := fmt.Errorf("scopes must be less than %d characters", formFieldLen)
-		apiutil.ErrorHandler(c, gtserror.NewErrorBadRequest(err, err.Error()), m.processor.InstanceGetV1)
+	if l := len([]rune(form.Scopes)); l > formFieldLen {
+		m.fieldTooLong(c, "scopes", formFieldLen, l)
 		return
 	}
 
-	if len([]rune(form.Website)) > formFieldLen {
-		err := fmt.Errorf("website must be less than %d characters", formFieldLen)
-		apiutil.ErrorHandler(c, gtserror.NewErrorBadRequest(err, err.Error()), m.processor.InstanceGetV1)
+	if l := len([]rune(form.Website)); l > formFieldLen {
+		m.fieldTooLong(c, "website", formFieldLen, l)
 		return
 	}
 
-	apiApp, errWithCode := m.processor.AppCreate(c.Request.Context(), authed, form)
+	var managedByUserID string
+	if authed.User != nil {
+		managedByUserID = authed.User.ID
+	}
+
+	apiApp, errWithCode := m.processor.Application().Create(c.Request.Context(), managedByUserID, form)
 	if errWithCode != nil {
 		apiutil.ErrorHandler(c, errWithCode, m.processor.InstanceGetV1)
 		return
 	}
 
 	apiutil.JSON(c, http.StatusOK, apiApp)
+}
+
+func (m *Module) fieldTooLong(c *gin.Context, fieldName string, max int, actual int) {
+	errText := fmt.Sprintf(
+		"%s must be less than %d characters, provided %s was %d characters",
+		fieldName, max, fieldName, actual,
+	)
+
+	errWithCode := gtserror.NewErrorBadRequest(errors.New(errText), errText)
+	apiutil.ErrorHandler(c, errWithCode, m.processor.InstanceGetV1)
 }

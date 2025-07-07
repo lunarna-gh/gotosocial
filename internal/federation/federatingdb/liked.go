@@ -21,8 +21,8 @@ import (
 	"context"
 	"net/url"
 
-	"github.com/superseriousbusiness/activity/streams"
-	"github.com/superseriousbusiness/activity/streams/vocab"
+	"code.superseriousbusiness.org/activity/streams"
+	"code.superseriousbusiness.org/activity/streams/vocab"
 )
 
 // Liked obtains the Liked Collection for an actor with the
@@ -33,6 +33,6 @@ import (
 // The library makes this call only after acquiring a lock first.
 //
 // Implementation note: we don't serve a Liked collection *yet* so just return an empty collection for now.
-func (f *federatingDB) Liked(c context.Context, actorIRI *url.URL) (liked vocab.ActivityStreamsCollection, err error) {
+func (f *DB) Liked(c context.Context, actorIRI *url.URL) (liked vocab.ActivityStreamsCollection, err error) {
 	return streams.NewActivityStreamsCollection(), nil
 }

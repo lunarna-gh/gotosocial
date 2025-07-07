@@ -28,12 +28,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/superseriousbusiness/activity/pub"
-	"github.com/superseriousbusiness/activity/streams/vocab"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/text"
-	"github.com/superseriousbusiness/gotosocial/internal/util"
+	"code.superseriousbusiness.org/activity/pub"
+	"code.superseriousbusiness.org/activity/streams/vocab"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/text"
+	"code.superseriousbusiness.org/gotosocial/internal/util"
 )
 
 // ExtractObjects will extract object vocab.Types from given implementing interface.
@@ -634,32 +634,38 @@ func ExtractContent(i WithContent) gtsmodel.Content {
 	return content
 }
 
-// ExtractAttachments attempts to extract barebones MediaAttachment objects from given AS interface type.
+// ExtractAttachments attempts to extract barebones
+// MediaAttachment objects from given AS interface type.
 func ExtractAttachments(i WithAttachment) ([]*gtsmodel.MediaAttachment, error) {
 	attachmentProp := i.GetActivityStreamsAttachment()
 	if attachmentProp == nil {
 		return nil, nil
 	}
 
-	var errs gtserror.MultiError
+	var (
+		attachments = make([]*gtsmodel.MediaAttachment, 0, attachmentProp.Len())
+		errs        gtserror.MultiError
+	)
 
-	attachments := make([]*gtsmodel.MediaAttachment, 0, attachmentProp.Len())
 	for iter := attachmentProp.Begin(); iter != attachmentProp.End(); iter = iter.Next() {
 		t := iter.GetType()
 		if t == nil {
 			errs.Appendf("nil attachment type")
 			continue
 		}
-		attachmentable, ok := t.(Attachmentable)
+
+		attachmentable, ok := ToAttachmentable(t)
 		if !ok {
-			errs.Appendf("incorrect attachment type: %T", t)
+			errs.Appendf("could not cast %T to Attachmentable", t)
 			continue
 		}
+
 		attachment, err := ExtractAttachment(attachmentable)
 		if err != nil {
 			errs.Appendf("error extracting attachment: %w", err)
 			continue
 		}
+
 		attachments = append(attachments, attachment)
 	}
 
@@ -681,7 +687,10 @@ func ExtractAttachment(i Attachmentable) (*gtsmodel.MediaAttachment, error) {
 		RemoteURL:   remoteURL.String(),
 		Description: ExtractDescription(i),
 		Blurhash:    ExtractBlurhash(i),
-		Processing:  gtsmodel.ProcessingStatusReceived,
+		FileMeta: gtsmodel.FileMeta{
+			Focus: ExtractFocus(i),
+		},
+		Processing: gtsmodel.ProcessingStatusReceived,
 	}, nil
 }
 
@@ -706,6 +715,50 @@ func ExtractBlurhash(i WithBlurhash) string {
 	}
 
 	return blurhashProp.Get()
+}
+
+// ExtractFocus parses a gtsmodel.Focus from the given Attachmentable's
+// `focalPoint` property, if Attachmentable can have `focalPoint`, and
+// `focalPoint` is set to a valid pair of floats. Otherwise, returns a
+// zero gtsmodel.Focus (ie., focus in the centre of the image).
+func ExtractFocus(attachmentable Attachmentable) gtsmodel.Focus {
+	focus := gtsmodel.Focus{}
+
+	withFocalPoint, ok := attachmentable.(WithFocalPoint)
+	if !ok {
+		return focus
+	}
+
+	focalPointProp := withFocalPoint.GetTootFocalPoint()
+	if focalPointProp == nil || focalPointProp.Len() != 2 {
+		return focus
+	}
+
+	xProp := focalPointProp.At(0)
+	if !xProp.IsXMLSchemaFloat() {
+		return focus
+	}
+
+	yProp := focalPointProp.At(1)
+	if !yProp.IsXMLSchemaFloat() {
+		return focus
+	}
+
+	x := xProp.Get()
+	if x < -1 || x > 1 {
+		return focus
+	}
+
+	y := yProp.Get()
+	if y < -1 || y > 1 {
+		return focus
+	}
+
+	// Looks good.
+	focus.X = float32(x)
+	focus.Y = float32(y)
+
+	return focus
 }
 
 // ExtractHashtags extracts a slice of minimal gtsmodel.Tags
@@ -850,7 +903,7 @@ func ExtractEmojis(i WithTag, host string) ([]*gtsmodel.Emoji, error) {
 // dummy URI for the emoji can be constructed in case
 // there's no id property or id property is null.
 //
-// https://github.com/superseriousbusiness/gotosocial/issues/3384)
+// https://codeberg.org/superseriousbusiness/gotosocial/issues/3384)
 func ExtractEmoji(
 	e Emojiable,
 	host string,
@@ -1078,7 +1131,14 @@ func ExtractInteractionPolicy(
 	statusable Statusable,
 	owner *gtsmodel.Account,
 ) *gtsmodel.InteractionPolicy {
-	policyProp := statusable.GetGoToSocialInteractionPolicy()
+	ipa, ok := statusable.(InteractionPolicyAware)
+	if !ok {
+		// Not a type with interaction
+		// policy properties settable.
+		return nil
+	}
+
+	policyProp := ipa.GetGoToSocialInteractionPolicy()
 	if policyProp == nil || policyProp.Len() != 1 {
 		return nil
 	}
@@ -1113,15 +1173,7 @@ func extractCanLike(
 		return gtsmodel.PolicyRules{}
 	}
 
-	withRules := propIter.Get()
-	if withRules == nil {
-		return gtsmodel.PolicyRules{}
-	}
-
-	return gtsmodel.PolicyRules{
-		Always:       extractPolicyValues(withRules.GetGoToSocialAlways(), owner),
-		WithApproval: extractPolicyValues(withRules.GetGoToSocialApprovalRequired(), owner),
-	}
+	return extractPolicyRules(propIter.Get(), owner)
 }
 
 func extractCanReply(
@@ -1137,15 +1189,7 @@ func extractCanReply(
 		return gtsmodel.PolicyRules{}
 	}
 
-	withRules := propIter.Get()
-	if withRules == nil {
-		return gtsmodel.PolicyRules{}
-	}
-
-	return gtsmodel.PolicyRules{
-		Always:       extractPolicyValues(withRules.GetGoToSocialAlways(), owner),
-		WithApproval: extractPolicyValues(withRules.GetGoToSocialApprovalRequired(), owner),
-	}
+	return extractPolicyRules(propIter.Get(), owner)
 }
 
 func extractCanAnnounce(
@@ -1166,9 +1210,39 @@ func extractCanAnnounce(
 		return gtsmodel.PolicyRules{}
 	}
 
+	return extractPolicyRules(propIter.Get(), owner)
+}
+
+func extractPolicyRules(
+	withRules WithPolicyRules,
+	owner *gtsmodel.Account,
+) gtsmodel.PolicyRules {
+	if withRules == nil {
+		return gtsmodel.PolicyRules{}
+	}
+
+	// Check for `automaticApproval` and
+	// `manualApproval` properties first.
+	var (
+		automaticApproval = withRules.GetGoToSocialAutomaticApproval()
+		manualApproval    = withRules.GetGoToSocialManualApproval()
+	)
+	if (automaticApproval != nil && automaticApproval.Len() != 0) ||
+		(manualApproval != nil && manualApproval.Len() != 0) {
+		// At least one is set, use these props.
+		return gtsmodel.PolicyRules{
+			AutomaticApproval: extractPolicyValues(automaticApproval, owner),
+			ManualApproval:    extractPolicyValues(manualApproval, owner),
+		}
+	}
+
+	// Fall back to deprecated `always`
+	// and `withApproval` properties.
+	//
+	// TODO: Remove this in GtS v0.21.0.
 	return gtsmodel.PolicyRules{
-		Always:       extractPolicyValues(withRules.GetGoToSocialAlways(), owner),
-		WithApproval: extractPolicyValues(withRules.GetGoToSocialApprovalRequired(), owner),
+		AutomaticApproval: extractPolicyValues(withRules.GetGoToSocialAlways(), owner),
+		ManualApproval:    extractPolicyValues(withRules.GetGoToSocialApprovalRequired(), owner),
 	}
 }
 

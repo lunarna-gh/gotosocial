@@ -21,15 +21,15 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/superseriousbusiness/activity/streams/vocab"
-	"github.com/superseriousbusiness/gotosocial/internal/ap"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/id"
-	"github.com/superseriousbusiness/gotosocial/internal/log"
-	"github.com/superseriousbusiness/gotosocial/internal/messages"
+	"code.superseriousbusiness.org/activity/streams/vocab"
+	"code.superseriousbusiness.org/gotosocial/internal/ap"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/id"
+	"code.superseriousbusiness.org/gotosocial/internal/log"
+	"code.superseriousbusiness.org/gotosocial/internal/messages"
 )
 
-func (f *federatingDB) Block(ctx context.Context, blockable vocab.ActivityStreamsBlock) error {
+func (f *DB) Block(ctx context.Context, blockable vocab.ActivityStreamsBlock) error {
 	log.DebugKV(ctx, "block", serialize{blockable})
 
 	// Extract relevant values from passed ctx.

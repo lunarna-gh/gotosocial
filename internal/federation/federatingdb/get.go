@@ -19,46 +19,103 @@ package federatingdb
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"net/url"
 
-	"github.com/superseriousbusiness/activity/streams/vocab"
-	"github.com/superseriousbusiness/gotosocial/internal/log"
-	"github.com/superseriousbusiness/gotosocial/internal/uris"
+	"code.superseriousbusiness.org/activity/streams/vocab"
+	"code.superseriousbusiness.org/gotosocial/internal/config"
+	"code.superseriousbusiness.org/gotosocial/internal/gtscontext"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/log"
+	"code.superseriousbusiness.org/gotosocial/internal/uris"
 )
+
+var ErrNotImplemented = errors.New("not implemented")
 
 // Get returns the database entry for the specified id.
 //
 // The library makes this call only after acquiring a lock first.
-func (f *federatingDB) Get(ctx context.Context, id *url.URL) (value vocab.Type, err error) {
+//
+// Implementation notes: in GoToSocial this function should *only*
+// be used for internal dereference calls. Everything coming from the
+// outside goes via the handlers defined in internal/api/activitypub.
+//
+// Normally with go-fed this function would get used in lots of
+// places for the side effect callback handlers, but since we override
+// everything and handle side effects ourselves, the only two places
+// this function actually ends up getting called are:
+//
+//   - vendor/code.superseriousbusiness.org/activity/pub/side_effect_actor.go
+//     to get outbox actor inside the prepare function.
+//   - internal/transport/controller.go to try to shortcut deref a local item.
+//
+// It may be useful in future to add more matching here so that more
+// stuff can be shortcutted by the dereferencer, saving HTTP calls.
+func (f *DB) Get(ctx context.Context, id *url.URL) (value vocab.Type, err error) {
 	log.DebugKV(ctx, "id", id)
 
-	switch {
+	// Ensure our host, for safety.
+	if id.Host != config.GetHost() {
+		return nil, gtserror.Newf("%s was not for our host", id)
+	}
 
-	case uris.IsUserPath(id):
-		acct, err := f.state.DB.GetAccountByURI(ctx, id.String())
+	if username, _ := uris.ParseUserPath(id); username != "" {
+		acct, err := f.state.DB.GetAccountByUsernameDomain(
+			gtscontext.SetBarebones(ctx),
+			username,
+			"",
+		)
 		if err != nil {
 			return nil, err
 		}
 		return f.converter.AccountToAS(ctx, acct)
 
-	case uris.IsStatusesPath(id):
-		status, err := f.state.DB.GetStatusByURI(ctx, id.String())
+	} else if _, statusID, _ := uris.ParseStatusesPath(id); statusID != "" {
+		status, err := f.state.DB.GetStatusByID(ctx, statusID)
 		if err != nil {
 			return nil, err
 		}
 		return f.converter.StatusToAS(ctx, status)
 
-	case uris.IsFollowersPath(id):
-		return f.Followers(ctx, id)
+	} else if username, _ := uris.ParseFollowersPath(id); username != "" {
+		acct, err := f.state.DB.GetAccountByUsernameDomain(
+			gtscontext.SetBarebones(ctx),
+			username,
+			"",
+		)
+		if err != nil {
+			return nil, err
+		}
 
-	case uris.IsFollowingPath(id):
-		return f.Following(ctx, id)
+		acctURI, err := url.Parse(acct.URI)
+		if err != nil {
+			return nil, err
+		}
 
-	case uris.IsAcceptsPath(id):
+		return f.Followers(ctx, acctURI)
+
+	} else if username, _ := uris.ParseFollowingPath(id); username != "" {
+		acct, err := f.state.DB.GetAccountByUsernameDomain(
+			gtscontext.SetBarebones(ctx),
+			username,
+			"",
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		acctURI, err := url.Parse(acct.URI)
+		if err != nil {
+			return nil, err
+		}
+
+		return f.Following(ctx, acctURI)
+
+	} else if uris.IsAcceptsPath(id) {
 		return f.GetAccept(ctx, id)
-
-	default:
-		return nil, fmt.Errorf("federatingDB: could not Get %s", id.String())
 	}
+
+	// Nothing found, the caller
+	// will have to deal with this.
+	return nil, ErrNotImplemented
 }

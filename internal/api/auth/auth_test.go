@@ -22,24 +22,25 @@ import (
 	"fmt"
 	"net/http/httptest"
 
+	"code.superseriousbusiness.org/gotosocial/internal/admin"
+	"code.superseriousbusiness.org/gotosocial/internal/api/auth"
+	apiutil "code.superseriousbusiness.org/gotosocial/internal/api/util"
+	"code.superseriousbusiness.org/gotosocial/internal/config"
+	"code.superseriousbusiness.org/gotosocial/internal/db"
+	"code.superseriousbusiness.org/gotosocial/internal/email"
+	"code.superseriousbusiness.org/gotosocial/internal/federation"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/media"
+	"code.superseriousbusiness.org/gotosocial/internal/middleware"
+	"code.superseriousbusiness.org/gotosocial/internal/oidc"
+	"code.superseriousbusiness.org/gotosocial/internal/processing"
+	"code.superseriousbusiness.org/gotosocial/internal/state"
+	"code.superseriousbusiness.org/gotosocial/internal/storage"
+	"code.superseriousbusiness.org/gotosocial/testrig"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/memstore"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/suite"
-	"github.com/superseriousbusiness/gotosocial/internal/admin"
-	"github.com/superseriousbusiness/gotosocial/internal/api/auth"
-	"github.com/superseriousbusiness/gotosocial/internal/config"
-	"github.com/superseriousbusiness/gotosocial/internal/db"
-	"github.com/superseriousbusiness/gotosocial/internal/email"
-	"github.com/superseriousbusiness/gotosocial/internal/federation"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/media"
-	"github.com/superseriousbusiness/gotosocial/internal/middleware"
-	"github.com/superseriousbusiness/gotosocial/internal/oidc"
-	"github.com/superseriousbusiness/gotosocial/internal/processing"
-	"github.com/superseriousbusiness/gotosocial/internal/state"
-	"github.com/superseriousbusiness/gotosocial/internal/storage"
-	"github.com/superseriousbusiness/gotosocial/testrig"
 )
 
 type AuthStandardTestSuite struct {
@@ -55,7 +56,6 @@ type AuthStandardTestSuite struct {
 
 	// standard suite models
 	testTokens       map[string]*gtsmodel.Token
-	testClients      map[string]*gtsmodel.Client
 	testApplications map[string]*gtsmodel.Application
 	testUsers        map[string]*gtsmodel.User
 	testAccounts     map[string]*gtsmodel.Account
@@ -71,7 +71,6 @@ const (
 
 func (suite *AuthStandardTestSuite) SetupSuite() {
 	suite.testTokens = testrig.NewTestTokens()
-	suite.testClients = testrig.NewTestClients()
 	suite.testApplications = testrig.NewTestApplications()
 	suite.testUsers = testrig.NewTestUsers()
 	suite.testAccounts = testrig.NewTestAccounts()
@@ -98,7 +97,7 @@ func (suite *AuthStandardTestSuite) SetupTest() {
 		testrig.NewNoopWebPushSender(),
 		suite.mediaManager,
 	)
-	suite.authModule = auth.New(suite.db, suite.processor, suite.idp)
+	suite.authModule = auth.New(&suite.state, suite.processor, suite.idp)
 
 	testrig.StandardDBSetup(suite.db, suite.testAccounts)
 	testrig.StartNoopWorkers(&suite.state)
@@ -109,30 +108,42 @@ func (suite *AuthStandardTestSuite) TearDownTest() {
 	testrig.StopWorkers(&suite.state)
 }
 
-func (suite *AuthStandardTestSuite) newContext(requestMethod string, requestPath string, requestBody []byte, bodyContentType string) (*gin.Context, *httptest.ResponseRecorder) {
-	// create the recorder and gin test context
+func (suite *AuthStandardTestSuite) newContext(
+	requestMethod string,
+	requestPath string,
+	requestBody []byte,
+	bodyContentType string,
+) (*gin.Context, *httptest.ResponseRecorder) {
+	// Create the recorder and test context.
 	recorder := httptest.NewRecorder()
 	ctx, engine := testrig.CreateGinTestContext(recorder, nil)
 
-	// load templates into the engine
+	// Load templates into the engine.
 	testrig.ConfigureTemplatesWithGin(engine, "../../../web/template")
 
-	// create the request
+	// Create the request itself.
 	protocol := config.GetProtocol()
 	host := config.GetHost()
 	baseURI := fmt.Sprintf("%s://%s", protocol, host)
 	requestURI := fmt.Sprintf("%s/%s", baseURI, requestPath)
+	ctx.Request = httptest.NewRequest(
+		requestMethod,
+		requestURI,
+		bytes.NewReader(requestBody),
+	)
 
-	ctx.Request = httptest.NewRequest(requestMethod, requestURI, bytes.NewReader(requestBody)) // the endpoint we're hitting
-	ctx.Request.Header.Set("accept", "text/html")
-
+	// Transmit appropriate Content-Type.
 	if bodyContentType != "" {
 		ctx.Request.Header.Set("Content-Type", bodyContentType)
 	}
 
-	// trigger the session middleware on the context
+	// Accept whatever, so we can use
+	// this to test both HTML and JSON.
+	ctx.Request.Header.Set("accept", "*/*")
+
+	// Trigger the session middleware on the context.
 	store := memstore.NewStore(make([]byte, 32), make([]byte, 32))
-	store.Options(middleware.SessionOptions())
+	store.Options(middleware.SessionOptions(apiutil.NewCookiePolicy()))
 	sessionMiddleware := sessions.Sessions("gotosocial-localhost", store)
 	sessionMiddleware(ctx)
 

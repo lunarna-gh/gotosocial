@@ -22,12 +22,12 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/superseriousbusiness/gotosocial/internal/config"
-	"github.com/superseriousbusiness/gotosocial/internal/db"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/state"
-	"github.com/superseriousbusiness/gotosocial/internal/util"
+	"code.superseriousbusiness.org/gotosocial/internal/config"
+	"code.superseriousbusiness.org/gotosocial/internal/db"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/state"
+	"code.superseriousbusiness.org/gotosocial/internal/util"
 	"github.com/uptrace/bun"
 )
 
@@ -36,7 +36,7 @@ type domainDB struct {
 	state *state.State
 }
 
-func (d *domainDB) CreateDomainAllow(ctx context.Context, allow *gtsmodel.DomainAllow) (err error) {
+func (d *domainDB) PutDomainAllow(ctx context.Context, allow *gtsmodel.DomainAllow) (err error) {
 	// Normalize the domain as punycode, note the extra
 	// validation step for domain name write operations.
 	allow.Domain, err = util.PunifySafely(allow.Domain)
@@ -162,7 +162,7 @@ func (d *domainDB) DeleteDomainAllow(ctx context.Context, domain string) error {
 	return nil
 }
 
-func (d *domainDB) CreateDomainBlock(ctx context.Context, block *gtsmodel.DomainBlock) error {
+func (d *domainDB) PutDomainBlock(ctx context.Context, block *gtsmodel.DomainBlock) error {
 	var err error
 
 	// Normalize the domain as punycode, note the extra

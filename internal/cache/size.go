@@ -23,13 +23,13 @@ import (
 	"time"
 	"unsafe"
 
+	"code.superseriousbusiness.org/gotosocial/internal/ap"
+	"code.superseriousbusiness.org/gotosocial/internal/config"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/id"
+	"code.superseriousbusiness.org/gotosocial/internal/util"
 	"codeberg.org/gruf/go-cache/v3/simple"
 	"github.com/DmitriyVTitov/size"
-	"github.com/superseriousbusiness/gotosocial/internal/ap"
-	"github.com/superseriousbusiness/gotosocial/internal/config"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/id"
-	"github.com/superseriousbusiness/gotosocial/internal/util"
 )
 
 const (
@@ -240,13 +240,12 @@ func sizeofAccount() uintptr {
 		DisplayName:             exampleUsername,
 		Note:                    exampleText,
 		NoteRaw:                 exampleText,
-		Memorial:                func() *bool { ok := false; return &ok }(),
+		MemorializedAt:          exampleTime,
 		CreatedAt:               exampleTime,
 		UpdatedAt:               exampleTime,
 		FetchedAt:               exampleTime,
-		Bot:                     func() *bool { ok := true; return &ok }(),
-		Locked:                  func() *bool { ok := true; return &ok }(),
-		Discoverable:            func() *bool { ok := false; return &ok }(),
+		Locked:                  util.Ptr(true),
+		Discoverable:            util.Ptr(false),
 		URI:                     exampleURI,
 		URL:                     exampleURI,
 		InboxURI:                exampleURI,
@@ -254,7 +253,7 @@ func sizeofAccount() uintptr {
 		FollowersURI:            exampleURI,
 		FollowingURI:            exampleURI,
 		FeaturedCollectionURI:   exampleURI,
-		ActorType:               ap.ActorPerson,
+		ActorType:               gtsmodel.AccountActorTypePerson,
 		PrivateKey:              &rsa.PrivateKey{},
 		PublicKey:               &rsa.PublicKey{},
 		PublicKeyURI:            exampleURI,
@@ -302,15 +301,14 @@ func sizeofAccountStats() uintptr {
 
 func sizeofApplication() uintptr {
 	return uintptr(size.Of(&gtsmodel.Application{
-		ID:           exampleID,
-		CreatedAt:    exampleTime,
-		UpdatedAt:    exampleTime,
-		Name:         exampleUsername,
-		Website:      exampleURI,
-		RedirectURI:  exampleURI,
-		ClientID:     exampleID,
-		ClientSecret: exampleID,
-		Scopes:       exampleTextSmall,
+		ID:              exampleID,
+		Name:            exampleUsername,
+		Website:         exampleURI,
+		RedirectURIs:    []string{exampleURI},
+		ClientID:        exampleID,
+		ClientSecret:    exampleID,
+		Scopes:          exampleTextSmall,
+		ManagedByUserID: exampleID,
 	}))
 }
 
@@ -322,17 +320,6 @@ func sizeofBlock() uintptr {
 		URI:             exampleURI,
 		AccountID:       exampleID,
 		TargetAccountID: exampleID,
-	}))
-}
-
-func sizeofClient() uintptr {
-	return uintptr(size.Of(&gtsmodel.Client{
-		ID:        exampleID,
-		CreatedAt: exampleTime,
-		UpdatedAt: exampleTime,
-		Secret:    exampleID,
-		Domain:    exampleURI,
-		UserID:    exampleID,
 	}))
 }
 
@@ -562,9 +549,7 @@ func sizeofMention() uintptr {
 		OriginAccountID:  exampleURI,
 		OriginAccountURI: exampleURI,
 		TargetAccountID:  exampleID,
-		NameString:       exampleUsername,
-		TargetAccountURI: exampleURI,
-		TargetAccountURL: exampleURI,
+		Silent:           util.Ptr(false),
 	}))
 }
 
@@ -588,7 +573,7 @@ func sizeofNotification() uintptr {
 		CreatedAt:        exampleTime,
 		TargetAccountID:  exampleID,
 		OriginAccountID:  exampleID,
-		StatusID:         exampleID,
+		StatusOrEditID:   exampleID,
 		Read:             func() *bool { ok := false; return &ok }(),
 	}))
 }
@@ -661,6 +646,7 @@ func sizeofStatus() uintptr {
 		URL:                      exampleURI,
 		Content:                  exampleText,
 		Text:                     exampleText,
+		ContentType:              gtsmodel.StatusContentTypePlain,
 		AttachmentIDs:            []string{exampleID, exampleID, exampleID},
 		TagIDs:                   []string{exampleID, exampleID, exampleID},
 		MentionIDs:               []string{},
@@ -677,6 +663,7 @@ func sizeofStatus() uintptr {
 		BoostOfID:                exampleID,
 		BoostOfAccountID:         exampleID,
 		ContentWarning:           exampleUsername, // similar length
+		ContentWarningText:       exampleUsername, // similar length
 		Visibility:               gtsmodel.VisibilityPublic,
 		Sensitive:                func() *bool { ok := false; return &ok }(),
 		Language:                 "en",
@@ -706,6 +693,7 @@ func sizeofStatusEdit() uintptr {
 		Content:        exampleText,
 		ContentWarning: exampleUsername, // similar length
 		Text:           exampleText,
+		ContentType:    gtsmodel.StatusContentTypePlain,
 		Language:       "en",
 		Sensitive:      func() *bool { ok := false; return &ok }(),
 		AttachmentIDs:  []string{exampleID, exampleID, exampleID},
@@ -752,8 +740,7 @@ func sizeofThreadMute() uintptr {
 func sizeofToken() uintptr {
 	return uintptr(size.Of(&gtsmodel.Token{
 		ID:                  exampleID,
-		CreatedAt:           exampleTime,
-		UpdatedAt:           exampleTime,
+		LastUsed:            exampleTime,
 		ClientID:            exampleID,
 		UserID:              exampleID,
 		RedirectURI:         exampleURI,

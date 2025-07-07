@@ -18,22 +18,57 @@
 package config
 
 import (
-	"net/netip"
+	"fmt"
 
-	"github.com/superseriousbusiness/gotosocial/internal/log"
+	"codeberg.org/gruf/go-split"
+	"github.com/spf13/cast"
 )
 
-func MustParseIPPrefixes(in []string) []netip.Prefix {
-	prefs := make([]netip.Prefix, 0, len(in))
+func toStringSlice(a any) ([]string, error) {
+	switch a := a.(type) {
+	case []string:
+		return a, nil
+	case string:
+		return split.SplitStrings[string](a)
+	case []any:
+		ss := make([]string, len(a))
+		for i, a := range a {
+			var err error
+			ss[i], err = cast.ToStringE(a)
+			if err != nil {
+				return nil, err
+			}
+		}
+		return ss, nil
+	default:
+		return nil, fmt.Errorf("cannot cast %T to []string", a)
+	}
+}
 
-	for _, i := range in {
-		pref, err := netip.ParsePrefix(i)
-		if err != nil {
-			log.Panicf(nil, "error parsing ip prefix from %q: %v", i, err)
+func mapGet(m map[string]any, keys ...string) (any, bool) {
+	for len(keys) > 0 {
+		key := keys[0]
+		keys = keys[1:]
+
+		// Check for key.
+		v, ok := m[key]
+		if !ok {
+			return nil, false
 		}
 
-		prefs = append(prefs, pref)
-	}
+		if len(keys) == 0 {
+			// Has to be value.
+			return v, true
+		}
 
-	return prefs
+		// Else, it needs to have
+		// nesting to keep searching.
+		switch t := v.(type) {
+		case map[string]any:
+			m = t
+		default:
+			return nil, false
+		}
+	}
+	return nil, false
 }

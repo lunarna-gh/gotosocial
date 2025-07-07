@@ -20,11 +20,11 @@ package testrig
 import (
 	"context"
 
-	"github.com/superseriousbusiness/gotosocial/internal/db"
-	"github.com/superseriousbusiness/gotosocial/internal/db/bundb"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/log"
-	"github.com/superseriousbusiness/gotosocial/internal/state"
+	"code.superseriousbusiness.org/gotosocial/internal/db"
+	"code.superseriousbusiness.org/gotosocial/internal/db/bundb"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/log"
+	"code.superseriousbusiness.org/gotosocial/internal/state"
 )
 
 var testModels = []interface{}{
@@ -68,7 +68,6 @@ var testModels = []interface{}{
 	&gtsmodel.Notification{},
 	&gtsmodel.RouterSession{},
 	&gtsmodel.Token{},
-	&gtsmodel.Client{},
 	&gtsmodel.EmojiCategory{},
 	&gtsmodel.Tombstone{},
 	&gtsmodel.Report{},
@@ -127,12 +126,6 @@ func StandardDBSetup(db db.DB, accounts map[string]*gtsmodel.Account) {
 	ctx := context.Background()
 
 	for _, v := range NewTestTokens() {
-		if err := db.Put(ctx, v); err != nil {
-			log.Panic(ctx, err)
-		}
-	}
-
-	for _, v := range NewTestClients() {
 		if err := db.Put(ctx, v); err != nil {
 			log.Panic(ctx, err)
 		}

@@ -62,8 +62,9 @@ type Table struct {
 	FieldMap  map[string]*Field
 	StructMap map[string]*structField
 
-	Relations map[string]*Relation
-	Unique    map[string][]*Field
+	IsM2MTable bool // If true, this table is the "junction table" of an m2m relation.
+	Relations  map[string]*Relation
+	Unique     map[string][]*Field
 
 	SoftDeleteField       *Field
 	UpdateSoftDeleteField func(fv reflect.Value, tm time.Time) error
@@ -122,6 +123,7 @@ func (t *Table) processFields(typ reflect.Type) {
 
 	names := make(map[string]struct{})
 	embedded := make([]embeddedField, 0, 10)
+	ebdStructs := make(map[string]*structField, 0)
 
 	for i, n := 0, typ.NumField(); i < n; i++ {
 		sf := typ.Field(i)
@@ -163,6 +165,17 @@ func (t *Table) processFields(typ reflect.Type) {
 					subfield:   subfield,
 				})
 			}
+			if len(subtable.StructMap) > 0 {
+				for k, v := range subtable.StructMap {
+					// NOTE: conflict Struct name
+					if _, ok := ebdStructs[k]; !ok {
+						ebdStructs[k] = &structField{
+							Index: makeIndex(sf.Index, v.Index),
+							Table: v.Table,
+						}
+					}
+				}
+			}
 
 			if tagstr != "" {
 				tag := tagparser.Parse(tagstr)
@@ -196,6 +209,18 @@ func (t *Table) processFields(typ reflect.Type) {
 					subtable:   subtable,
 					subfield:   subfield,
 				})
+			}
+			if len(subtable.StructMap) > 0 {
+				for k, v := range subtable.StructMap {
+					// NOTE: conflict Struct name
+					k = prefix + k
+					if _, ok := ebdStructs[k]; !ok {
+						ebdStructs[k] = &structField{
+							Index: makeIndex(sf.Index, v.Index),
+							Table: subtable,
+						}
+					}
+				}
 			}
 			continue
 		}
@@ -234,12 +259,12 @@ func (t *Table) processFields(typ reflect.Type) {
 	}
 
 	for _, embfield := range embedded {
-		subfield := embfield.subfield.Clone()
-
-		if ambiguousNames[subfield.Name] > 1 &&
-			!(!subfield.Tag.IsZero() && ambiguousTags[subfield.Name] == 1) {
+		if ambiguousNames[embfield.prefix+embfield.subfield.Name] > 1 &&
+			!(!embfield.subfield.Tag.IsZero() && ambiguousTags[embfield.prefix+embfield.subfield.Name] == 1) {
 			continue // ambiguous embedded field
 		}
+
+		subfield := embfield.subfield.Clone()
 
 		subfield.Index = makeIndex(embfield.index, subfield.Index)
 		if embfield.prefix != "" {
@@ -249,6 +274,15 @@ func (t *Table) processFields(typ reflect.Type) {
 		t.addField(subfield)
 		if v, ok := subfield.Tag.Options["unique"]; ok {
 			t.addUnique(subfield, embfield.prefix, v)
+		}
+	}
+
+	if len(ebdStructs) > 0 && t.StructMap == nil {
+		t.StructMap = make(map[string]*structField)
+	}
+	for name, sfield := range ebdStructs {
+		if _, ok := t.StructMap[name]; !ok {
+			t.StructMap[name] = sfield
 		}
 	}
 
@@ -483,6 +517,7 @@ func (t *Table) newField(sf reflect.StructField, tag tagparser.Tag) *Field {
 	}
 
 	field := &Field{
+		Table:       t,
 		StructField: sf,
 		IsPtr:       sf.Type.Kind() == reflect.Ptr,
 
@@ -862,6 +897,7 @@ func (t *Table) m2mRelation(field *Field) *Relation {
 		JoinTable: joinTable,
 		M2MTable:  m2mTable,
 	}
+	m2mTable.markM2M()
 
 	if field.Tag.HasOption("join_on") {
 		rel.Condition = field.Tag.Options["join_on"]
@@ -905,6 +941,10 @@ func (t *Table) m2mRelation(field *Field) *Relation {
 	rel.M2MJoinPKs = rightRel.BasePKs
 
 	return rel
+}
+
+func (t *Table) markM2M() {
+	t.IsM2MTable = true
 }
 
 //------------------------------------------------------------------------------

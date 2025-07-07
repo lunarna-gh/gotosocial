@@ -28,15 +28,19 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 
+	"code.superseriousbusiness.org/activity/pub"
+	"code.superseriousbusiness.org/gotosocial/internal/ap"
+	apiutil "code.superseriousbusiness.org/gotosocial/internal/api/util"
+	"code.superseriousbusiness.org/gotosocial/internal/config"
+	"code.superseriousbusiness.org/gotosocial/internal/db"
+	"code.superseriousbusiness.org/gotosocial/internal/federation/federatingdb"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/state"
+	"code.superseriousbusiness.org/gotosocial/internal/util"
 	"codeberg.org/gruf/go-byteutil"
 	"codeberg.org/gruf/go-cache/v3"
-	"github.com/superseriousbusiness/activity/pub"
-	"github.com/superseriousbusiness/gotosocial/internal/ap"
-	"github.com/superseriousbusiness/gotosocial/internal/config"
-	"github.com/superseriousbusiness/gotosocial/internal/db"
-	"github.com/superseriousbusiness/gotosocial/internal/federation/federatingdb"
-	"github.com/superseriousbusiness/gotosocial/internal/state"
 )
 
 // Controller generates transports for use in making federation requests to other servers.
@@ -50,15 +54,14 @@ type Controller interface {
 
 type controller struct {
 	state     *state.State
-	fedDB     federatingdb.DB
-	clock     pub.Clock
+	fedDB     *federatingdb.DB
 	client    pub.HttpClient
 	trspCache cache.TTLCache[string, *transport]
 	userAgent string
 }
 
 // NewController returns an implementation of the Controller interface for creating new transports
-func NewController(state *state.State, federatingDB federatingdb.DB, clock pub.Clock, client pub.HttpClient) Controller {
+func NewController(state *state.State, federatingDB *federatingdb.DB, client pub.HttpClient) Controller {
 	var (
 		host    = config.GetHost()
 		proto   = config.GetProtocol()
@@ -68,7 +71,6 @@ func NewController(state *state.State, federatingDB federatingdb.DB, clock pub.C
 	c := &controller{
 		state:     state,
 		fedDB:     federatingDB,
-		clock:     clock,
 		client:    client,
 		trspCache: cache.NewTTL[string, *transport](0, 100, 0),
 		userAgent: fmt.Sprintf("gotosocial/%s (+%s://%s)", version, proto, host),
@@ -140,109 +142,75 @@ func (c *controller) NewTransportForUsername(ctx context.Context, username strin
 	return transport, nil
 }
 
-// dereferenceLocalFollowers is a shortcut to dereference followers of an
-// account on this instance, without making any external api/http calls.
+// dereferenceLocal is a shortcut to try dereferencing
+// something on this instance without making any http calls.
 //
-// It is passed to new transports, and should only be invoked when the iri.Host == this host.
-func (c *controller) dereferenceLocalFollowers(ctx context.Context, iri *url.URL) (*http.Response, error) {
-	followers, err := c.fedDB.Followers(ctx, iri)
-	if err != nil && !errors.Is(err, db.ErrNoEntries) {
-		return nil, err
-	}
-
-	if followers == nil {
-		// Return a generic 404 not found response.
-		rsp := craftResponse(iri, http.StatusNotFound)
-		return rsp, nil
-	}
-
-	i, err := ap.Serialize(followers)
-	if err != nil {
-		return nil, err
-	}
-
-	b, err := json.Marshal(i)
-	if err != nil {
-		return nil, err
-	}
-
-	// Return a response with AS data as body.
-	rsp := craftResponse(iri, http.StatusOK)
-	rsp.Body = io.NopCloser(bytes.NewReader(b))
-	return rsp, nil
-}
-
-// dereferenceLocalUser is a shortcut to dereference followers an account on
-// this instance, without making any external api/http calls.
+// Will return an error if nothing could be found, indicating that
+// the calling transport should continue with an http call anyway.
 //
-// It is passed to new transports, and should only be invoked when the iri.Host == this host.
-func (c *controller) dereferenceLocalUser(ctx context.Context, iri *url.URL) (*http.Response, error) {
-	user, err := c.fedDB.Get(ctx, iri)
-	if err != nil && !errors.Is(err, db.ErrNoEntries) {
-		return nil, err
+// It should only be invoked when the iri.Host == this host.
+func (c *controller) dereferenceLocal(
+	ctx context.Context,
+	uri *url.URL,
+) (*http.Response, error) {
+
+	// Try fetch via federating DB.
+	t, err := c.fedDB.Get(ctx, uri)
+
+	switch {
+	// No problem.
+	case err == nil:
+
+	// Catch and handle objects not found.
+	case errors.Is(err, db.ErrNoEntries):
+		return &http.Response{
+			Request:    &http.Request{URL: uri},
+			Status:     http.StatusText(http.StatusNotFound),
+			StatusCode: http.StatusNotFound,
+			Header: map[string][]string{
+				"Content-Type":   {apiutil.AppActivityLDJSON},
+				"Content-Length": {"0"},
+			},
+		}, nil
+
+	// Any other.
+	default:
+		return nil, gtserror.Newf("error getting: %w", err)
 	}
 
-	if user == nil {
-		// Return a generic 404 not found response.
-		rsp := craftResponse(iri, http.StatusNotFound)
-		return rsp, nil
+	if util.IsNil(t) {
+		// Assert this should never happen.
+		panic(gtserror.New("nil vocab.Type"))
 	}
 
-	i, err := ap.Serialize(user)
+	// Serialize type to JSON map.
+	m, err := ap.Serialize(t)
 	if err != nil {
 		return nil, err
 	}
 
-	b, err := json.Marshal(i)
+	// Marshal JSON to bytes.
+	b, err := json.Marshal(m)
 	if err != nil {
 		return nil, err
 	}
 
-	// Return a response with AS data as body.
-	rsp := craftResponse(iri, http.StatusOK)
-	rsp.Body = io.NopCloser(bytes.NewReader(b))
+	// Return a response
+	// with AS data as body.
+	contentLength := len(b)
+	rsp := &http.Response{
+		Request:       &http.Request{URL: uri},
+		Status:        http.StatusText(http.StatusOK),
+		StatusCode:    http.StatusOK,
+		Body:          io.NopCloser(bytes.NewReader(b)),
+		ContentLength: int64(contentLength),
+		Header: map[string][]string{
+			"Content-Type":   {apiutil.AppActivityLDJSON},
+			"Content-Length": {strconv.Itoa(contentLength)},
+		},
+	}
+
 	return rsp, nil
-}
-
-// dereferenceLocalAccept is a shortcut to dereference an accept created
-// by an account on this instance, without making any external api/http calls.
-//
-// It is passed to new transports, and should only be invoked when the iri.Host == this host.
-func (c *controller) dereferenceLocalAccept(ctx context.Context, iri *url.URL) (*http.Response, error) {
-	accept, err := c.fedDB.GetAccept(ctx, iri)
-	if err != nil && !errors.Is(err, db.ErrNoEntries) {
-		return nil, err
-	}
-
-	if accept == nil {
-		// Return a generic 404 not found response.
-		rsp := craftResponse(iri, http.StatusNotFound)
-		return rsp, nil
-	}
-
-	i, err := ap.Serialize(accept)
-	if err != nil {
-		return nil, err
-	}
-
-	b, err := json.Marshal(i)
-	if err != nil {
-		return nil, err
-	}
-
-	// Return a response with AS data as body.
-	rsp := craftResponse(iri, http.StatusOK)
-	rsp.Body = io.NopCloser(bytes.NewReader(b))
-	return rsp, nil
-}
-
-func craftResponse(url *url.URL, code int) *http.Response {
-	rsp := new(http.Response)
-	rsp.Request = new(http.Request)
-	rsp.Request.URL = url
-	rsp.Status = http.StatusText(code)
-	rsp.StatusCode = code
-	return rsp
 }
 
 // privkeyToPublicStr will create a string representation of RSA public key from private.

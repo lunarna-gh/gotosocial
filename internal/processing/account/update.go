@@ -24,19 +24,19 @@ import (
 	"io"
 	"mime/multipart"
 
+	"code.superseriousbusiness.org/gotosocial/internal/ap"
+	apimodel "code.superseriousbusiness.org/gotosocial/internal/api/model"
+	"code.superseriousbusiness.org/gotosocial/internal/config"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/log"
+	"code.superseriousbusiness.org/gotosocial/internal/media"
+	"code.superseriousbusiness.org/gotosocial/internal/messages"
+	"code.superseriousbusiness.org/gotosocial/internal/text"
+	"code.superseriousbusiness.org/gotosocial/internal/typeutils"
+	"code.superseriousbusiness.org/gotosocial/internal/util"
+	"code.superseriousbusiness.org/gotosocial/internal/validate"
 	"codeberg.org/gruf/go-iotools"
-	"github.com/superseriousbusiness/gotosocial/internal/ap"
-	apimodel "github.com/superseriousbusiness/gotosocial/internal/api/model"
-	"github.com/superseriousbusiness/gotosocial/internal/config"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/log"
-	"github.com/superseriousbusiness/gotosocial/internal/media"
-	"github.com/superseriousbusiness/gotosocial/internal/messages"
-	"github.com/superseriousbusiness/gotosocial/internal/text"
-	"github.com/superseriousbusiness/gotosocial/internal/typeutils"
-	"github.com/superseriousbusiness/gotosocial/internal/util"
-	"github.com/superseriousbusiness/gotosocial/internal/validate"
 )
 
 func (p *Processor) selectNoteFormatter(contentType string) text.FormatFunc {
@@ -77,9 +77,17 @@ func (p *Processor) Update(ctx context.Context, account *gtsmodel.Account, form 
 		acctColumns = append(acctColumns, "discoverable")
 	}
 
-	if form.Bot != nil {
-		account.Bot = form.Bot
-		acctColumns = append(acctColumns, "bot")
+	if bot := form.Bot; bot != nil {
+		if *bot {
+			// Mark account as an Application.
+			// See: https://www.w3.org/TR/activitystreams-vocabulary/#dfn-application
+			account.ActorType = gtsmodel.AccountActorTypeApplication
+		} else {
+			// Mark account as a Person.
+			// See: https://www.w3.org/TR/activitystreams-vocabulary/#dfn-person
+			account.ActorType = gtsmodel.AccountActorTypePerson
+		}
+		acctColumns = append(acctColumns, "actor_type")
 	}
 
 	if form.Locked != nil {
@@ -97,8 +105,8 @@ func (p *Processor) Update(ctx context.Context, account *gtsmodel.Account, form 
 			return nil, gtserror.NewErrorBadRequest(err, err.Error())
 		}
 
-		// Parse new display name (always from plaintext).
-		account.DisplayName = text.SanitizeToPlaintext(displayName)
+		// HTML tags not allowed in display name.
+		account.DisplayName = text.StripHTMLFromText(displayName)
 		acctColumns = append(acctColumns, "display_name")
 	}
 
@@ -145,7 +153,7 @@ func (p *Processor) Update(ctx context.Context, account *gtsmodel.Account, form 
 	}
 
 	if form.AvatarDescription != nil {
-		desc := text.SanitizeToPlaintext(*form.AvatarDescription)
+		desc := text.StripHTMLFromText(*form.AvatarDescription)
 		form.AvatarDescription = &desc
 	}
 
@@ -175,7 +183,7 @@ func (p *Processor) Update(ctx context.Context, account *gtsmodel.Account, form 
 	}
 
 	if form.HeaderDescription != nil {
-		desc := text.SanitizeToPlaintext(*form.HeaderDescription)
+		desc := text.StripHTMLFromText(*form.HeaderDescription)
 		form.HeaderDescription = util.Ptr(desc)
 	}
 
@@ -265,7 +273,7 @@ func (p *Processor) Update(ctx context.Context, account *gtsmodel.Account, form 
 			return nil, gtserror.NewErrorBadRequest(err, err.Error())
 		}
 
-		account.Settings.CustomCSS = text.SanitizeToPlaintext(customCSS)
+		account.Settings.CustomCSS = text.StripHTMLFromText(customCSS)
 		settingsColumns = append(settingsColumns, "custom_css")
 	}
 
@@ -292,6 +300,18 @@ func (p *Processor) Update(ctx context.Context, account *gtsmodel.Account, form 
 
 		account.Settings.WebVisibility = webVisibility
 		settingsColumns = append(settingsColumns, "web_visibility")
+	}
+
+	if form.WebLayout != nil {
+		webLayout := gtsmodel.ParseWebLayout(*form.WebLayout)
+		if webLayout == gtsmodel.WebLayoutUnknown {
+			const text = "web_layout must be one of microblog or gallery"
+			err := errors.New(text)
+			return nil, gtserror.NewErrorBadRequest(err, text)
+		}
+
+		account.Settings.WebLayout = webLayout
+		settingsColumns = append(settingsColumns, "web_layout")
 	}
 
 	// We've parsed + set everything, do
@@ -356,8 +376,8 @@ func (p *Processor) updateFields(
 
 		// Sanitize raw field values.
 		fieldRaw := &gtsmodel.Field{
-			Name:  text.SanitizeToPlaintext(name),
-			Value: text.SanitizeToPlaintext(value),
+			Name:  text.StripHTMLFromText(name),
+			Value: text.StripHTMLFromText(value),
 		}
 		fieldsRaw = append(fieldsRaw, fieldRaw)
 	}
@@ -385,7 +405,7 @@ func (p *Processor) processAccountText(
 	emojis := make(map[string]*gtsmodel.Emoji)
 
 	// Retrieve display name emojis.
-	for _, emoji := range p.formatter.FromPlainEmojiOnly(
+	for _, emoji := range p.formatter.FromPlainBasic(
 		ctx,
 		p.parseMention,
 		account.ID,
@@ -413,7 +433,7 @@ func (p *Processor) processAccountText(
 		// Name stays plain, but we still need to
 		// see if there are any emojis set in it.
 		field.Name = fieldRaw.Name
-		for _, emoji := range p.formatter.FromPlainEmojiOnly(
+		for _, emoji := range p.formatter.FromPlainBasic(
 			ctx,
 			p.parseMention,
 			account.ID,

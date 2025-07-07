@@ -22,13 +22,13 @@ import (
 	"strings"
 	"testing"
 
+	"code.superseriousbusiness.org/gotosocial/internal/api/client/statuses"
+	apiutil "code.superseriousbusiness.org/gotosocial/internal/api/util"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/oauth"
+	"code.superseriousbusiness.org/gotosocial/testrig"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/suite"
-	"github.com/superseriousbusiness/gotosocial/internal/api/client/statuses"
-	apiutil "github.com/superseriousbusiness/gotosocial/internal/api/util"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/oauth"
-	"github.com/superseriousbusiness/gotosocial/testrig"
 )
 
 type StatusBoostTestSuite struct {
@@ -113,6 +113,11 @@ func (suite *StatusBoostTestSuite) TestPostBoost() {
         "public",
         "me"
       ],
+      "automatic_approval": [
+        "public",
+        "me"
+      ],
+      "manual_approval": [],
       "with_approval": []
     },
     "can_reblog": {
@@ -120,6 +125,11 @@ func (suite *StatusBoostTestSuite) TestPostBoost() {
         "public",
         "me"
       ],
+      "automatic_approval": [
+        "public",
+        "me"
+      ],
+      "manual_approval": [],
       "with_approval": []
     },
     "can_reply": {
@@ -127,6 +137,11 @@ func (suite *StatusBoostTestSuite) TestPostBoost() {
         "public",
         "me"
       ],
+      "automatic_approval": [
+        "public",
+        "me"
+      ],
+      "manual_approval": [],
       "with_approval": []
     }
   },
@@ -144,7 +159,8 @@ func (suite *StatusBoostTestSuite) TestPostBoost() {
     },
     "bookmarked": true,
     "card": null,
-    "content": "hello world! #welcome ! first post on the instance :rainbow: !",
+    "content": "<p>hello world! <a href=\"http://localhost:8080/tags/welcome\" class=\"mention hashtag\" rel=\"tag nofollow noreferrer noopener\" target=\"_blank\">#<span>welcome</span></a> ! first post on the instance :rainbow: !</p>",
+    "content_type": "text/plain",
     "created_at": "right the hell just now babyee",
     "edited_at": null,
     "emojis": [
@@ -167,6 +183,11 @@ func (suite *StatusBoostTestSuite) TestPostBoost() {
           "public",
           "me"
         ],
+        "automatic_approval": [
+          "public",
+          "me"
+        ],
+        "manual_approval": [],
         "with_approval": []
       },
       "can_reblog": {
@@ -174,6 +195,11 @@ func (suite *StatusBoostTestSuite) TestPostBoost() {
           "public",
           "me"
         ],
+        "automatic_approval": [
+          "public",
+          "me"
+        ],
+        "manual_approval": [],
         "with_approval": []
       },
       "can_reply": {
@@ -181,6 +207,11 @@ func (suite *StatusBoostTestSuite) TestPostBoost() {
           "public",
           "me"
         ],
+        "automatic_approval": [
+          "public",
+          "me"
+        ],
+        "manual_approval": [],
         "with_approval": []
       }
     },
@@ -192,8 +223,8 @@ func (suite *StatusBoostTestSuite) TestPostBoost() {
         "id": "01F8MH6NEM8D7527KZAECTCR76",
         "meta": {
           "focus": {
-            "x": 0,
-            "y": 0
+            "x": -0.5,
+            "y": 0.5
           },
           "original": {
             "aspect": 1.9047619,
@@ -297,6 +328,13 @@ func (suite *StatusBoostTestSuite) TestPostBoostOwnFollowersOnly() {
         "mentioned",
         "me"
       ],
+      "automatic_approval": [
+        "author",
+        "followers",
+        "mentioned",
+        "me"
+      ],
+      "manual_approval": [],
       "with_approval": []
     },
     "can_reblog": {
@@ -304,6 +342,11 @@ func (suite *StatusBoostTestSuite) TestPostBoostOwnFollowersOnly() {
         "author",
         "me"
       ],
+      "automatic_approval": [
+        "author",
+        "me"
+      ],
+      "manual_approval": [],
       "with_approval": []
     },
     "can_reply": {
@@ -313,6 +356,13 @@ func (suite *StatusBoostTestSuite) TestPostBoostOwnFollowersOnly() {
         "mentioned",
         "me"
       ],
+      "automatic_approval": [
+        "author",
+        "followers",
+        "mentioned",
+        "me"
+      ],
+      "manual_approval": [],
       "with_approval": []
     }
   },
@@ -330,7 +380,8 @@ func (suite *StatusBoostTestSuite) TestPostBoostOwnFollowersOnly() {
     },
     "bookmarked": false,
     "card": null,
-    "content": "hi!",
+    "content": "<p>hi!</p>",
+    "content_type": "text/plain",
     "created_at": "right the hell just now babyee",
     "edited_at": null,
     "emojis": [],
@@ -347,6 +398,13 @@ func (suite *StatusBoostTestSuite) TestPostBoostOwnFollowersOnly() {
           "mentioned",
           "me"
         ],
+        "automatic_approval": [
+          "author",
+          "followers",
+          "mentioned",
+          "me"
+        ],
+        "manual_approval": [],
         "with_approval": []
       },
       "can_reblog": {
@@ -354,6 +412,11 @@ func (suite *StatusBoostTestSuite) TestPostBoostOwnFollowersOnly() {
           "author",
           "me"
         ],
+        "automatic_approval": [
+          "author",
+          "me"
+        ],
+        "manual_approval": [],
         "with_approval": []
       },
       "can_reply": {
@@ -363,6 +426,13 @@ func (suite *StatusBoostTestSuite) TestPostBoostOwnFollowersOnly() {
           "mentioned",
           "me"
         ],
+        "automatic_approval": [
+          "author",
+          "followers",
+          "mentioned",
+          "me"
+        ],
+        "manual_approval": [],
         "with_approval": []
       }
     },
@@ -511,6 +581,11 @@ func (suite *StatusBoostTestSuite) TestPostBoostImplicitAccept() {
         "public",
         "me"
       ],
+      "automatic_approval": [
+        "public",
+        "me"
+      ],
+      "manual_approval": [],
       "with_approval": []
     },
     "can_reblog": {
@@ -518,6 +593,11 @@ func (suite *StatusBoostTestSuite) TestPostBoostImplicitAccept() {
         "public",
         "me"
       ],
+      "automatic_approval": [
+        "public",
+        "me"
+      ],
+      "manual_approval": [],
       "with_approval": []
     },
     "can_reply": {
@@ -525,6 +605,11 @@ func (suite *StatusBoostTestSuite) TestPostBoostImplicitAccept() {
         "public",
         "me"
       ],
+      "automatic_approval": [
+        "public",
+        "me"
+      ],
+      "manual_approval": [],
       "with_approval": []
     }
   },
@@ -543,6 +628,7 @@ func (suite *StatusBoostTestSuite) TestPostBoostImplicitAccept() {
     "bookmarked": false,
     "card": null,
     "content": "<p>Hi <span class=\"h-card\"><a href=\"http://localhost:8080/@1happyturtle\" class=\"u-url mention\" rel=\"nofollow noreferrer noopener\" target=\"_blank\">@<span>1happyturtle</span></a></span>, can I reply?</p>",
+    "content_type": "text/markdown",
     "created_at": "right the hell just now babyee",
     "edited_at": null,
     "emojis": [],
@@ -557,6 +643,11 @@ func (suite *StatusBoostTestSuite) TestPostBoostImplicitAccept() {
           "public",
           "me"
         ],
+        "automatic_approval": [
+          "public",
+          "me"
+        ],
+        "manual_approval": [],
         "with_approval": []
       },
       "can_reblog": {
@@ -564,6 +655,11 @@ func (suite *StatusBoostTestSuite) TestPostBoostImplicitAccept() {
           "public",
           "me"
         ],
+        "automatic_approval": [
+          "public",
+          "me"
+        ],
+        "manual_approval": [],
         "with_approval": []
       },
       "can_reply": {
@@ -571,6 +667,11 @@ func (suite *StatusBoostTestSuite) TestPostBoostImplicitAccept() {
           "public",
           "me"
         ],
+        "automatic_approval": [
+          "public",
+          "me"
+        ],
+        "manual_approval": [],
         "with_approval": []
       }
     },

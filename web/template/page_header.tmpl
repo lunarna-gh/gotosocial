@@ -33,9 +33,7 @@
             href="https://docs.gotosocial.org/en/latest/configuration/trusted_proxies/"
             rel="nofollow noreferrer noopener"
             target="_blank"
-        >
-            the documentation
-        </a>.
+        >the documentation</a>.
     </p>
 </div> 
 {{- end -}}
@@ -100,6 +98,6 @@ Instance Logo
     <h1>{{- .instance.Title -}}</h1>
 </a>
 {{- if .showStrap }}
-<aside>home to {{ template "strapUsers" . }} who wrote {{ template "strapPosts" . }}, federating with {{ template "strapInstances" . }}</aside>
+<aside>home to {{ template "strapUsers" . }} who wrote {{ template "strapPosts" . }}; knows of {{ template "strapInstances" . }}</aside>
 {{- end }}
 {{- end }}

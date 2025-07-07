@@ -22,8 +22,8 @@ import (
 	"net/url"
 	"slices"
 
-	apimodel "github.com/superseriousbusiness/gotosocial/internal/api/model"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
+	apimodel "code.superseriousbusiness.org/gotosocial/internal/api/model"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
 )
 
 func APIVisToVis(m apimodel.Visibility) gtsmodel.Visibility {
@@ -40,6 +40,16 @@ func APIVisToVis(m apimodel.Visibility) gtsmodel.Visibility {
 		return gtsmodel.VisibilityDirect
 	case apimodel.VisibilityNone:
 		return gtsmodel.VisibilityNone
+	}
+	return 0
+}
+
+func APIContentTypeToContentType(m apimodel.StatusContentType) gtsmodel.StatusContentType {
+	switch m {
+	case apimodel.StatusContentTypePlain:
+		return gtsmodel.StatusContentTypePlain
+	case apimodel.StatusContentTypeMarkdown:
+		return gtsmodel.StatusContentTypeMarkdown
 	}
 	return 0
 }
@@ -218,16 +228,16 @@ func APIInteractionPolicyToInteractionPolicy(
 
 	return &gtsmodel.InteractionPolicy{
 		CanLike: gtsmodel.PolicyRules{
-			Always:       canLikeAlways,
-			WithApproval: canLikeWithApproval,
+			AutomaticApproval: canLikeAlways,
+			ManualApproval:    canLikeWithApproval,
 		},
 		CanReply: gtsmodel.PolicyRules{
-			Always:       canReplyAlways,
-			WithApproval: canReplyWithApproval,
+			AutomaticApproval: canReplyAlways,
+			ManualApproval:    canReplyWithApproval,
 		},
 		CanAnnounce: gtsmodel.PolicyRules{
-			Always:       canAnnounceAlways,
-			WithApproval: canAnnounceWithApproval,
+			AutomaticApproval: canAnnounceAlways,
+			ManualApproval:    canAnnounceWithApproval,
 		},
 	}, nil
 }

@@ -24,9 +24,9 @@ import (
 	"testing"
 	"time"
 
+	"code.superseriousbusiness.org/gotosocial/internal/db"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
 	"github.com/stretchr/testify/suite"
-	"github.com/superseriousbusiness/gotosocial/internal/db"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
 )
 
 type BasicTestSuite struct {
@@ -55,7 +55,7 @@ func (suite *BasicTestSuite) TestPutAccountWithBunDefaultFields() {
 		URL:          "https://example.org/@test",
 		InboxURI:     "https://example.org/users/test/inbox",
 		OutboxURI:    "https://example.org/users/test/outbox",
-		ActorType:    "Person",
+		ActorType:    gtsmodel.AccountActorTypePerson,
 		PublicKeyURI: "https://example.org/test#main-key",
 		PublicKey:    &key.PublicKey,
 	}
@@ -87,7 +87,6 @@ func (suite *BasicTestSuite) TestPutAccountWithBunDefaultFields() {
 	suite.Empty(a.NoteRaw)
 	suite.Empty(a.AlsoKnownAsURIs)
 	suite.Empty(a.MovedToURI)
-	suite.False(*a.Bot)
 	// Locked is especially important, since it's a bool that defaults
 	// to true, which is why we use pointers for bools in the first place
 	suite.True(*a.Locked)
@@ -114,7 +113,7 @@ func (suite *BasicTestSuite) TestGetAllStatuses() {
 	s := []*gtsmodel.Status{}
 	err := suite.db.GetAll(context.Background(), &s)
 	suite.NoError(err)
-	suite.Len(s, 28)
+	suite.Len(s, 30)
 }
 
 func (suite *BasicTestSuite) TestGetAllNotNull() {

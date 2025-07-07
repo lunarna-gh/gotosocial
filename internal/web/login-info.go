@@ -20,10 +20,10 @@ package web
 import (
 	"context"
 
+	apimodel "code.superseriousbusiness.org/gotosocial/internal/api/model"
+	apiutil "code.superseriousbusiness.org/gotosocial/internal/api/util"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
 	"github.com/gin-gonic/gin"
-	apimodel "github.com/superseriousbusiness/gotosocial/internal/api/model"
-	apiutil "github.com/superseriousbusiness/gotosocial/internal/api/util"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
 )
 
 const (
@@ -50,7 +50,7 @@ func (m *Module) loginGETHandler(c *gin.Context) {
 	}
 
 	page := apiutil.WebPage{
-		Template:    "login_info.tmpl",
+		Template:    "login-info.tmpl",
 		Instance:    instance,
 		OGMeta:      apiutil.OGBase(instance),
 		Stylesheets: []string{cssAbout, cssLoginInfo},

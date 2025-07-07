@@ -20,12 +20,15 @@ package apps
 import (
 	"net/http"
 
+	apiutil "code.superseriousbusiness.org/gotosocial/internal/api/util"
+	"code.superseriousbusiness.org/gotosocial/internal/processing"
 	"github.com/gin-gonic/gin"
-	"github.com/superseriousbusiness/gotosocial/internal/processing"
 )
 
-// BasePath is the base path for this api module, excluding the api prefix
-const BasePath = "/v1/apps"
+const (
+	BasePath       = "/v1/apps"
+	BasePathWithID = BasePath + "/:" + apiutil.IDKey
+)
 
 type Module struct {
 	processor *processing.Processor
@@ -39,4 +42,7 @@ func New(processor *processing.Processor) *Module {
 
 func (m *Module) Route(attachHandler func(method string, path string, f ...gin.HandlerFunc) gin.IRoutes) {
 	attachHandler(http.MethodPost, BasePath, m.AppsPOSTHandler)
+	attachHandler(http.MethodGet, BasePath, m.AppsGETHandler)
+	attachHandler(http.MethodGet, BasePathWithID, m.AppGETHandler)
+	attachHandler(http.MethodDelete, BasePathWithID, m.AppDELETEHandler)
 }

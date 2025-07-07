@@ -13,7 +13,7 @@ GoToSocial - a fediverse social media server
 
 For help, see: https://docs.gotosocial.org.
 
-Code: https://github.com/superseriousbusiness/gotosocial
+Code: https://codeberg.org/superseriousbusiness/gotosocial
 
 Usage:
   gotosocial [command]
@@ -56,6 +56,9 @@ Contains `account`, `export`, `import`, and `media` subcommands.
 ### gotosocial admin account create
 
 This command can be used to create a new account on your instance.
+
+!!! Warning
+    You must have launched the server at least once before running this command, to initialize essential entries in the database.
 
 `gotosocial admin account create --help`:
 

@@ -25,11 +25,11 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	apimodel "github.com/superseriousbusiness/gotosocial/internal/api/model"
-	apiutil "github.com/superseriousbusiness/gotosocial/internal/api/util"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/oauth"
-	"github.com/superseriousbusiness/gotosocial/internal/processing"
+
+	apimodel "code.superseriousbusiness.org/gotosocial/internal/api/model"
+	apiutil "code.superseriousbusiness.org/gotosocial/internal/api/util"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/processing"
 )
 
 const (
@@ -39,6 +39,7 @@ const (
 var types = []string{
 	"following",
 	"blocks",
+	"mutes",
 }
 
 var modes = []string{
@@ -94,6 +95,8 @@ func (m *Module) Route(attachHandler func(method string, path string, f ...gin.H
 //
 //			- `following` - accounts to follow.
 //			- `blocks` - accounts to block.
+//			- `mutes` - accounts to mute.
+//
 //		type: string
 //		required: true
 //	-
@@ -109,7 +112,7 @@ func (m *Module) Route(attachHandler func(method string, path string, f ...gin.H
 //
 //	security:
 //	- OAuth2 Bearer:
-//		- write:accounts
+//		- write
 //
 //	responses:
 //		'202':
@@ -123,9 +126,12 @@ func (m *Module) Route(attachHandler func(method string, path string, f ...gin.H
 //		'500':
 //			description: internal server error
 func (m *Module) ImportPOSTHandler(c *gin.Context) {
-	authed, err := oauth.Authed(c, true, true, true, true)
-	if err != nil {
-		apiutil.ErrorHandler(c, gtserror.NewErrorUnauthorized(err, err.Error()), m.processor.InstanceGetV1)
+	authed, errWithCode := apiutil.TokenAuth(c,
+		true, true, true, true,
+		apiutil.ScopeWrite,
+	)
+	if errWithCode != nil {
+		apiutil.ErrorHandler(c, errWithCode, m.processor.InstanceGetV1)
 		return
 	}
 
@@ -179,7 +185,7 @@ func (m *Module) ImportPOSTHandler(c *gin.Context) {
 	overwrite := form.Mode == "overwrite"
 
 	// Trigger the import.
-	errWithCode := m.processor.Account().ImportData(
+	errWithCode = m.processor.Account().ImportData(
 		c.Request.Context(),
 		authed.Account,
 		form.Data,

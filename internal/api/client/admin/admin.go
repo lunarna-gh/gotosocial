@@ -20,11 +20,11 @@ package admin
 import (
 	"net/http"
 
+	apiutil "code.superseriousbusiness.org/gotosocial/internal/api/util"
+	"code.superseriousbusiness.org/gotosocial/internal/processing"
+	"code.superseriousbusiness.org/gotosocial/internal/state"
 	"codeberg.org/gruf/go-debug"
 	"github.com/gin-gonic/gin"
-	apiutil "github.com/superseriousbusiness/gotosocial/internal/api/util"
-	"github.com/superseriousbusiness/gotosocial/internal/processing"
-	"github.com/superseriousbusiness/gotosocial/internal/state"
 )
 
 const (
@@ -102,12 +102,14 @@ func (m *Module) Route(attachHandler func(method string, path string, f ...gin.H
 	attachHandler(http.MethodPost, DomainBlocksPath, m.DomainBlocksPOSTHandler)
 	attachHandler(http.MethodGet, DomainBlocksPath, m.DomainBlocksGETHandler)
 	attachHandler(http.MethodGet, DomainBlocksPathWithID, m.DomainBlockGETHandler)
+	attachHandler(http.MethodPut, DomainBlocksPathWithID, m.DomainBlockUpdatePUTHandler)
 	attachHandler(http.MethodDelete, DomainBlocksPathWithID, m.DomainBlockDELETEHandler)
 
 	// domain allow stuff
 	attachHandler(http.MethodPost, DomainAllowsPath, m.DomainAllowsPOSTHandler)
 	attachHandler(http.MethodGet, DomainAllowsPath, m.DomainAllowsGETHandler)
 	attachHandler(http.MethodGet, DomainAllowsPathWithID, m.DomainAllowGETHandler)
+	attachHandler(http.MethodPut, DomainAllowsPathWithID, m.DomainAllowUpdatePUTHandler)
 	attachHandler(http.MethodDelete, DomainAllowsPathWithID, m.DomainAllowDELETEHandler)
 
 	// domain permission draft stuff

@@ -32,8 +32,6 @@ These contribution guidelines were adapted from / inspired by those of Gitea (ht
     - [Federation](#federation)
   - [Updating Swagger docs](#updating-swagger-docs)
   - [CI/CD configuration](#cicd-configuration)
-  - [Release Checklist](#release-checklist)
-    - [What if something goes wrong?](#what-if-something-goes-wrong)
 
 ## Introduction
 
@@ -41,11 +39,11 @@ This document contains important information that will help you to write a succe
 
 ## Bug reports and feature requests
 
-Currently, we use Github's issue system for tracking bug reports and feature requests.
+Currently, we use Codeberg's issue system for tracking bug reports and feature requests.
 
-You can view all open issues [here](https://github.com/superseriousbusiness/gotosocial/issues "The Github Issues page for GoToSocial").
+You can view all open issues [here](https://codeberg.org/superseriousbusiness/gotosocial/issues "The Codeberg Issues page for GoToSocial").
 
-Before opening a new issue, whether bug or feature request, **please search carefully through both open and closed issues to make sure it hasn't been addressed already**. You can use Github's keyword issue search for this. If your issue is a duplicate of an existing issue, it will be closed.
+Before opening a new issue, whether bug or feature request, **please search carefully through both open and closed issues to make sure it hasn't been addressed already**. You can use Codeberg's keyword issue search for this. If your issue is a duplicate of an existing issue, it will be closed.
 
 Before you open a feature request issue, please consider the following:
 
@@ -99,7 +97,7 @@ If you see something in the documentation that's missing, wrong, or unclear, fee
 
 We support a [Conda](https://docs.conda.io/en/latest/)-based workflow for hacking, building & publishing the documentation. Here's how you can get started locally:
 
-* Install [`miniconda`](https://docs.conda.io/en/latest/miniconda.html)
+* Install [`miniconda`](https://www.anaconda.com/docs/getting-started/miniconda/main)
 * Create your conda environment: `conda env create -f ./docs/environment.yml`
 * Activate the environment: `conda activate gotosocial-docs`
 * Serve locally: `mkdocs serve`
@@ -122,26 +120,22 @@ Beware that `conda env export` will add a `prefix` entry to the environment.yml 
 
 ### Golang forking quirks
 
-One of the quirks of Golang is that it relies on the source management path being the same as the one used within `go.mod` and in package imports within individual Go files. This makes working with forks a bit awkward.
-
-Let's say you fork GoToSocial to `github.com/yourgithubname/gotosocial`, and then clone that repository to `~/go/src/github.com/yourgithubname/gotosocial`. You will probably run into errors trying to run tests or build, so you might change your `go.mod` file so that the module is called `github.com/yourgithubname/gotosocial` instead of `github.com/superseriousbusiness/gotosocial`. But then this breaks all the imports within the project. Nightmare! So now you have to go through the source files and painstakingly replace `github.com/superseriousbusiness/gotosocial` with `github.com/yourgithubname/gotosocial`. This works OK, but when you decide to make a pull request against the original repo, all the changed paths are included! Argh!
-
-The correct solution to this is to fork, then clone the upstream repository, then set `origin` of the upstream repository to that of your fork.
+One of the quirks of Golang is that it relies on the source management path being the same as the one used within `go.mod` and in package imports within individual Go files. This makes working with forks a bit awkward. The solution to this is to fork, then clone the upstream repository, then set `origin` of the upstream repository to that of your fork.
 
 See [this blog post](https://blog.sgmansfield.com/2016/06/working-with-forks-in-go/) for more details.
 
 In case this post disappears, here are the steps (slightly modified):
 
 >
-> Fork the repository on GitHub or set up whatever other remote git repo you will be using. In this case, I would go to GitHub and fork the repository.
+> Fork the repository on Codeberg or set up whatever other remote git repo you will be using. In this case, I would go to Codeberg and fork the repository.
 >
 > Now clone the upstream repo (not the fork):
 >
-> `mkdir -p ~/go/src/github.com/superseriousbusiness && git clone git@github.com:superseriousbusiness/gotosocial ~/go/src/github.com/superseriousbusiness/gotosocial`
+> `mkdir -p ~/go/src/code.superseriousbusiness.org && git clone git@codeberg.org:superseriousbusiness/gotosocial ~/go/src/code.superseriousbusiness.org/gotosocial`
 >
 > Navigate to the top level of the upstream repository on your computer:
 >
-> `cd ~/go/src/github.com/superseriousbusiness/gotosocial`
+> `cd ~/go/src/code.superseriousbusiness.org/gotosocial`
 >
 > Rename the current origin remote to upstream:
 >
@@ -149,7 +143,7 @@ In case this post disappears, here are the steps (slightly modified):
 >
 > Add your fork as origin:
 >
-> `git remote add origin git@github.com:yourgithubname/gotosocial`
+> `git remote add origin git@codeberg.org:username/gotosocial`
 >
 
 Be sure to run `git fetch` before building the project for the first time.
@@ -158,9 +152,9 @@ Be sure to run `git fetch` before building the project for the first time.
 
 #### Binary
 
-To get started, you first need to have Go installed. GtS is currently using Go 1.21, so you should take that too. See [here](https://golang.org/doc/install) for installation instructions.
+To get started, you first need to have Go installed. Check the top of the `go.mod` file to see which version of Go you need to install, and see [here](https://golang.org/doc/install) for installation instructions.
 
-Once you've got go installed, clone this repository into your Go path. Normally, this should be `~/go/src/github.com/superseriousbusiness/gotosocial`.
+Once you've got Go installed, clone this repository into your Go path. Normally, this should be `~/go/src/code.superseriousbusiness.org/gotosocial`.
 
 Once you've installed the prerequisites, you can try building the project: `./scripts/build.sh`. This will build the `gotosocial` binary.
 
@@ -176,7 +170,7 @@ nodemon -e go --signal SIGTERM --exec "go run ./cmd/gotosocial --host localhost 
 
 #### Docker
 
-For both of the below methods, you need to have [Docker buildx](https://docs.docker.com/buildx/working-with-buildx/) installed.
+For both of the below methods, you need to have [Docker buildx](https://docs.docker.com/build/concepts/overview/#buildx) installed.
 
 ##### With GoReleaser
 
@@ -187,8 +181,6 @@ GoReleaser is also used by GoToSocial for building and pushing Docker containers
 Normally, these processes are handled by Drone (see CI/CD above). However, you can also invoke GoReleaser manually for things like building snapshots.
 
 To do this, first [install GoReleaser](https://goreleaser.com/install/).
-
-Then install GoSwagger as described in [the Swagger section](#updating-swagger-docs).
 
 Then install Node and Yarn as described in [Stylesheet / Web dev](#stylesheet--web-dev).
 
@@ -202,13 +194,15 @@ If all goes according to plan, you should now have a number of multiple-architec
 
 ##### Manually
 
-If you prefer a simple approach to building a Docker container, with fewer dependencies (go-swagger, Node, Yarn), you can also just build in the following way:
+If you prefer a simple approach to building a Docker container, with fewer dependencies (Node, Yarn), you can also just build in the following way:
 
 ```bash
 ./scripts/build.sh && docker buildx build -t superseriousbusiness/gotosocial:latest .
 ```
 
 The above command first builds the `gotosocial` binary, then invokes Docker buildx to build the container image.
+
+If you get an error while doing the build that looks like `"/web/assets/swagger.yaml": not found`, then you need to (re)generate the Swagger docs once, see [Updating Swagger docs](#updating-swagger-docs) for the command.
 
 If you want to build a docker image for a different CPU architecture without setting up buildx (for example for ARMv7 aka 32-bit ARM), first modify the Dockerfile by adding the following lines to the top (but don't commit this!):
 
@@ -397,7 +391,7 @@ If there's no output, great! It passed :)
 
 ### Testing
 
-GoToSocial provides a [testrig](https://github.com/superseriousbusiness/gotosocial/tree/main/testrig) with a number of mock packages you can use in integration tests.
+GoToSocial provides a [testrig](https://codeberg.org/superseriousbusiness/gotosocial/tree/main/testrig) with a number of mock packages you can use in integration tests.
 
 One thing that *isn't* mocked is the Database interface because it's just easier to use an in-memory SQLite database than to mock everything out.
 
@@ -484,65 +478,24 @@ You'll additionally need functioning DNS for your two instance names, which you 
 
 GoToSocial uses [go-swagger](https://goswagger.io) to generate Swagger API documentation from code annotations.
 
-You can install go-swagger following the instructions [here](https://goswagger.io/install.html).
-
-If you change Swagger annotations on any of the API paths, you can generate a new Swagger file at `./docs/api/swagger.yaml` by running:
+If you change Swagger annotations on any of the API paths, you can generate a new Swagger file at `./docs/api/swagger.yaml`, and copy that file to web assets, by running:
 
 ```bash
-go run github.com/go-swagger/go-swagger/cmd/swagger generate spec --scan-models --exclude-deps --output docs/api/swagger.yaml
+go run ./vendor/github.com/go-swagger/go-swagger/cmd/swagger \
+generate spec --scan-models --exclude-deps -o docs/api/swagger.yaml \
+&& cp docs/api/swagger.yaml web/assets/swagger.yaml
 ```
+
+You shouldn't need to install go-swagger to run this command, as it's already included in the `vendor` folder.
 
 ### CI/CD configuration
 
-GoToSocial uses [Drone](https://www.drone.io/) for CI/CD tasks like running tests, linting, and building Docker containers.
+GoToSocial uses [Woodpecker CI](https://woodpecker-ci.org/) for CI/CD tasks like running tests, linting, and building Docker containers.
 
-These runs are integrated with GitHub, and will be run on opening a pull request or merging into main.
+These runs are integrated with Codeberg, and will be run on opening a pull request or merging into main.
 
-The Drone instance for GoToSocial is [here](https://drone.superseriousbusiness.org/superseriousbusiness/gotosocial).
+The `woodpecker` pipeline files are in the `.woodpecker` directory of this repository — these define how and when Woodpecker should run.
 
-The `drone.yml` file is [here](./.drone.yml) — this defines how and when Drone should run. Documentation for Drone is [here](https://docs.drone.io/).
+The Woodpecker instance for GoToSocial is [here](https://woodpecker.superseriousbusiness.org/repos/2).
 
-It is worth noting that the `drone.yml` file must be signed by the Drone admin account to be considered valid. This must be done every time the file is changed. This is to prevent tampering and hijacking of the Drone instance. See [here](https://docs.drone.io/signature/).
-
-To sign the file, first install and setup the [drone cli tool](https://docs.drone.io/cli/install/). Then, run:
-
-```bash
-drone -t PUT_YOUR_DRONE_ADMIN_TOKEN_HERE -s https://drone.superseriousbusiness.org sign superseriousbusiness/gotosocial --save
-```
-
-### Release Checklist
-
-First things first: If this is a security hot-fix, we'll probably rush through this list, and make a prettier release a few days later.
-
-Now, with that out of the way, here's our Checklist.
-
-GoToSocial follows [Semantic Versioning](https://semver.org/).
-So our first concern on the Checklist is:
-
-- What version are we releasing?
-
-Next we need to check:
-
-- Do the assets have to be rebuilt and committed to the repository.
-- Do the swagger docs have to be rebuilt?
-
-On the project management side:
-
-- Are there any issues that have to be moved to a different milestone?
-- Are there any things on the [Roadmap](./ROADMAP.md) that can be ticked off?
-
-Once we're happy with our Checklist, we can create the tag, and push it.
-And the rest [is automation](./.drone.yml).
-
-We can now head to GitHub, and add some personality to the release notes.
-Finally, we make announcements on the all our channels that the release is out!
-
-#### What if something goes wrong?
-
-Sometimes things go awry.
-We release a buggy release, we forgot something ­ something important.
-
-If the release is so bad that it's unusable ­ or dangerous! ­ to a great part of our user-base, we can pull.
-That is: Delete the tag.
-
-Either way, once we've resolved the issue, we just start from the top of this list again. Version numbers are cheap. It's cheap to burn them.
+Documentation for Woodpecker is [here](https://woodpecker-ci.org/docs/intro).

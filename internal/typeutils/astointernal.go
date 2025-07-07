@@ -24,15 +24,15 @@ import (
 	"net/url"
 	"time"
 
+	"code.superseriousbusiness.org/gotosocial/internal/ap"
+	"code.superseriousbusiness.org/gotosocial/internal/config"
+	"code.superseriousbusiness.org/gotosocial/internal/db"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/log"
+	"code.superseriousbusiness.org/gotosocial/internal/uris"
+	"code.superseriousbusiness.org/gotosocial/internal/util"
 	"github.com/miekg/dns"
-	"github.com/superseriousbusiness/gotosocial/internal/ap"
-	"github.com/superseriousbusiness/gotosocial/internal/config"
-	"github.com/superseriousbusiness/gotosocial/internal/db"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/log"
-	"github.com/superseriousbusiness/gotosocial/internal/uris"
-	"github.com/superseriousbusiness/gotosocial/internal/util"
 )
 
 // ASRepresentationToAccount converts a remote account / person
@@ -70,19 +70,10 @@ func (c *Converter) ASRepresentationToAccount(
 	acct.URI = uri
 
 	// Check whether account is a usable actor type.
-	switch acct.ActorType = accountable.GetTypeName(); acct.ActorType {
-
-	// people, groups, and organizations aren't bots
-	case ap.ActorPerson, ap.ActorGroup, ap.ActorOrganization:
-		acct.Bot = util.Ptr(false)
-
-	// apps and services are
-	case ap.ActorApplication, ap.ActorService:
-		acct.Bot = util.Ptr(true)
-
-	// we don't know what this is!
-	default:
-		err := gtserror.Newf("unusable actor type for %s", uri)
+	actorTypeName := accountable.GetTypeName()
+	acct.ActorType = gtsmodel.ParseAccountActorType(actorTypeName)
+	if acct.ActorType == gtsmodel.AccountActorTypeUnknown {
+		err := gtserror.Newf("unusable actor type %s for %s", actorTypeName, uri)
 		return nil, gtserror.SetMalformed(err)
 	}
 
@@ -161,9 +152,9 @@ func (c *Converter) ASRepresentationToAccount(
 	acct.Note = ap.ExtractSummary(accountable)
 
 	// Assume not memorial (todo)
-	acct.Memorial = util.Ptr(false)
+	acct.MemorializedAt = time.Time{}
 
-	// Extract 'manuallyApprovesFollowers' aka locked account (default = true).
+	// Extract 'manuallyApprovesFollowers' aka locked account (default = false).
 	manuallyApprovesFollowers := ap.GetManuallyApprovesFollowers(accountable)
 	acct.Locked = &manuallyApprovesFollowers
 
@@ -434,9 +425,10 @@ func (c *Converter) ASStatusToStatus(ctx context.Context, statusable ap.Statusab
 		return nil, gtserror.SetMalformed(err)
 	}
 
-	// Status was sent to us or dereffed
-	// by us so it must be federated.
+	// Status was sent to us or dereffed by
+	// us so it must be federated and not local.
 	status.Federated = util.Ptr(true)
+	status.Local = util.Ptr(false)
 
 	// Derive interaction policy for this status.
 	status.InteractionPolicy = ap.ExtractInteractionPolicy(
@@ -446,9 +438,11 @@ func (c *Converter) ASStatusToStatus(ctx context.Context, statusable ap.Statusab
 
 	// Set approvedByURI if present,
 	// for later dereferencing.
-	approvedByURI := ap.GetApprovedBy(statusable)
-	if approvedByURI != nil {
-		status.ApprovedByURI = approvedByURI.String()
+	if ipa, ok := statusable.(ap.InteractionPolicyAware); ok {
+		approvedByURI := ap.GetApprovedBy(ipa)
+		if approvedByURI != nil {
+			status.ApprovedByURI = approvedByURI.String()
+		}
 	}
 
 	// Assume not pending approval; this may
@@ -518,7 +512,9 @@ func (c *Converter) ASFollowToFollow(ctx context.Context, followable ap.Followab
 
 	follow := &gtsmodel.Follow{
 		URI:             uri,
+		Account:         origin,
 		AccountID:       origin.ID,
+		TargetAccount:   target,
 		TargetAccountID: target.ID,
 	}
 

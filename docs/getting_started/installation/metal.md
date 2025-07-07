@@ -34,14 +34,14 @@ cd /gotosocial
 Now, download the latest GoToSocial release archive corresponding to the operating system and architecture you're running on.
 
 !!! tip
-    You can find the list of releases [right here](https://github.com/superseriousbusiness/gotosocial/releases), arranged with the newest release at the top.
+    You can find the list of releases [right here](https://codeberg.org/superseriousbusiness/gotosocial/releases), arranged with the newest release at the top.
 
 For example, to download a version for running on 64-bit Linux:
 
 ```bash
 GTS_VERSION=X.Y.Z # replace this
 GTS_TARGET=linux_amd64
-wget https://github.com/superseriousbusiness/gotosocial/releases/download/v${GTS_VERSION}/gotosocial_${GTS_VERSION}_${GTS_TARGET}.tar.gz
+wget https://codeberg.org/superseriousbusiness/gotosocial/releases/download/v${GTS_VERSION}/gotosocial_${GTS_VERSION}_${GTS_TARGET}.tar.gz
 ```
 
 Then extract it:
@@ -63,8 +63,6 @@ You'll probably need to change the following settings:
 
 - Set `host` to whatever hostname you're going to be running the server on (eg., `example.org`).
 - Set `port` to `443`.
-- Set `db-type` to `sqlite`.
-- Set `db-address` to `sqlite.db`.
 - Set `storage-local-base-path` to the storage directory you created above (eg., `/gotosocial/storage`).
 - Set `letsencrypt-enabled` to `true`.
 - Set `letsencrypt-cert-dir` to the certificate storage directory you created above (eg., `/gotosocial/storage/certs`).
@@ -123,7 +121,7 @@ Then make them the owner of your GoToSocial installation since they will need to
 sudo chown -R gotosocial:gotosocial /gotosocial
 ```
 
-You can find a `gotosocial.service` file in the `example` folder on [github](https://raw.githubusercontent.com/superseriousbusiness/gotosocial/main/example/gotosocial.service) or your installation.
+You can find a `gotosocial.service` file in the `example` folder on [our repository](https://codeberg.org/superseriousbusiness/gotosocial/raw/branch/main/example/gotosocial.service) or your installation.
 
 Copy it to `/etc/systemd/system/gotosocial.service`:
 

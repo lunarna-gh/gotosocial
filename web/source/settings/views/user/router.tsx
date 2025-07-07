@@ -21,21 +21,28 @@ import React from "react";
 import { BaseUrlContext, useBaseUrl } from "../../lib/navigation/util";
 import { Redirect, Route, Router, Switch } from "wouter";
 import { ErrorBoundary } from "../../lib/navigation/error";
-import UserProfile from "./profile";
-import UserMigration from "./migration";
+import Profile from "./profile/profile";
 import PostSettings from "./posts";
-import EmailPassword from "./emailpassword";
+import Account from "./account";
 import ExportImport from "./export-import";
 import InteractionRequests from "./interactions";
 import InteractionRequestDetail from "./interactions/detail";
+import Tokens from "./tokens";
+import Applications from "./applications";
+import NewApp from "./applications/new";
+import AppDetail from "./applications/detail";
+import { AppTokenCallback } from "./applications/callback";
+import Migration from "./migration";
 
 /**
  * - /settings/user/profile
+ * - /settings/user/account
  * - /settings/user/posts
- * - /settings/user/emailpassword
  * - /settings/user/migration
  * - /settings/user/export-import
- * - /settings/users/interaction_requests
+ * - /settings/user/tokens
+ * - /settings/user/interaction_requests
+ * - /settings/user/applications
  */
 export default function UserRouter() {
 	const baseUrl = useBaseUrl();
@@ -45,15 +52,40 @@ export default function UserRouter() {
 	return (
 		<BaseUrlContext.Provider value={absBase}>
 			<Router base={thisBase}>
+				<Switch>
+					<Route path="/profile" component={Profile} />
+					<Route path="/account" component={Account} />
+					<Route path="/posts" component={PostSettings} />
+					<Route path="/migration" component={Migration} />
+					<Route path="/export-import" component={ExportImport} />
+					<Route path="/tokens" component={Tokens} />
+				</Switch>
+				<InteractionRequestsRouter />
+				<ApplicationsRouter />
+			</Router>
+		</BaseUrlContext.Provider>
+	);
+}
+
+/**
+ * - /settings/user/applications/search
+ * - /settings/user/applications/{appID}
+ */
+function ApplicationsRouter() {
+	const parentUrl = useBaseUrl();
+	const thisBase = "/applications";
+	const absBase = parentUrl + thisBase;
+
+	return (
+		<BaseUrlContext.Provider value={absBase}>
+			<Router base={thisBase}>
 				<ErrorBoundary>
 					<Switch>
-						<Route path="/profile" component={UserProfile} />
-						<Route path="/posts" component={PostSettings} />
-						<Route path="/emailpassword" component={EmailPassword} />
-						<Route path="/migration" component={UserMigration} />
-						<Route path="/export-import" component={ExportImport} />
-						<InteractionRequestsRouter />
-						<Route><Redirect to="/profile" /></Route>
+						<Route path="/search" component={Applications} />
+						<Route path="/new" component={NewApp} />
+						<Route path="/callback" component={AppTokenCallback} />
+						<Route path="/:appId" component={AppDetail} />
+						<Route><Redirect to="/search"/></Route>
 					</Switch>
 				</ErrorBoundary>
 			</Router>
@@ -73,11 +105,13 @@ function InteractionRequestsRouter() {
 	return (
 		<BaseUrlContext.Provider value={absBase}>
 			<Router base={thisBase}>
-				<Switch>
-					<Route path="/search" component={InteractionRequests} />
-					<Route path="/:reqId" component={InteractionRequestDetail} />
-					<Route><Redirect to="/search"/></Route>
-				</Switch>
+				<ErrorBoundary>
+					<Switch>
+						<Route path="/search" component={InteractionRequests} />
+						<Route path="/:reqId" component={InteractionRequestDetail} />
+						<Route><Redirect to="/search"/></Route>
+					</Switch>
+				</ErrorBoundary>
 			</Router>
 		</BaseUrlContext.Provider>
 	);

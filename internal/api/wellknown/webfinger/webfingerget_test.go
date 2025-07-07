@@ -29,18 +29,17 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	apiutil "code.superseriousbusiness.org/gotosocial/internal/api/util"
+	"code.superseriousbusiness.org/gotosocial/internal/api/wellknown/webfinger"
+	"code.superseriousbusiness.org/gotosocial/internal/cleaner"
+	"code.superseriousbusiness.org/gotosocial/internal/config"
+	"code.superseriousbusiness.org/gotosocial/internal/filter/interaction"
+	"code.superseriousbusiness.org/gotosocial/internal/filter/visibility"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/processing"
+	"code.superseriousbusiness.org/gotosocial/internal/subscriptions"
+	"code.superseriousbusiness.org/gotosocial/testrig"
 	"github.com/stretchr/testify/suite"
-	"github.com/superseriousbusiness/gotosocial/internal/ap"
-	apiutil "github.com/superseriousbusiness/gotosocial/internal/api/util"
-	"github.com/superseriousbusiness/gotosocial/internal/api/wellknown/webfinger"
-	"github.com/superseriousbusiness/gotosocial/internal/cleaner"
-	"github.com/superseriousbusiness/gotosocial/internal/config"
-	"github.com/superseriousbusiness/gotosocial/internal/filter/interaction"
-	"github.com/superseriousbusiness/gotosocial/internal/filter/visibility"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/processing"
-	"github.com/superseriousbusiness/gotosocial/internal/subscriptions"
-	"github.com/superseriousbusiness/gotosocial/testrig"
 )
 
 type WebfingerGetTestSuite struct {
@@ -94,7 +93,7 @@ func (suite *WebfingerGetTestSuite) funkifyAccountDomain(host string, accountDom
 		subscriptions.New(&suite.state, suite.federator.TransportController(), suite.tc),
 		suite.tc,
 		suite.federator,
-		testrig.NewTestOauthServer(suite.db),
+		testrig.NewTestOauthServer(&suite.state),
 		testrig.NewTestMediaManager(&suite.state),
 		&suite.state,
 		suite.emailSender,
@@ -124,7 +123,7 @@ func (suite *WebfingerGetTestSuite) funkifyAccountDomain(host string, accountDom
 		FollowingURI:          "http://" + host + "/users/new_account_domain_user/following",
 		FollowersURI:          "http://" + host + "/users/new_account_domain_user/followers",
 		FeaturedCollectionURI: "http://" + host + "/users/new_account_domain_user/collections/featured",
-		ActorType:             ap.ActorPerson,
+		ActorType:             gtsmodel.AccountActorTypePerson,
 		PrivateKey:            privateKey,
 		PublicKey:             publicKey,
 		PublicKeyURI:          "http://" + host + "/users/new_account_domain_user/main-key",

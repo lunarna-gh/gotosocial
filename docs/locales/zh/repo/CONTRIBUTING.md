@@ -41,11 +41,11 @@
 
 ## 错误报告与功能请求
 
-目前，我们使用 Github 的问题追踪系统来管理错误报告与功能请求。
+目前，我们使用 Codeberg 的问题追踪系统来管理错误报告与功能请求。
 
-你可以在[此处](https://github.com/superseriousbusiness/gotosocial/issues "GoToSocial 的 Github 问题页")查看所有开放的问题。
+你可以在[此处](https://codeberg.org/superseriousbusiness/gotosocial/issues "GoToSocial 的 Codeberg 问题追踪页")查看所有开放的问题。
 
-在创建新问题之前，不论是错误还是功能请求，**请现仔细搜索所有仍处于打开状态和已被关闭的问题，以确保它尚未被解决过**。你可以使用 Github 的关键字搜索来进行此操作。如果你的问题与已有问题重复，它将被关闭。
+在创建新问题之前，不论是错误还是功能请求，**请现仔细搜索所有仍处于打开状态和已被关闭的问题，以确保它尚未被解决过**。你可以使用 Codeberg 的关键字搜索来进行此操作。如果你的问题与已有问题重复，它将被关闭。
 
 在打开功能请求之前，请考虑以下几点：
 
@@ -98,7 +98,7 @@
 
 我们支持基于 [Conda](https://docs.conda.io/en/latest/) 的工作流程，用于修改、构建和发布文档。以下是你可以在本地开始编辑的步骤：
 
-* 安装 [`miniconda`](https://docs.conda.io/en/latest/miniconda.html)
+* 安装 [`miniconda`](https://www.anaconda.com/docs/getting-started/miniconda/main)
 * 创建你的 conda 环境：`conda env create -f ./docs/environment.yml`
 * 激活环境：`conda activate gotosocial-docs`
 * 在本地运行：`mkdocs serve`
@@ -121,26 +121,22 @@ conda env export -n gotosocial-docs --from-history --override-channels -c conda-
 
 ### Golang 的分支特点
 
-Golang 的一个特点是，它所依赖的源代码管理路径与 `go.mod` 中使用的路径以及各 Go 文件中的包导入路径相同。这使得使用分支有些棘手。
-
-假设你要将 GoToSocial 分支到 `github.com/yourgithubname/gotosocial`，然后将存储库克隆到 `~/go/src/github.com/yourgithubname/gotosocial`。你可能会在尝试运行测试或构建时遇到错误，因此你可能会更改 `go.mod` 文件，使模块名称为 `github.com/yourgithubname/gotosocial` 而不是 `github.com/superseriousbusiness/gotosocial`。但这样做会破坏项目中的所有导入路径。这简直是噩梦！于是，你不得不逐一在源代码文件中将 `github.com/superseriousbusiness/gotosocial` 替换为 `github.com/yourgithubname/gotosocial`。这样确实能行得通，但一旦你决定对原始存储库发起合并请求，所有路径变更都会被包含在内！哦不！
-
-正确的解决方案是先派生存储库，然后克隆上游存储库，并将上游存储库的 `origin` 设置为你分支的源。
+Golang 的一个特点是，它所依赖的源代码管理路径与 `go.mod` 中使用的路径以及各 Go 文件中的包导入路径相同。这使得使用分支版本变得有些棘手。这个问题的解决方案是先派生存储库，然后克隆上游存储库，并将上游存储库的 `origin` 设置为你派生的存储库的源。
 
 有关更多细节，请参阅[这篇博客](https://blog.sgmansfield.com/2016/06/working-with-forks-in-go/)。
 
 为防此文章消失，此处是步骤（有轻微修改）：
 
 >
-> 在 GitHub 上派生存储库或设置任何其他远程 git 存储库。在这种情况下，我会转到 GitHub 并分支存储库。
+> 在 Codeberg 上派生存储库或设置任何其他远端 git 存储库。在这种情形下，我会转到 Codeberg 并派生存储库。
 >
 > 现在克隆上游存储库（而非派生的存储库）：
 >
-> `mkdir -p ~/go/src/github.com/superseriousbusiness && git clone git@github.com:superseriousbusiness/gotosocial ~/go/src/github.com/superseriousbusiness/gotosocial`
+> `mkdir -p ~/go/src/code.superseriousbusiness.org && git clone git@codeberg.org:superseriousbusiness/gotosocial ~/go/src/code.superseriousbusiness.org/gotosocial`
 >
 > 转到你的计算机上上游存储库的顶级目录：
 >
-> `cd ~/go/src/github.com/superseriousbusiness/gotosocial`
+> `cd ~/go/src/code.superseriousbusiness.org/gotosocial`
 >
 > 将当前的 origin 远程源重命名为 upstream：
 >
@@ -148,7 +144,7 @@ Golang 的一个特点是，它所依赖的源代码管理路径与 `go.mod` 中
 >
 > 把你的派生分支添加为 origin：
 >
-> `git remote add origin git@github.com:yourgithubname/gotosocial`
+> `git remote add origin git@codeberg.org:username/gotosocial`
 >
 
 在第一次构建项目之前，一定要运行 `git fetch`。
@@ -157,9 +153,9 @@ Golang 的一个特点是，它所依赖的源代码管理路径与 `go.mod` 中
 
 #### 二进制文件
 
-要开始构建，你需要先安装 Go。GtS 目前使用 Go 1.21，因此你也应该使用这个版本。安装指南见[此处](https://golang.org/doc/install)。
+要开始构建，你首先需要安装 Go。你可以在顶层目录的 `go.mod` 文件中查看需要安装的 Go 版本，然后按照[此处](https://golang.org/doc/install)的指引进行安装。
 
-安装 go 后，将此存储库克隆到你的 Go 路径中。通常，此路径为 `~/go/src/github.com/superseriousbusiness/gotosocial`。
+安装 Go 后，将此存储库克隆到你的 Go 路径中。通常，此路径为 `~/go/src/code.superseriousbusiness.org/gotosocial`。
 
 安装完上述环境与依赖后，可以尝试构建项目：`./scripts/build.sh`。此命令将构建 `gotosocial` 二进制文件。
 
@@ -175,7 +171,7 @@ nodemon -e go --signal SIGTERM --exec "go run ./cmd/gotosocial --host localhost 
 
 #### Docker
 
-对于以下两种方法，你需要安装 [Docker buildx](https://docs.docker.com/buildx/working-with-buildx/)。
+对于以下两种方法，你需要安装 [Docker buildx](https://docs.docker.com/build/concepts/overview/#buildx)。
 
 ##### 使用 GoReleaser
 
@@ -186,8 +182,6 @@ GoReleaser 还被 GoToSocial 用于构建和推送 Docker 镜像。
 通常，这些过程由 Drone (参见 CI/CD 部分) 处理。不过，你也可以手动调用 GoReleaser 来构建快照版。
 
 为此，首先[安装 GoReleaser](https://goreleaser.com/install/)。
-
-然后按照[Swagger 部分](#更新-swagger-文档)的说明安装 GoSwagger。
 
 接着按[样式表 / Web开发](#样式表--web开发)的说明安装 Node 和 Yarn。
 
@@ -201,13 +195,15 @@ goreleaser release --clean --snapshot
 
 ##### 手动构建
 
-如果你更喜欢以简单方法构建 Docker 容器，使用更少的依赖（go-swagger, Node, Yarn），也可以这样构建：
+如果你更喜欢以简单方法构建 Docker 容器，使用更少的依赖（Node, Yarn），也可以这样构建：
 
 ```bash
 ./scripts/build.sh && docker buildx build -t superseriousbusiness/gotosocial:latest .
 ```
 
 上述命令首先构建 `gotosocial` 二进制文件，然后调用 Docker buildx 构建容器镜像。
+
+如果在构建过程中出现错误，提示 `"/web/assets/swagger.yaml": not found`，则需要（重新）生成 Swagger 文档，参见 [更新 Swagger 文档](#更新-swagger-文档)。
 
 如果想为不同 CPU 架构构建 docker 镜像而不设置 buildx（例如 ARMv7 aka 32-bit ARM），首先需要通过添加以下几行到 Dockerfile 顶部来修改 Dockerfile（但不要提交此更改！）：
 
@@ -396,13 +392,13 @@ golangci-lint run
 
 ### 测试
 
-GoToSocial 提供了一个 [testrig](https://github.com/superseriousbusiness/gotosocial/tree/main/testrig)，包含一些可以用于集成测试的模拟包。
+GoToSocial 提供了一个 [testrig](https://codeberg.org/superseriousbusiness/gotosocial/tree/main/testrig)，包含一些可以用于集成测试的模拟包。
 
 没有模拟的一个东西是数据库接口，因为使用内存中的 SQLite 数据库比模拟所有东西要简单得多。
 
 #### 独立测试环境与 Pinafore
 
-你可以启动一个在本地主机运行的独立测试服务器 testrig，可以通过 [Pinafore](https://github.com/NickColley/pinafore/) 连接。
+你可以启动一个在本地主机运行的独立测试服务器 testrig，可以通过 [Pinafore](https://github.com/nolanlawson/pinafore/) 连接。
 
 要做到这一点，首先用 `DEBUG=1 ./scripts/build.sh` 构建 gotosocial 二进制文件。
 
@@ -483,64 +479,24 @@ GTS_DB_TYPE="postgres" GTS_DB_ADDRESS="localhost" go test -p 1 ./...
 
 GoToSocial 使用 [go-swagger](https://goswagger.io) 根据代码注释生成 Swagger API 文档。
 
-你可以遵循 [此处](https://goswagger.io/install.html) 的说明安装 go-swagger。
-
-如果你更改了任何 API 路径上的 Swagger 注释，可以通过运行以下命令在 `./docs/api/swagger.yaml` 生成一个新的 Swagger 文件：
+如果你修改了任何 API 端点上的 Swagger 注释，你可以通过运行以下命令在 `./docs/api/swagger.yaml` 生成一个新的 Swagger 文件，并通过以下命令将该文件复制到 web 资源目录中：
 
 ```bash
-go run github.com/go-swagger/go-swagger/cmd/swagger generate spec --scan-models --exclude-deps --output docs/api/swagger.yaml
+go run ./vendor/github.com/go-swagger/go-swagger/cmd/swagger \
+generate spec --scan-models --exclude-deps -o docs/api/swagger.yaml \
+&& cp docs/api/swagger.yaml web/assets/swagger.yaml
 ```
+
+你无需安装 go-swagger 来运行此命令，因为 `vendor` 目录中已经包含了 go-swagger。
 
 ### CI/CD 配置
 
-GoToSocial 使用 [Drone](https://www.drone.io/) 进行 CI/CD 任务，如运行测试、代码检查和构建 Docker 容器。
+GoToSocial 使用 [Woodpecker CI](https://woodpecker-ci.org/) 进行 CI/CD 任务，如运行测试、代码检查和构建 Docker 容器。
 
-这些运行与 GitHub 集成，在打开拉取请求或合并到主干时执行。
+这些运行与 Codeberg 集成，在打开拉取请求或合并到主干时执行。
 
-GoToSocial 的 Drone 实例在 [此处](https://drone.superseriousbusiness.org/superseriousbusiness/gotosocial)。
+`woodpecker` 流水线文件在 [此处](../../../../.woodpecker) —— 它们定义了 Woodpecker 如何运行及何时运行。
 
-`drone.yml` 文件在 [此处](../../../../.drone.yml) —— 它定义了 Drone 如何运行及何时运行。Drone 的文档在 [此处](https://docs.drone.io/)。
+GoToSocial 的 Woodpecker 实例地址在 [此处](https://woodpecker.superseriousbusiness.org/repos/2).
 
-值得注意的是，`drone.yml` 文件必须由 Drone 管理员帐户签名后才被视为有效。每次修改该文件时都必须这样做。这是为了防止篡改和劫持 Drone 实例。请参阅 [此处](https://docs.drone.io/signature/)。
-
-要签署文件，请首先安装并设置 [drone cli 工具](https://docs.drone.io/cli/install/)。然后，运行：
-
-```bash
-drone -t PUT_YOUR_DRONE_ADMIN_TOKEN_HERE -s https://drone.superseriousbusiness.org sign superseriousbusiness/gotosocial --save
-```
-
-### 发布检查清单
-
-首先：如果这是一个安全修复，我们可能会加急处理此清单，并在几天后发布包含此修复的版本。
-
-现在，解决完安全问题后，此处是我们的清单。
-
-GoToSocial 遵循 [语义化版本控制](https://semver.org/)。
-因此，清单上的首要问题是：
-
-- 我们正在发布哪个版本？
-
-接下来我们需要检查：
-
-- 这些资源是否需要重新构建并提交到存储库。
-- Swagger 文档是否需要重新生成？
-
-在项目管理方面：
-
-- 是否有需要移动到其他里程碑的问题？
-- [路线图](./ROADMAP.md) 上是否有可以勾掉的事情？
-
-一旦我们对清单满意，我们就可以创建标签并推送它。
-剩下的事情 [是自动化](../../../../.drone.yml)。
-
-然后我们可以前往 GitHub，为发布说明增添个性。
-最后，我们在所有渠道上发布公告，宣布发布已完成！
-
-#### 如果出问题了怎么办？
-
-有时事情会出错。
-我们发布了有 Bug 的版本，或者忘记了什么重要的东西。
-
-如果该版本不可用，甚至对很大一部分用户而言是危险的，我们可以删除标签。
-
-无论怎样，一旦我们解决了问题，我们就重新开始这个清单。版本号并不昂贵，可以随意更改。
+Woodpecker 的文档参见 [此处](https://woodpecker-ci.org/docs/intro).

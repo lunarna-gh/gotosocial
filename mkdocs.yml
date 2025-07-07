@@ -18,7 +18,7 @@ theme:
       toggle:
         icon: material/brightness-4
         name: Switch to dark mode
-repo_url: https://github.com/superseriousbusiness/gotosocial
+repo_url: https://codeberg.org/superseriousbusiness/gotosocial
 edit_uri: edit/main/docs/
 copyright: GoToSocial is licensed under the GNU AGPL v3 LICENSE. Copyright (C) GoToSocial Authors admin@gotosocial.org
 plugins:
@@ -81,6 +81,7 @@ nav:
       - "user_guide/password_management.md"
       - "user_guide/rss.md"
       - "user_guide/migration.md"
+      - "user_guide/importing_posts.md"
   - "Getting Started":
       - "getting_started/index.md"
       - "getting_started/releases.md"
@@ -130,6 +131,7 @@ nav:
     - "advanced/tracing.md"
     - "advanced/metrics.md"
     - "advanced/replicating-sqlite.md"
+    - "advanced/scraper_deterrence.md"
     - "advanced/sqlite-networked-storage.md"
     - "Advanced builds":
       - "advanced/builds/nowasm.md"
@@ -155,6 +157,7 @@ nav:
       - "federation/ratelimiting.md"
       - "federation/actors.md"
       - "federation/posts.md"
+      - "federation/interaction_policy.md"
       - "federation/moderation.md"
       - "federation/glossary.md"
   - "Client API Docs":

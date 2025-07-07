@@ -23,8 +23,8 @@ import (
 	"testing"
 	"time"
 
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
 	"github.com/stretchr/testify/suite"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
 )
 
 type AccountDeleteTestSuite struct {
@@ -64,7 +64,7 @@ func (suite *AccountDeleteTestSuite) TestAccountDeleteLocal() {
 	suite.Nil(updatedAccount.Fields)
 	suite.Zero(updatedAccount.Note)
 	suite.Zero(updatedAccount.NoteRaw)
-	suite.False(*updatedAccount.Memorial)
+	suite.Zero(updatedAccount.MemorializedAt)
 	suite.Empty(updatedAccount.AlsoKnownAsURIs)
 	suite.False(*updatedAccount.Discoverable)
 	suite.WithinDuration(time.Now(), updatedAccount.SuspendedAt, 1*time.Minute)

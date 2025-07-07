@@ -21,8 +21,8 @@ import (
 	"context"
 	"net/url"
 
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/paging"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/paging"
 )
 
 // Domain contains DB functions related to domains and domain blocks.
@@ -31,8 +31,8 @@ type Domain interface {
 		Block/allow storage + retrieval functions.
 	*/
 
-	// CreateDomainAllow puts the given instance-level domain allow into the database.
-	CreateDomainAllow(ctx context.Context, allow *gtsmodel.DomainAllow) error
+	// PutDomainAllow puts the given instance-level domain allow into the database.
+	PutDomainAllow(ctx context.Context, allow *gtsmodel.DomainAllow) error
 
 	// GetDomainAllow returns one instance-level domain allow with the given domain, if it exists.
 	GetDomainAllow(ctx context.Context, domain string) (*gtsmodel.DomainAllow, error)
@@ -49,8 +49,8 @@ type Domain interface {
 	// DeleteDomainAllow deletes an instance-level domain allow with the given domain, if it exists.
 	DeleteDomainAllow(ctx context.Context, domain string) error
 
-	// CreateDomainBlock puts the given instance-level domain block into the database.
-	CreateDomainBlock(ctx context.Context, block *gtsmodel.DomainBlock) error
+	// PutDomainBlock puts the given instance-level domain block into the database.
+	PutDomainBlock(ctx context.Context, block *gtsmodel.DomainBlock) error
 
 	// GetDomainBlock returns one instance-level domain block with the given domain, if it exists.
 	GetDomainBlock(ctx context.Context, domain string) (*gtsmodel.DomainBlock, error)

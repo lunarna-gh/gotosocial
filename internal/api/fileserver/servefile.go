@@ -25,13 +25,12 @@ import (
 	"strings"
 	"time"
 
+	apimodel "code.superseriousbusiness.org/gotosocial/internal/api/model"
+	apiutil "code.superseriousbusiness.org/gotosocial/internal/api/util"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/log"
 	"codeberg.org/gruf/go-fastcopy"
 	"github.com/gin-gonic/gin"
-	apimodel "github.com/superseriousbusiness/gotosocial/internal/api/model"
-	apiutil "github.com/superseriousbusiness/gotosocial/internal/api/util"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/log"
-	"github.com/superseriousbusiness/gotosocial/internal/oauth"
 )
 
 // ServeFile is for serving attachments, headers, and avatars to the requester from instance storage.
@@ -39,9 +38,9 @@ import (
 // Note: to mitigate scraping attempts, no information should be given out on a bad request except "404 page not found".
 // Don't give away account ids or media ids or anything like that; callers shouldn't be able to infer anything.
 func (m *Module) ServeFile(c *gin.Context) {
-	authed, err := oauth.Authed(c, false, false, false, false)
-	if err != nil {
-		apiutil.ErrorHandler(c, gtserror.NewErrorNotFound(err), m.processor.InstanceGetV1)
+	authed, errWithCode := apiutil.TokenAuth(c, false, false, false, false)
+	if errWithCode != nil {
+		apiutil.ErrorHandler(c, errWithCode, m.processor.InstanceGetV1)
 		return
 	}
 

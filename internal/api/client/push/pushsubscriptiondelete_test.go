@@ -22,10 +22,10 @@ import (
 	"net/http"
 	"net/http/httptest"
 
-	"github.com/superseriousbusiness/gotosocial/internal/api/client/push"
-	"github.com/superseriousbusiness/gotosocial/internal/config"
-	"github.com/superseriousbusiness/gotosocial/internal/oauth"
-	"github.com/superseriousbusiness/gotosocial/testrig"
+	"code.superseriousbusiness.org/gotosocial/internal/api/client/push"
+	"code.superseriousbusiness.org/gotosocial/internal/config"
+	"code.superseriousbusiness.org/gotosocial/internal/oauth"
+	"code.superseriousbusiness.org/gotosocial/testrig"
 )
 
 // deleteSubscription deletes the push subscription for the named account and token.
@@ -76,7 +76,7 @@ func (suite *PushTestSuite) TestDeleteSubscription() {
 func (suite *PushTestSuite) TestDeleteMissingSubscription() {
 	accountFixtureName := "local_account_1"
 	// This token should not have a subscription.
-	tokenFixtureName := "local_account_1_user_authorization_token"
+	tokenFixtureName := "local_account_1_push_only"
 
 	err := suite.deleteSubscription(accountFixtureName, tokenFixtureName, 200)
 	suite.NoError(err)

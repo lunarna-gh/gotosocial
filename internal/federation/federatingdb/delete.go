@@ -22,12 +22,12 @@ import (
 	"errors"
 	"net/url"
 
-	"github.com/superseriousbusiness/gotosocial/internal/ap"
-	"github.com/superseriousbusiness/gotosocial/internal/db"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/log"
-	"github.com/superseriousbusiness/gotosocial/internal/messages"
+	"code.superseriousbusiness.org/gotosocial/internal/ap"
+	"code.superseriousbusiness.org/gotosocial/internal/db"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/log"
+	"code.superseriousbusiness.org/gotosocial/internal/messages"
 )
 
 // Delete removes the entry with the given id.
@@ -36,7 +36,7 @@ import (
 // Protocol instead call Update to create a Tombstone.
 //
 // The library makes this call only after acquiring a lock first.
-func (f *federatingDB) Delete(ctx context.Context, id *url.URL) error {
+func (f *DB) Delete(ctx context.Context, id *url.URL) error {
 	log.DebugKV(ctx, "id", id)
 
 	activityContext := getActivityContext(ctx)
@@ -87,7 +87,7 @@ func (f *federatingDB) Delete(ctx context.Context, id *url.URL) error {
 	return nil
 }
 
-func (f *federatingDB) deleteAccount(
+func (f *DB) deleteAccount(
 	ctx context.Context,
 	requesting *gtsmodel.Account,
 	receiving *gtsmodel.Account,
@@ -126,7 +126,7 @@ func (f *federatingDB) deleteAccount(
 	return false, nil
 }
 
-func (f *federatingDB) deleteStatus(
+func (f *DB) deleteStatus(
 	ctx context.Context,
 	requesting *gtsmodel.Account,
 	receiving *gtsmodel.Account,

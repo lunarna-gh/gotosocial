@@ -19,18 +19,22 @@ package status
 
 import (
 	"context"
+	"errors"
 	"time"
 
-	"github.com/superseriousbusiness/gotosocial/internal/ap"
-	apimodel "github.com/superseriousbusiness/gotosocial/internal/api/model"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/id"
-	"github.com/superseriousbusiness/gotosocial/internal/log"
-	"github.com/superseriousbusiness/gotosocial/internal/messages"
-	"github.com/superseriousbusiness/gotosocial/internal/typeutils"
-	"github.com/superseriousbusiness/gotosocial/internal/uris"
-	"github.com/superseriousbusiness/gotosocial/internal/util"
+	"code.superseriousbusiness.org/gotosocial/internal/ap"
+	apimodel "code.superseriousbusiness.org/gotosocial/internal/api/model"
+	"code.superseriousbusiness.org/gotosocial/internal/config"
+	"code.superseriousbusiness.org/gotosocial/internal/db"
+	"code.superseriousbusiness.org/gotosocial/internal/gtscontext"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/id"
+	"code.superseriousbusiness.org/gotosocial/internal/log"
+	"code.superseriousbusiness.org/gotosocial/internal/messages"
+	"code.superseriousbusiness.org/gotosocial/internal/typeutils"
+	"code.superseriousbusiness.org/gotosocial/internal/uris"
+	"code.superseriousbusiness.org/gotosocial/internal/util"
 )
 
 // Create processes the given form to create a new status, returning the api model representation of that status if it's OK.
@@ -62,11 +66,14 @@ func (p *Processor) Create(
 	// Generate new ID for status.
 	statusID := id.NewULID()
 
+	// Process incoming content type.
+	contentType := processContentType(form.ContentType, nil, requester.Settings.StatusContentType)
+
 	// Process incoming status content fields.
 	content, errWithCode := p.processContent(ctx,
 		requester,
 		statusID,
-		string(form.ContentType),
+		contentType,
 		form.Status,
 		form.SpoilerText,
 		form.Language,
@@ -92,11 +99,58 @@ func (p *Processor) Create(
 	// Get current time.
 	now := time.Now()
 
+	// Default to current
+	// time as creation time.
+	createdAt := now
+
+	// Handle backfilled/scheduled statuses.
+	backfill := false
+	if form.ScheduledAt != nil {
+		scheduledAt := *form.ScheduledAt
+
+		// Statuses may only be scheduled
+		// a minimum time into the future.
+		if now.Before(scheduledAt) {
+			const errText = "scheduled statuses are not yet supported"
+			return nil, gtserror.NewErrorNotImplemented(gtserror.New(errText), errText)
+		}
+
+		// If not scheduled into the future, this status is being backfilled.
+		if !config.GetInstanceAllowBackdatingStatuses() {
+			const errText = "backdating statuses has been disabled on this instance"
+			return nil, gtserror.NewErrorForbidden(gtserror.New(errText), errText)
+		}
+
+		// Statuses can't be backdated to or before the UNIX epoch
+		// since this would prevent generating a ULID.
+		// If backdated even further to the Go epoch,
+		// this would also cause issues with time.Time.IsZero() checks
+		// that normally signify an absent optional time,
+		// but this check covers both cases.
+		if scheduledAt.Compare(time.UnixMilli(0)) <= 0 {
+			const errText = "statuses can't be backdated to or before the UNIX epoch"
+			return nil, gtserror.NewErrorNotAcceptable(gtserror.New(errText), errText)
+		}
+
+		var err error
+
+		// This is a backfill.
+		backfill = true
+
+		// Update to backfill date.
+		createdAt = scheduledAt
+
+		// Generate an appropriate, (and unique!), ID for the creation time.
+		if statusID, err = p.backfilledStatusID(ctx, createdAt); err != nil {
+			return nil, gtserror.NewErrorInternalError(err)
+		}
+	}
+
 	status := &gtsmodel.Status{
 		ID:                       statusID,
 		URI:                      accountURIs.StatusesURI + "/" + statusID,
 		URL:                      accountURIs.StatusesURL + "/" + statusID,
-		CreatedAt:                now,
+		CreatedAt:                createdAt,
 		Local:                    util.Ptr(true),
 		Account:                  requester,
 		AccountID:                requester.ID,
@@ -112,6 +166,7 @@ func (p *Processor) Create(
 		Content:        content.Content,
 		ContentWarning: content.ContentWarning,
 		Text:           form.Status, // raw
+		ContentType:    contentType,
 
 		// Set gathered mentions.
 		MentionIDs: content.MentionIDs,
@@ -134,11 +189,30 @@ func (p *Processor) Create(
 		PendingApproval: util.Ptr(false),
 	}
 
+	// Only store ContentWarningText if the parsed
+	// result is different from the given SpoilerText,
+	// otherwise skip to avoid duplicating db columns.
+	if content.ContentWarning != form.SpoilerText {
+		status.ContentWarningText = form.SpoilerText
+	}
+
+	if backfill {
+		// Ensure backfilled status contains no
+		// mentions to anyone other than author.
+		for _, mention := range status.Mentions {
+			if mention.TargetAccountID != requester.ID {
+				const errText = "statuses mentioning others can't be backfilled"
+				return nil, gtserror.NewErrorForbidden(gtserror.New(errText), errText)
+			}
+		}
+	}
+
 	// Check + attach in-reply-to status.
 	if errWithCode := p.processInReplyTo(ctx,
 		requester,
 		status,
 		form.InReplyToID,
+		backfill,
 	); errWithCode != nil {
 		return nil, errWithCode
 	}
@@ -147,9 +221,8 @@ func (p *Processor) Create(
 		return nil, errWithCode
 	}
 
-	if err := p.processVisibility(ctx, form, requester.Settings.Privacy, status); err != nil {
-		return nil, gtserror.NewErrorInternalError(err)
-	}
+	// Process the incoming created status visibility.
+	processVisibility(form, requester.Settings.Privacy, status)
 
 	// Process policy AFTER visibility as it relies
 	// on status.Visibility and form.Visibility being set.
@@ -165,11 +238,16 @@ func (p *Processor) Create(
 	}
 
 	if form.Poll != nil {
+		if backfill {
+			const errText = "statuses with polls can't be backfilled"
+			return nil, gtserror.NewErrorForbidden(gtserror.New(errText), errText)
+		}
+
 		// Process poll, inserting into database.
 		poll, errWithCode := p.processPoll(ctx,
 			statusID,
 			form.Poll,
-			now,
+			createdAt,
 		)
 		if errWithCode != nil {
 			return nil, errWithCode
@@ -199,11 +277,18 @@ func (p *Processor) Create(
 		}
 	}
 
+	var model any = status
+	if backfill {
+		// We specifically wrap backfilled statuses in
+		// a different type to signal to worker process.
+		model = &gtsmodel.BackfillStatus{Status: status}
+	}
+
 	// Send it to the client API worker for async side-effects.
 	p.state.Workers.Client.Queue.Push(&messages.FromClientAPI{
 		APObjectType:   ap.ObjectNote,
 		APActivityType: ap.ActivityCreate,
-		GTSModel:       status,
+		GTSModel:       model,
 		Origin:         requester,
 	})
 
@@ -227,7 +312,49 @@ func (p *Processor) Create(
 	return p.c.GetAPIStatus(ctx, requester, status)
 }
 
-func (p *Processor) processInReplyTo(ctx context.Context, requester *gtsmodel.Account, status *gtsmodel.Status, inReplyToID string) gtserror.WithCode {
+// backfilledStatusID tries to find an unused ULID for a backfilled status.
+func (p *Processor) backfilledStatusID(ctx context.Context, createdAt time.Time) (string, error) {
+
+	// Any fetching of statuses here is
+	// only to check availability of ID,
+	// no need for any attached models.
+	ctx = gtscontext.SetBarebones(ctx)
+
+	// backfilledStatusIDRetries should
+	// be more than enough attempts.
+	const backfilledStatusIDRetries = 100
+	for try := 0; try < backfilledStatusIDRetries; try++ {
+		var err error
+
+		// Generate a ULID based on the backfilled
+		// status's original creation time.
+		statusID := id.NewULIDFromTime(createdAt)
+
+		// Check for an existing status with that ID.
+		status, err := p.state.DB.GetStatusByID(ctx, statusID)
+		if err != nil && !errors.Is(err, db.ErrNoEntries) {
+			return "", gtserror.Newf("DB error checking if a status ID was in use: %w", err)
+		}
+
+		if status == nil {
+			// We found a free ID!
+			return statusID, nil
+		}
+
+		// That status ID is
+		// in use. Try again.
+	}
+
+	return "", gtserror.Newf("failed to find an unused ID after %d tries", backfilledStatusIDRetries)
+}
+
+func (p *Processor) processInReplyTo(
+	ctx context.Context,
+	requester *gtsmodel.Account,
+	status *gtsmodel.Status,
+	inReplyToID string,
+	backfill bool,
+) gtserror.WithCode {
 	if inReplyToID == "" {
 		// Not a reply.
 		// Nothing to do.
@@ -269,10 +396,17 @@ func (p *Processor) processInReplyTo(ctx context.Context, requester *gtsmodel.Ac
 		return gtserror.NewErrorForbidden(err, errText)
 	}
 
+	// When backfilling, only self-replies are allowed.
+	if backfill && requester.ID != inReplyTo.AccountID {
+		const errText = "replies to others can't be backfilled"
+		err := gtserror.New(errText)
+		return gtserror.NewErrorForbidden(err, errText)
+	}
+
 	// Derive pendingApproval status.
 	var pendingApproval bool
 	switch {
-	case policyResult.WithApproval():
+	case policyResult.ManualApproval():
 		// We're allowed to do
 		// this pending approval.
 		pendingApproval = true
@@ -293,7 +427,7 @@ func (p *Processor) processInReplyTo(ctx context.Context, requester *gtsmodel.Ac
 			status.PreApproved = true
 		}
 
-	case policyResult.Permitted():
+	case policyResult.AutomaticApproval():
 		// We're permitted to do this
 		// based on another kind of match.
 		pendingApproval = false
@@ -350,12 +484,11 @@ func (p *Processor) processThreadID(ctx context.Context, status *gtsmodel.Status
 	return nil
 }
 
-func (p *Processor) processVisibility(
-	ctx context.Context,
+func processVisibility(
 	form *apimodel.StatusCreateRequest,
 	accountDefaultVis gtsmodel.Visibility,
 	status *gtsmodel.Status,
-) error {
+) {
 	switch {
 	// Visibility set on form, use that.
 	case form.Visibility != "":
@@ -365,21 +498,19 @@ func (p *Processor) processVisibility(
 	// this back on the form for later use.
 	case accountDefaultVis != 0:
 		status.Visibility = accountDefaultVis
-		form.Visibility = p.converter.VisToAPIVis(ctx, accountDefaultVis)
+		form.Visibility = typeutils.VisToAPIVis(accountDefaultVis)
 
 	// What? Fall back to global default, set
 	// this back on the form for later use.
 	default:
 		status.Visibility = gtsmodel.VisibilityDefault
-		form.Visibility = p.converter.VisToAPIVis(ctx, gtsmodel.VisibilityDefault)
+		form.Visibility = typeutils.VisToAPIVis(gtsmodel.VisibilityDefault)
 	}
 
 	// Set federated according to "local_only" field,
 	// assuming federated (ie., not local-only) by default.
 	localOnly := util.PtrOrValue(form.LocalOnly, false)
 	status.Federated = util.Ptr(!localOnly)
-
-	return nil
 }
 
 func processInteractionPolicy(

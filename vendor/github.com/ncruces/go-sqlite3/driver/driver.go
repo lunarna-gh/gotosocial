@@ -20,22 +20,45 @@
 //   - a [serializable] transaction is always "immediate";
 //   - a [read-only] transaction is always "deferred".
 //
+// # Datatypes In SQLite
+//
+// SQLite is dynamically typed.
+// Columns can mostly hold any value regardless of their declared type.
+// SQLite supports most [driver.Value] types out of the box,
+// but bool and [time.Time] require special care.
+//
+// Booleans can be stored on any column type and scanned back to a *bool.
+// However, if scanned to a *any, booleans may either become an
+// int64, string or bool, depending on the declared type of the column.
+// If you use BOOLEAN for your column type,
+// 1 and 0 will always scan as true and false.
+//
 // # Working with time
 //
+// Time values can similarly be stored on any column type.
 // The time encoding/decoding format can be specified using "_timefmt":
 //
 //	sql.Open("sqlite3", "file:demo.db?_timefmt=sqlite")
 //
-// Possible values are: "auto" (the default), "sqlite", "rfc3339";
+// Special values are: "auto" (the default), "sqlite", "rfc3339";
 //   - "auto" encodes as RFC 3339 and decodes any [format] supported by SQLite;
 //   - "sqlite" encodes as SQLite and decodes any [format] supported by SQLite;
 //   - "rfc3339" encodes and decodes RFC 3339 only.
 //
-// If you encode as RFC 3339 (the default),
-// consider using the TIME [collating sequence] to produce a time-ordered sequence.
+// You can also set "_timefmt" to an arbitrary [sqlite3.TimeFormat] or [time.Layout].
 //
-// To scan values in other formats, [sqlite3.TimeFormat.Scanner] may be helpful.
-// To bind values in other formats, [sqlite3.TimeFormat.Encode] them before binding.
+// If you encode as RFC 3339 (the default),
+// consider using the TIME [collating sequence] to produce time-ordered sequences.
+//
+// If you encode as RFC 3339 (the default),
+// time values will scan back to a *time.Time unless your column type is TEXT.
+// Otherwise, if scanned to a *any, time values may either become an
+// int64, float64 or string, depending on the time format and declared type of the column.
+// If you use DATE, TIME, DATETIME, or TIMESTAMP for your column type,
+// "_timefmt" will be used to decode values.
+//
+// To scan values in custom formats, [sqlite3.TimeFormat.Scanner] may be helpful.
+// To bind values in custom formats, [sqlite3.TimeFormat.Encode] them before binding.
 //
 // When using a custom time struct, you'll have to implement
 // [database/sql/driver.Valuer] and [database/sql.Scanner].
@@ -48,7 +71,7 @@
 // The Scan method needs to take into account that the value it receives can be of differing types.
 // It can already be a [time.Time], if the driver decoded the value according to "_timefmt" rules.
 // Or it can be a: string, int64, float64, []byte, or nil,
-// depending on the column type and what whoever wrote the value.
+// depending on the column type and whoever wrote the value.
 // [sqlite3.TimeFormat.Decode] may help.
 //
 // # Setting PRAGMAs
@@ -201,7 +224,7 @@ func (n *connector) Driver() driver.Driver {
 	return &SQLite{}
 }
 
-func (n *connector) Connect(ctx context.Context) (res driver.Conn, err error) {
+func (n *connector) Connect(ctx context.Context) (ret driver.Conn, err error) {
 	c := &conn{
 		txLock:  n.txLock,
 		tmRead:  n.tmRead,
@@ -213,13 +236,14 @@ func (n *connector) Connect(ctx context.Context) (res driver.Conn, err error) {
 		return nil, err
 	}
 	defer func() {
-		if res == nil {
+		if ret == nil {
 			c.Close()
 		}
 	}()
 
-	old := c.Conn.SetInterrupt(ctx)
-	defer c.Conn.SetInterrupt(old)
+	if old := c.Conn.SetInterrupt(ctx); old != ctx {
+		defer c.Conn.SetInterrupt(old)
+	}
 
 	if !n.pragmas {
 		err = c.Conn.BusyTimeout(time.Minute)
@@ -339,8 +363,9 @@ func (c *conn) BeginTx(ctx context.Context, opts driver.TxOptions) (driver.Tx, e
 		c.txReset = `; PRAGMA query_only=` + string(c.readOnly)
 	}
 
-	old := c.Conn.SetInterrupt(ctx)
-	defer c.Conn.SetInterrupt(old)
+	if old := c.Conn.SetInterrupt(ctx); old != ctx {
+		defer c.Conn.SetInterrupt(old)
+	}
 
 	err := c.Conn.Exec(txBegin)
 	if err != nil {
@@ -358,13 +383,12 @@ func (c *conn) Commit() error {
 }
 
 func (c *conn) Rollback() error {
-	err := c.Conn.Exec(`ROLLBACK` + c.txReset)
-	if errors.Is(err, sqlite3.INTERRUPT) {
-		old := c.Conn.SetInterrupt(context.Background())
+	// ROLLBACK even if interrupted.
+	ctx := context.Background()
+	if old := c.Conn.SetInterrupt(ctx); old != ctx {
 		defer c.Conn.SetInterrupt(old)
-		err = c.Conn.Exec(`ROLLBACK` + c.txReset)
 	}
-	return err
+	return c.Conn.Exec(`ROLLBACK` + c.txReset)
 }
 
 func (c *conn) Prepare(query string) (driver.Stmt, error) {
@@ -373,8 +397,9 @@ func (c *conn) Prepare(query string) (driver.Stmt, error) {
 }
 
 func (c *conn) PrepareContext(ctx context.Context, query string) (driver.Stmt, error) {
-	old := c.Conn.SetInterrupt(ctx)
-	defer c.Conn.SetInterrupt(old)
+	if old := c.Conn.SetInterrupt(ctx); old != ctx {
+		defer c.Conn.SetInterrupt(old)
+	}
 
 	s, tail, err := c.Conn.Prepare(query)
 	if err != nil {
@@ -399,8 +424,9 @@ func (c *conn) ExecContext(ctx context.Context, query string, args []driver.Name
 		return resultRowsAffected(0), nil
 	}
 
-	old := c.Conn.SetInterrupt(ctx)
-	defer c.Conn.SetInterrupt(old)
+	if old := c.Conn.SetInterrupt(ctx); old != ctx {
+		defer c.Conn.SetInterrupt(old)
+	}
 
 	err := c.Conn.Exec(query)
 	if err != nil {
@@ -463,16 +489,19 @@ func (s *stmt) ExecContext(ctx context.Context, args []driver.NamedValue) (drive
 		return nil, err
 	}
 
-	old := s.Stmt.Conn().SetInterrupt(ctx)
-	defer s.Stmt.Conn().SetInterrupt(old)
+	c := s.Stmt.Conn()
+	if old := c.SetInterrupt(ctx); old != ctx {
+		defer c.SetInterrupt(old)
+	}
 
-	err = s.Stmt.Exec()
-	s.Stmt.ClearBindings()
+	err = errors.Join(
+		s.Stmt.Exec(),
+		s.Stmt.ClearBindings())
 	if err != nil {
 		return nil, err
 	}
 
-	return newResult(s.Stmt.Conn()), nil
+	return newResult(c), nil
 }
 
 func (s *stmt) QueryContext(ctx context.Context, args []driver.NamedValue) (driver.Rows, error) {
@@ -597,6 +626,28 @@ const (
 	_TIME
 )
 
+func scanFromDecl(decl string) scantype {
+	// These types are only used before we have rows,
+	// and otherwise as type hints.
+	// The first few ensure STRICT tables are strictly typed.
+	// The other two are type hints for booleans and time.
+	switch decl {
+	case "INT", "INTEGER":
+		return _INT
+	case "REAL":
+		return _REAL
+	case "TEXT":
+		return _TEXT
+	case "BLOB":
+		return _BLOB
+	case "BOOLEAN":
+		return _BOOL
+	case "DATE", "TIME", "DATETIME", "TIMESTAMP":
+		return _TIME
+	}
+	return _ANY
+}
+
 var (
 	// Ensure these interfaces are implemented:
 	_ driver.RowsColumnTypeDatabaseTypeName = &rows{}
@@ -604,8 +655,9 @@ var (
 )
 
 func (r *rows) Close() error {
-	r.Stmt.ClearBindings()
-	return r.Stmt.Reset()
+	return errors.Join(
+		r.Stmt.Reset(),
+		r.Stmt.ClearBindings())
 }
 
 func (r *rows) Columns() []string {
@@ -620,37 +672,33 @@ func (r *rows) Columns() []string {
 	return r.names
 }
 
+func (r *rows) scanType(index int) scantype {
+	if r.scans == nil {
+		count := r.Stmt.ColumnCount()
+		scans := make([]scantype, count)
+		for i := range scans {
+			scans[i] = scanFromDecl(strings.ToUpper(r.Stmt.ColumnDeclType(i)))
+		}
+		r.scans = scans
+	}
+	return r.scans[index]
+}
+
 func (r *rows) loadColumnMetadata() {
 	if r.nulls == nil {
+		c := r.Stmt.Conn()
 		count := r.Stmt.ColumnCount()
 		nulls := make([]bool, count)
 		types := make([]string, count)
 		scans := make([]scantype, count)
 		for i := range nulls {
 			if col := r.Stmt.ColumnOriginName(i); col != "" {
-				types[i], _, nulls[i], _, _, _ = r.Stmt.Conn().TableColumnMetadata(
+				types[i], _, nulls[i], _, _, _ = c.TableColumnMetadata(
 					r.Stmt.ColumnDatabaseName(i),
 					r.Stmt.ColumnTableName(i),
 					col)
 				types[i] = strings.ToUpper(types[i])
-				// These types are only used before we have rows,
-				// and otherwise as type hints.
-				// The first few ensure STRICT tables are strictly typed.
-				// The other two are type hints for booleans and time.
-				switch types[i] {
-				case "INT", "INTEGER":
-					scans[i] = _INT
-				case "REAL":
-					scans[i] = _REAL
-				case "TEXT":
-					scans[i] = _TEXT
-				case "BLOB":
-					scans[i] = _BLOB
-				case "BOOLEAN":
-					scans[i] = _BOOL
-				case "DATE", "TIME", "DATETIME", "TIMESTAMP":
-					scans[i] = _TIME
-				}
+				scans[i] = scanFromDecl(types[i])
 			}
 		}
 		r.nulls = nulls
@@ -659,27 +707,15 @@ func (r *rows) loadColumnMetadata() {
 	}
 }
 
-func (r *rows) declType(index int) string {
-	if r.types == nil {
-		count := r.Stmt.ColumnCount()
-		types := make([]string, count)
-		for i := range types {
-			types[i] = strings.ToUpper(r.Stmt.ColumnDeclType(i))
-		}
-		r.types = types
-	}
-	return r.types[index]
-}
-
 func (r *rows) ColumnTypeDatabaseTypeName(index int) string {
 	r.loadColumnMetadata()
-	decltype := r.types[index]
-	if len := len(decltype); len > 0 && decltype[len-1] == ')' {
-		if i := strings.LastIndexByte(decltype, '('); i >= 0 {
-			decltype = decltype[:i]
+	decl := r.types[index]
+	if len := len(decl); len > 0 && decl[len-1] == ')' {
+		if i := strings.LastIndexByte(decl, '('); i >= 0 {
+			decl = decl[:i]
 		}
 	}
-	return strings.TrimSpace(decltype)
+	return strings.TrimSpace(decl)
 }
 
 func (r *rows) ColumnTypeNullable(index int) (nullable, ok bool) {
@@ -718,25 +754,27 @@ func (r *rows) ColumnTypeScanType(index int) (typ reflect.Type) {
 
 	switch scan {
 	case _INT:
-		return reflect.TypeOf(int64(0))
+		return reflect.TypeFor[int64]()
 	case _REAL:
-		return reflect.TypeOf(float64(0))
+		return reflect.TypeFor[float64]()
 	case _TEXT:
-		return reflect.TypeOf("")
+		return reflect.TypeFor[string]()
 	case _BLOB:
-		return reflect.TypeOf([]byte{})
+		return reflect.TypeFor[[]byte]()
 	case _BOOL:
-		return reflect.TypeOf(false)
+		return reflect.TypeFor[bool]()
 	case _TIME:
-		return reflect.TypeOf(time.Time{})
+		return reflect.TypeFor[time.Time]()
 	default:
-		return reflect.TypeOf((*any)(nil)).Elem()
+		return reflect.TypeFor[any]()
 	}
 }
 
 func (r *rows) Next(dest []driver.Value) error {
-	old := r.Stmt.Conn().SetInterrupt(r.ctx)
-	defer r.Stmt.Conn().SetInterrupt(old)
+	c := r.Stmt.Conn()
+	if old := c.SetInterrupt(r.ctx); old != r.ctx {
+		defer c.SetInterrupt(old)
+	}
 
 	if !r.Stmt.Step() {
 		if err := r.Stmt.Err(); err != nil {
@@ -746,36 +784,49 @@ func (r *rows) Next(dest []driver.Value) error {
 	}
 
 	data := unsafe.Slice((*any)(unsafe.SliceData(dest)), len(dest))
-	err := r.Stmt.Columns(data...)
+	if err := r.Stmt.ColumnsRaw(data...); err != nil {
+		return err
+	}
 	for i := range dest {
-		if t, ok := r.decodeTime(i, dest[i]); ok {
-			dest[i] = t
-		}
-	}
-	return err
-}
-
-func (r *rows) decodeTime(i int, v any) (_ time.Time, ok bool) {
-	switch v := v.(type) {
-	case int64, float64:
-		// could be a time value
-	case string:
-		if r.tmWrite != "" && r.tmWrite != time.RFC3339 && r.tmWrite != time.RFC3339Nano {
+		scan := r.scanType(i)
+		switch v := dest[i].(type) {
+		case int64:
+			if scan == _BOOL {
+				switch v {
+				case 1:
+					dest[i] = true
+				case 0:
+					dest[i] = false
+				}
+				continue
+			}
+		case []byte:
+			if len(v) == cap(v) { // a BLOB
+				continue
+			}
+			if scan != _TEXT {
+				switch r.tmWrite {
+				case "", time.RFC3339, time.RFC3339Nano:
+					t, ok := maybeTime(v)
+					if ok {
+						dest[i] = t
+						continue
+					}
+				}
+			}
+			dest[i] = string(v)
+		case float64:
 			break
+		default:
+			continue
 		}
-		t, ok := maybeTime(v)
-		if ok {
-			return t, true
+		if scan == _TIME {
+			t, err := r.tmRead.Decode(dest[i])
+			if err == nil {
+				dest[i] = t
+				continue
+			}
 		}
-	default:
-		return
 	}
-	switch r.declType(i) {
-	case "DATE", "TIME", "DATETIME", "TIMESTAMP":
-		// could be a time value
-	default:
-		return
-	}
-	t, err := r.tmRead.Decode(v)
-	return t, err == nil
+	return nil
 }

@@ -30,17 +30,16 @@ import (
 	"strings"
 	"testing"
 
+	"code.superseriousbusiness.org/gotosocial/internal/api/client/search"
+	apimodel "code.superseriousbusiness.org/gotosocial/internal/api/model"
+	apiutil "code.superseriousbusiness.org/gotosocial/internal/api/util"
+	"code.superseriousbusiness.org/gotosocial/internal/config"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/id"
+	"code.superseriousbusiness.org/gotosocial/internal/oauth"
+	"code.superseriousbusiness.org/gotosocial/testrig"
 	"github.com/stretchr/testify/suite"
-	"github.com/superseriousbusiness/gotosocial/internal/ap"
-	"github.com/superseriousbusiness/gotosocial/internal/api/client/search"
-	apimodel "github.com/superseriousbusiness/gotosocial/internal/api/model"
-	apiutil "github.com/superseriousbusiness/gotosocial/internal/api/util"
-	"github.com/superseriousbusiness/gotosocial/internal/config"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/id"
-	"github.com/superseriousbusiness/gotosocial/internal/oauth"
-	"github.com/superseriousbusiness/gotosocial/testrig"
 )
 
 type SearchGetTestSuite struct {
@@ -915,8 +914,8 @@ func (suite *SearchGetTestSuite) TestSearchAAny() {
 		suite.FailNow(err.Error())
 	}
 
-	suite.Len(searchResult.Accounts, 5)
-	suite.Len(searchResult.Statuses, 8)
+	suite.Len(searchResult.Accounts, 6)
+	suite.Len(searchResult.Statuses, 9)
 	suite.Len(searchResult.Hashtags, 0)
 }
 
@@ -959,7 +958,7 @@ func (suite *SearchGetTestSuite) TestSearchAAnyFollowingOnly() {
 	}
 
 	suite.Len(searchResult.Accounts, 2)
-	suite.Len(searchResult.Statuses, 8)
+	suite.Len(searchResult.Statuses, 9)
 	suite.Len(searchResult.Hashtags, 0)
 }
 
@@ -1002,7 +1001,7 @@ func (suite *SearchGetTestSuite) TestSearchAStatuses() {
 	}
 
 	suite.Len(searchResult.Accounts, 0)
-	suite.Len(searchResult.Statuses, 8)
+	suite.Len(searchResult.Statuses, 9)
 	suite.Len(searchResult.Hashtags, 0)
 }
 
@@ -1130,7 +1129,7 @@ func (suite *SearchGetTestSuite) TestSearchAAccounts() {
 		suite.FailNow(err.Error())
 	}
 
-	suite.Len(searchResult.Accounts, 5)
+	suite.Len(searchResult.Accounts, 6)
 	suite.Len(searchResult.Statuses, 0)
 	suite.Len(searchResult.Hashtags, 0)
 }
@@ -1402,7 +1401,7 @@ func (suite *SearchGetTestSuite) TestSearchRemoteInstanceAccountPartial() {
 		FollowersURI:          "http://" + theirDomain + "/users/" + theirDomain + "/followers",
 		FollowingURI:          "http://" + theirDomain + "/users/" + theirDomain + "/following",
 		FeaturedCollectionURI: "http://" + theirDomain + "/users/" + theirDomain + "/collections/featured",
-		ActorType:             ap.ActorPerson,
+		ActorType:             gtsmodel.AccountActorTypePerson,
 		PrivateKey:            key,
 		PublicKey:             &key.PublicKey,
 	}); err != nil {

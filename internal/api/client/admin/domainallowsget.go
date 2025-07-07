@@ -18,8 +18,8 @@
 package admin
 
 import (
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
 	"github.com/gin-gonic/gin"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
 )
 
 // DomainAllowsGETHandler swagger:operation GET /api/v1/admin/domain_allows domainAllowsGet
@@ -47,7 +47,7 @@ import (
 //
 //	security:
 //	- OAuth2 Bearer:
-//		- admin
+//		- admin:read:domain_allows
 //
 //	responses:
 //		'200':

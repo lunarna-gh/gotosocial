@@ -22,12 +22,11 @@ import (
 	"fmt"
 	"net/http"
 
+	apimodel "code.superseriousbusiness.org/gotosocial/internal/api/model"
+	apiutil "code.superseriousbusiness.org/gotosocial/internal/api/util"
+	"code.superseriousbusiness.org/gotosocial/internal/config"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
 	"github.com/gin-gonic/gin"
-	apimodel "github.com/superseriousbusiness/gotosocial/internal/api/model"
-	apiutil "github.com/superseriousbusiness/gotosocial/internal/api/util"
-	"github.com/superseriousbusiness/gotosocial/internal/config"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/oauth"
 )
 
 // MediaCreatePOSTHandler swagger:operation POST /api/{api_version}/media mediaCreate
@@ -93,18 +92,22 @@ import (
 //		'500':
 //			description: internal server error
 func (m *Module) MediaCreatePOSTHandler(c *gin.Context) {
-	apiVersion, errWithCode := apiutil.ParseAPIVersion(
+	_, errWithCode := apiutil.ParseAPIVersion(
 		c.Param(apiutil.APIVersionKey),
-		[]string{apiutil.APIv1, apiutil.APIv2}...,
+		apiutil.APIv1,
+		apiutil.APIv2,
 	)
 	if errWithCode != nil {
 		apiutil.ErrorHandler(c, errWithCode, m.processor.InstanceGetV1)
 		return
 	}
 
-	authed, err := oauth.Authed(c, true, true, true, true)
-	if err != nil {
-		apiutil.ErrorHandler(c, gtserror.NewErrorUnauthorized(err, err.Error()), m.processor.InstanceGetV1)
+	authed, errWithCode := apiutil.TokenAuth(c,
+		true, true, true, true,
+		apiutil.ScopeWriteMedia,
+	)
+	if errWithCode != nil {
+		apiutil.ErrorHandler(c, errWithCode, m.processor.InstanceGetV1)
 		return
 	}
 
@@ -135,14 +138,13 @@ func (m *Module) MediaCreatePOSTHandler(c *gin.Context) {
 		return
 	}
 
-	if apiVersion == apiutil.APIv2 {
-		// the mastodon v2 media API specifies that the URL should be null
-		// and that the client should call /api/v1/media/:id to get the URL
-		//
-		// so even though we have the URL already, remove it now to comply
-		// with the api
-		apiAttachment.URL = nil
-	}
+	// The v2 mastodon endpoint always returns TextURL,
+	// but in the case that a 202 Accepted (i.e. processing
+	// still in progress) is returned then the URL will be
+	// nil. Since we only ever return a 200 OK, we behave
+	// exactly the same as the v1 endpoint.
+	//
+	// https://docs.joinmastodon.org/methods/media/#v2
 
 	apiutil.JSON(c, http.StatusOK, apiAttachment)
 }

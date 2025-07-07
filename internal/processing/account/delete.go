@@ -23,16 +23,16 @@ import (
 	"net"
 	"time"
 
+	"code.superseriousbusiness.org/gotosocial/internal/ap"
+	"code.superseriousbusiness.org/gotosocial/internal/db"
+	"code.superseriousbusiness.org/gotosocial/internal/gtscontext"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/log"
+	"code.superseriousbusiness.org/gotosocial/internal/messages"
+	"code.superseriousbusiness.org/gotosocial/internal/util"
 	"codeberg.org/gruf/go-kv"
 	"github.com/google/uuid"
-	"github.com/superseriousbusiness/gotosocial/internal/ap"
-	"github.com/superseriousbusiness/gotosocial/internal/db"
-	"github.com/superseriousbusiness/gotosocial/internal/gtscontext"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/log"
-	"github.com/superseriousbusiness/gotosocial/internal/messages"
-	"github.com/superseriousbusiness/gotosocial/internal/util"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -107,24 +107,33 @@ func (p *Processor) deleteUserAndTokensForAccount(ctx context.Context, account *
 		return gtserror.Newf("db error getting user: %w", err)
 	}
 
-	tokens := []*gtsmodel.Token{}
-	if err := p.state.DB.GetWhere(ctx, []db.Where{{Key: "user_id", Value: user.ID}}, &tokens); err != nil {
+	// Get all applications owned by user.
+	apps, err := p.state.DB.GetApplicationsManagedByUserID(ctx, user.ID, nil)
+	if err != nil {
+		return gtserror.Newf("db error getting apps: %w", err)
+	}
+
+	// Delete each app and any tokens it had created
+	// (not necessarily owned by deleted account).
+	for _, a := range apps {
+		if err := p.state.DB.DeleteApplicationByID(ctx, a.ID); err != nil {
+			return gtserror.Newf("db error deleting app: %w", err)
+		}
+
+		if err := p.state.DB.DeleteTokensByClientID(ctx, a.ClientID); err != nil {
+			return gtserror.Newf("db error deleting tokens for app: %w", err)
+		}
+	}
+
+	// Get any remaining access tokens owned by user.
+	tokens, err := p.state.DB.GetAccessTokens(ctx, user.ID, nil)
+	if err != nil {
 		return gtserror.Newf("db error getting tokens: %w", err)
 	}
 
+	// Delete each token.
 	for _, t := range tokens {
-		// Delete any OAuth clients associated with this token.
-		if err := p.state.DB.DeleteByID(ctx, t.ClientID, &[]*gtsmodel.Client{}); err != nil {
-			return gtserror.Newf("db error deleting client: %w", err)
-		}
-
-		// Delete any OAuth applications associated with this token.
-		if err := p.state.DB.DeleteApplicationByClientID(ctx, t.ClientID); err != nil {
-			return gtserror.Newf("db error deleting application: %w", err)
-		}
-
-		// Delete the token itself.
-		if err := p.state.DB.DeleteByID(ctx, t.ID, t); err != nil {
+		if err := p.state.DB.DeleteTokenByID(ctx, t.ID); err != nil {
 			return gtserror.Newf("db error deleting token: %w", err)
 		}
 	}
@@ -519,7 +528,7 @@ func stubbifyAccount(account *gtsmodel.Account, origin string) []string {
 	account.Fields = nil
 	account.Note = ""
 	account.NoteRaw = ""
-	account.Memorial = util.Ptr(false)
+	account.MemorializedAt = never
 	account.AlsoKnownAsURIs = nil
 	account.MovedToURI = ""
 	account.Discoverable = util.Ptr(false)
@@ -537,7 +546,7 @@ func stubbifyAccount(account *gtsmodel.Account, origin string) []string {
 		"fields",
 		"note",
 		"note_raw",
-		"memorial",
+		"memorialized_at",
 		"also_known_as_uris",
 		"moved_to_uri",
 		"discoverable",

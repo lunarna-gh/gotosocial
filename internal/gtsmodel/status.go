@@ -21,7 +21,8 @@ import (
 	"slices"
 	"time"
 
-	"github.com/superseriousbusiness/gotosocial/internal/util/xslices"
+	"code.superseriousbusiness.org/gotosocial/internal/log"
+	"code.superseriousbusiness.org/gotosocial/internal/util/xslices"
 )
 
 // Status represents a user-created 'post' or 'status' in the database, either remote or local
@@ -33,7 +34,7 @@ type Status struct {
 	PinnedAt                 time.Time          `bun:"type:timestamptz,nullzero"`                                   // Status was pinned by owning account at this time.
 	URI                      string             `bun:",unique,nullzero,notnull"`                                    // activitypub URI of this status
 	URL                      string             `bun:",nullzero"`                                                   // web url for viewing this status
-	Content                  string             `bun:""`                                                            // content of this status; likely html-formatted but not guaranteed
+	Content                  string             `bun:""`                                                            // Content HTML for this status.
 	AttachmentIDs            []string           `bun:"attachments,array"`                                           // Database IDs of any media attachments associated with this status
 	Attachments              []*MediaAttachment `bun:"attached_media,rel:has-many"`                                 // Attachments corresponding to attachmentIDs
 	TagIDs                   []string           `bun:"tags,array"`                                                  // Database IDs of any tags used in this status
@@ -61,7 +62,8 @@ type Status struct {
 	Edits                    []*StatusEdit      `bun:"-"`                                                           //
 	PollID                   string             `bun:"type:CHAR(26),nullzero"`                                      //
 	Poll                     *Poll              `bun:"-"`                                                           //
-	ContentWarning           string             `bun:",nullzero"`                                                   // cw string for this status
+	ContentWarning           string             `bun:",nullzero"`                                                   // Content warning HTML for this status.
+	ContentWarningText       string             `bun:""`                                                            // Original text of the content warning without formatting
 	Visibility               Visibility         `bun:",nullzero,notnull"`                                           // visibility entry for this status
 	Sensitive                *bool              `bun:",nullzero,notnull,default:false"`                             // mark the status as sensitive?
 	Language                 string             `bun:",nullzero"`                                                   // what language is this status written in?
@@ -69,6 +71,7 @@ type Status struct {
 	CreatedWithApplication   *Application       `bun:"rel:belongs-to"`                                              // application corresponding to createdWithApplicationID
 	ActivityStreamsType      string             `bun:",nullzero,notnull"`                                           // What is the activitystreams type of this status? See: https://www.w3.org/TR/activitystreams-vocabulary/#object-types. Will probably almost always be Note but who knows!.
 	Text                     string             `bun:""`                                                            // Original text of the status without formatting
+	ContentType              StatusContentType  `bun:",nullzero"`                                                   // Content type used to process the original text of the status
 	Federated                *bool              `bun:",notnull"`                                                    // This status will be federated beyond the local timeline(s)
 	InteractionPolicy        *InteractionPolicy `bun:""`                                                            // InteractionPolicy for this status. If null then the default InteractionPolicy should be assumed for this status's Visibility. Always null for boost wrappers.
 	PendingApproval          *bool              `bun:",nullzero,notnull,default:false"`                             // If true then status is a reply or boost wrapper that must be Approved by the reply-ee or boost-ee before being fully distributed.
@@ -86,7 +89,14 @@ func (s *Status) GetAccountID() string {
 	return s.AccountID
 }
 
-// GetBoostID implements timeline.Timelineable{}.
+// GetAccount returns the account that owns
+// this status. May be nil if status not populated.
+// Fulfils Interaction interface.
+func (s *Status) GetAccount() *Account {
+	return s.Account
+}
+
+// GetBoostOfID implements timeline.Timelineable{}.
 func (s *Status) GetBoostOfID() string {
 	return s.BoostOfID
 }
@@ -171,7 +181,7 @@ func (s *Status) EditsPopulated() bool {
 	return true
 }
 
-// EmojissUpToDate returns whether status emoji attachments of receiving status are up-to-date
+// EmojisUpToDate returns whether status emoji attachments of receiving status are up-to-date
 // according to emoji attachments of the passed status, by comparing their emoji URIs. We don't
 // use IDs as this is used to determine whether there are new emojis to fetch.
 func (s *Status) EmojisUpToDate(other *Status) bool {
@@ -201,6 +211,16 @@ func (s *Status) GetAttachmentByRemoteURL(url string) (*MediaAttachment, bool) {
 func (s *Status) GetMentionByTargetURI(uri string) (*Mention, bool) {
 	for _, mention := range s.Mentions {
 		if mention.TargetAccountURI == uri {
+			return mention, true
+		}
+	}
+	return nil, false
+}
+
+// GetMentionByTargetID searches status for Mention{} with target ID.
+func (s *Status) GetMentionByTargetID(id string) (*Mention, bool) {
+	for _, mention := range s.Mentions {
+		if mention.TargetAccountID == id {
 			return mention, true
 		}
 	}
@@ -270,14 +290,15 @@ func (s *Status) IsLocalOnly() bool {
 	return s.Federated == nil || !*s.Federated
 }
 
-// AllAttachmentIDs gathers ALL media attachment IDs from both the
-// receiving Status{}, and any historical Status{}.Edits. Note that
-// this function will panic if Status{}.Edits is not populated.
+// AllAttachmentIDs gathers ALL media attachment IDs from both
+// the receiving Status{}, and any historical Status{}.Edits.
 func (s *Status) AllAttachmentIDs() []string {
 	var total int
 
-	if len(s.EditIDs) != len(s.Edits) {
-		panic("status edits not populated")
+	// Check if this is being correctly
+	// called on fully populated status.
+	if !s.EditsPopulated() {
+		log.Warnf(nil, "status edits not populated for %s", s.URI)
 	}
 
 	// Get count of attachment IDs.
@@ -376,6 +397,16 @@ func (v Visibility) String() string {
 	}
 }
 
+// StatusContentType is the content type with which a status's text is
+// parsed. Can be either plain or markdown. Empty will default to plain.
+type StatusContentType enumType
+
+const (
+	StatusContentTypePlain    StatusContentType = 1
+	StatusContentTypeMarkdown StatusContentType = 2
+	StatusContentTypeDefault                    = StatusContentTypePlain
+)
+
 // Content models the simple string content
 // of a status along with its ContentMap,
 // which contains content entries keyed by
@@ -385,4 +416,9 @@ func (v Visibility) String() string {
 type Content struct {
 	Content    string
 	ContentMap map[string]string
+}
+
+// BackfillStatus is a wrapper for creating a status without pushing notifications to followers.
+type BackfillStatus struct {
+	*Status
 }

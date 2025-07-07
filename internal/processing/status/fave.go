@@ -22,16 +22,16 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/superseriousbusiness/gotosocial/internal/ap"
-	apimodel "github.com/superseriousbusiness/gotosocial/internal/api/model"
-	"github.com/superseriousbusiness/gotosocial/internal/db"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/id"
-	"github.com/superseriousbusiness/gotosocial/internal/log"
-	"github.com/superseriousbusiness/gotosocial/internal/messages"
-	"github.com/superseriousbusiness/gotosocial/internal/uris"
-	"github.com/superseriousbusiness/gotosocial/internal/util"
+	"code.superseriousbusiness.org/gotosocial/internal/ap"
+	apimodel "code.superseriousbusiness.org/gotosocial/internal/api/model"
+	"code.superseriousbusiness.org/gotosocial/internal/db"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/id"
+	"code.superseriousbusiness.org/gotosocial/internal/log"
+	"code.superseriousbusiness.org/gotosocial/internal/messages"
+	"code.superseriousbusiness.org/gotosocial/internal/uris"
+	"code.superseriousbusiness.org/gotosocial/internal/util"
 )
 
 func (p *Processor) getFaveableStatus(
@@ -112,7 +112,7 @@ func (p *Processor) FaveCreate(
 	)
 
 	switch {
-	case policyResult.WithApproval():
+	case policyResult.ManualApproval():
 		// We're allowed to do
 		// this pending approval.
 		pendingApproval = true
@@ -133,7 +133,7 @@ func (p *Processor) FaveCreate(
 			preApproved = true
 		}
 
-	case policyResult.Permitted():
+	case policyResult.AutomaticApproval():
 		// We're permitted to do this
 		// based on another kind of match.
 		pendingApproval = false

@@ -22,11 +22,10 @@ import (
 	"errors"
 	"reflect"
 	"testing"
-	"time"
 
+	"code.superseriousbusiness.org/gotosocial/internal/db"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
 	"github.com/stretchr/testify/suite"
-	"github.com/superseriousbusiness/gotosocial/internal/db"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
 )
 
 type ApplicationTestSuite struct {
@@ -45,12 +44,6 @@ func (suite *ApplicationTestSuite) TestGetApplicationBy() {
 
 	// isEqual checks if 2 application models are equal.
 	isEqual := func(a1, a2 gtsmodel.Application) bool {
-		// Clear database-set fields.
-		a1.CreatedAt = time.Time{}
-		a2.CreatedAt = time.Time{}
-		a1.UpdatedAt = time.Time{}
-		a2.UpdatedAt = time.Time{}
-
 		return reflect.DeepEqual(a1, a2)
 	}
 
@@ -99,7 +92,7 @@ func (suite *ApplicationTestSuite) TestDeleteApplicationBy() {
 	for _, app := range suite.testApplications {
 		for lookup, dbfunc := range map[string]func() error{
 			"client_id": func() error {
-				return suite.db.DeleteApplicationByClientID(ctx, app.ClientID)
+				return suite.db.DeleteApplicationByID(ctx, app.ID)
 			},
 		} {
 			// Clear database caches.
@@ -129,6 +122,36 @@ func (suite *ApplicationTestSuite) TestGetAllTokens() {
 		suite.FailNow(err.Error())
 	}
 	suite.NotEmpty(tokens)
+}
+
+func (suite *ApplicationTestSuite) TestDeleteTokensByClientID() {
+	ctx := context.Background()
+
+	// Delete tokens by each app.
+	for _, app := range suite.testApplications {
+		if err := suite.state.DB.DeleteTokensByClientID(ctx, app.ClientID); err != nil {
+			suite.FailNow(err.Error())
+		}
+	}
+
+	// Ensure all tokens deleted.
+	for _, token := range suite.testTokens {
+		_, err := suite.db.GetTokenByID(ctx, token.ID)
+		if !errors.Is(err, db.ErrNoEntries) {
+			suite.FailNow("", "token %s not deleted", token.ID)
+		}
+	}
+}
+
+func (suite *ApplicationTestSuite) TestDeleteTokensByUnknownClientID() {
+	// Should not return ErrNoRows even though
+	// the client with given ID doesn't exist.
+	if err := suite.state.DB.DeleteTokensByClientID(
+		context.Background(),
+		"01JPJ4NCGH6GHY7ZVYBHNP55XS",
+	); err != nil {
+		suite.FailNow(err.Error())
+	}
 }
 
 func TestApplicationTestSuite(t *testing.T) {

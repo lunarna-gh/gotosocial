@@ -22,16 +22,16 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/superseriousbusiness/activity/streams/vocab"
-	"github.com/superseriousbusiness/gotosocial/internal/ap"
-	"github.com/superseriousbusiness/gotosocial/internal/db"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/id"
-	"github.com/superseriousbusiness/gotosocial/internal/log"
-	"github.com/superseriousbusiness/gotosocial/internal/messages"
+	"code.superseriousbusiness.org/activity/streams/vocab"
+	"code.superseriousbusiness.org/gotosocial/internal/ap"
+	"code.superseriousbusiness.org/gotosocial/internal/db"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/id"
+	"code.superseriousbusiness.org/gotosocial/internal/log"
+	"code.superseriousbusiness.org/gotosocial/internal/messages"
 )
 
-func (f *federatingDB) Like(ctx context.Context, likeable vocab.ActivityStreamsLike) error {
+func (f *DB) Like(ctx context.Context, likeable vocab.ActivityStreamsLike) error {
 	log.DebugKV(ctx, "like", serialize{likeable})
 
 	// Mark activity as handled.
@@ -98,7 +98,7 @@ func (f *federatingDB) Like(ctx context.Context, likeable vocab.ActivityStreamsL
 	)
 
 	switch {
-	case policyResult.WithApproval():
+	case policyResult.ManualApproval():
 		// Requester allowed to do
 		// this pending approval.
 		pendingApproval = true
@@ -111,7 +111,7 @@ func (f *federatingDB) Like(ctx context.Context, likeable vocab.ActivityStreamsL
 		pendingApproval = true
 		preApproved = true
 
-	case policyResult.Permitted():
+	case policyResult.AutomaticApproval():
 		// Requester straight up
 		// permitted to do this,
 		// no need for Accept.

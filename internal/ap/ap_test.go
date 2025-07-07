@@ -23,12 +23,12 @@ import (
 	"encoding/json"
 	"io"
 
+	"code.superseriousbusiness.org/activity/streams"
+	"code.superseriousbusiness.org/activity/streams/vocab"
+	"code.superseriousbusiness.org/gotosocial/internal/ap"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/testrig"
 	"github.com/stretchr/testify/suite"
-	"github.com/superseriousbusiness/activity/streams"
-	"github.com/superseriousbusiness/activity/streams/vocab"
-	"github.com/superseriousbusiness/gotosocial/internal/ap"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/testrig"
 )
 
 func document1() vocab.ActivityStreamsDocument {
@@ -307,7 +307,7 @@ func addressable3() ap.Addressable {
 }
 
 func addressable4() vocab.ActivityStreamsAnnounce {
-	// https://github.com/superseriousbusiness/gotosocial/issues/267
+	// https://codeberg.org/superseriousbusiness/gotosocial/issues/267
 	announceJson := []byte(`
 {
 	"@context": "https://www.w3.org/ns/activitystreams",

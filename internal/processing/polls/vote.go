@@ -21,13 +21,13 @@ import (
 	"context"
 	"errors"
 
-	"github.com/superseriousbusiness/gotosocial/internal/ap"
-	apimodel "github.com/superseriousbusiness/gotosocial/internal/api/model"
-	"github.com/superseriousbusiness/gotosocial/internal/db"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/id"
-	"github.com/superseriousbusiness/gotosocial/internal/messages"
+	"code.superseriousbusiness.org/gotosocial/internal/ap"
+	apimodel "code.superseriousbusiness.org/gotosocial/internal/api/model"
+	"code.superseriousbusiness.org/gotosocial/internal/db"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/id"
+	"code.superseriousbusiness.org/gotosocial/internal/messages"
 )
 
 func (p *Processor) PollVote(ctx context.Context, requester *gtsmodel.Account, pollID string, choices []int) (*apimodel.Poll, gtserror.WithCode) {
@@ -93,7 +93,7 @@ func (p *Processor) PollVote(ctx context.Context, requester *gtsmodel.Account, p
 	// Before enqueuing it, increment the poll
 	// vote counts on the copy attached to the
 	// PollVote (that we also later return).
-	poll.IncrementVotes(choices)
+	poll.IncrementVotes(choices, true)
 
 	// Enqueue worker task to handle side-effects of user poll vote(s).
 	p.state.Workers.Client.Queue.Push(&messages.FromClientAPI{

@@ -18,20 +18,18 @@
 package lists_test
 
 import (
+	"code.superseriousbusiness.org/gotosocial/internal/admin"
+	"code.superseriousbusiness.org/gotosocial/internal/api/client/lists"
+	"code.superseriousbusiness.org/gotosocial/internal/db"
+	"code.superseriousbusiness.org/gotosocial/internal/email"
+	"code.superseriousbusiness.org/gotosocial/internal/federation"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/media"
+	"code.superseriousbusiness.org/gotosocial/internal/processing"
+	"code.superseriousbusiness.org/gotosocial/internal/state"
+	"code.superseriousbusiness.org/gotosocial/internal/storage"
+	"code.superseriousbusiness.org/gotosocial/testrig"
 	"github.com/stretchr/testify/suite"
-	"github.com/superseriousbusiness/gotosocial/internal/admin"
-	"github.com/superseriousbusiness/gotosocial/internal/api/client/lists"
-	"github.com/superseriousbusiness/gotosocial/internal/db"
-	"github.com/superseriousbusiness/gotosocial/internal/email"
-	"github.com/superseriousbusiness/gotosocial/internal/federation"
-	"github.com/superseriousbusiness/gotosocial/internal/filter/visibility"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/media"
-	"github.com/superseriousbusiness/gotosocial/internal/processing"
-	"github.com/superseriousbusiness/gotosocial/internal/state"
-	"github.com/superseriousbusiness/gotosocial/internal/storage"
-	"github.com/superseriousbusiness/gotosocial/internal/typeutils"
-	"github.com/superseriousbusiness/gotosocial/testrig"
 )
 
 type ListsStandardTestSuite struct {
@@ -47,7 +45,6 @@ type ListsStandardTestSuite struct {
 
 	// standard suite models
 	testTokens          map[string]*gtsmodel.Token
-	testClients         map[string]*gtsmodel.Client
 	testApplications    map[string]*gtsmodel.Application
 	testUsers           map[string]*gtsmodel.User
 	testAccounts        map[string]*gtsmodel.Account
@@ -64,7 +61,6 @@ type ListsStandardTestSuite struct {
 
 func (suite *ListsStandardTestSuite) SetupSuite() {
 	suite.testTokens = testrig.NewTestTokens()
-	suite.testClients = testrig.NewTestClients()
 	suite.testApplications = testrig.NewTestApplications()
 	suite.testUsers = testrig.NewTestUsers()
 	suite.testAccounts = testrig.NewTestAccounts()
@@ -78,7 +74,9 @@ func (suite *ListsStandardTestSuite) SetupSuite() {
 
 func (suite *ListsStandardTestSuite) SetupTest() {
 	suite.state.Caches.Init()
-	suite.state.Caches.Start()
+	if err := suite.state.Caches.Start(); err != nil {
+		panic("error starting caches: " + err.Error())
+	}
 	testrig.StartNoopWorkers(&suite.state)
 
 	testrig.InitTestConfig()
@@ -89,12 +87,6 @@ func (suite *ListsStandardTestSuite) SetupTest() {
 	suite.state.AdminActions = admin.New(suite.state.DB, &suite.state.Workers)
 	suite.storage = testrig.NewInMemoryStorage()
 	suite.state.Storage = suite.storage
-
-	testrig.StartTimelines(
-		&suite.state,
-		visibility.NewFilter(&suite.state),
-		typeutils.NewConverter(&suite.state),
-	)
 
 	suite.mediaManager = testrig.NewTestMediaManager(&suite.state)
 	suite.federator = testrig.NewTestFederator(&suite.state, testrig.NewTestTransportController(&suite.state, testrig.NewMockHTTPClient(nil, "../../../../testrig/media")), suite.mediaManager)

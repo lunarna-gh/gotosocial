@@ -27,12 +27,12 @@ import (
 	"testing"
 	"time"
 
+	"code.superseriousbusiness.org/activity/streams"
+	"code.superseriousbusiness.org/activity/streams/vocab"
+	"code.superseriousbusiness.org/gotosocial/internal/api/activitypub/users"
+	"code.superseriousbusiness.org/gotosocial/testrig"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/suite"
-	"github.com/superseriousbusiness/activity/streams"
-	"github.com/superseriousbusiness/activity/streams/vocab"
-	"github.com/superseriousbusiness/gotosocial/internal/api/activitypub/users"
-	"github.com/superseriousbusiness/gotosocial/testrig"
 )
 
 type OutboxGetTestSuite struct {

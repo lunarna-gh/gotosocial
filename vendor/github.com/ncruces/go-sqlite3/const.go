@@ -1,19 +1,28 @@
 package sqlite3
 
-import "strconv"
+import (
+	"strconv"
+
+	"github.com/ncruces/go-sqlite3/internal/util"
+)
 
 const (
 	_OK   = 0   /* Successful result */
 	_ROW  = 100 /* sqlite3_step() has another row ready */
 	_DONE = 101 /* sqlite3_step() has finished executing */
 
-	_MAX_NAME         = 1e6 // Self-imposed limit for most NUL terminated strings.
-	_MAX_LENGTH       = 1e9
-	_MAX_SQL_LENGTH   = 1e9
-	_MAX_FUNCTION_ARG = 100
+	_MAX_NAME       = 1e6 // Self-imposed limit for most NUL terminated strings.
+	_MAX_LENGTH     = 1e9
+	_MAX_SQL_LENGTH = 1e9
 
-	ptrlen = 4
-	intlen = 4
+	ptrlen = util.PtrLen
+	intlen = util.IntLen
+)
+
+type (
+	stk_t = util.Stk_t
+	ptr_t = util.Ptr_t
+	res_t = util.Res_t
 )
 
 // ErrorCode is a result code that [Error.Code] might return.
@@ -249,7 +258,10 @@ const (
 	DBCONFIG_TRUSTED_SCHEMA        DBConfig = 1017
 	DBCONFIG_STMT_SCANSTATUS       DBConfig = 1018
 	DBCONFIG_REVERSE_SCANORDER     DBConfig = 1019
-	// DBCONFIG_MAX                DBConfig = 1019
+	DBCONFIG_ENABLE_ATTACH_CREATE  DBConfig = 1020
+	DBCONFIG_ENABLE_ATTACH_WRITE   DBConfig = 1021
+	DBCONFIG_ENABLE_COMMENTS       DBConfig = 1022
+	// DBCONFIG_MAX                DBConfig = 1022
 )
 
 // FcntlOpcode are the available opcodes for [Conn.FileControl].

@@ -3,7 +3,7 @@ definitions:
     FilterAction:
         title: FilterAction is the action to apply to statuses matching a filter.
         type: string
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     InstanceConfigurationEmojis:
         properties:
             emoji_size_limit:
@@ -14,7 +14,7 @@ definitions:
                 x-go-name: EmojiSizeLimit
         title: InstanceConfigurationEmojis models instance emoji config parameters.
         type: object
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     Link:
         description: See https://webfinger.net/ and https://www.rfc-editor.org/rfc/rfc6415.html#section-3.1
         properties:
@@ -32,7 +32,7 @@ definitions:
                 x-go-name: Type
         title: Link represents one 'link' in a slice of links returned from a lookup request.
         type: object
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     Mention:
         properties:
             acct:
@@ -59,7 +59,7 @@ definitions:
                 x-go-name: Username
         title: Mention represents a mention of another account.
         type: object
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     NodeInfoServices:
         properties:
             inbound:
@@ -74,7 +74,7 @@ definitions:
                 x-go-name: Outbound
         title: NodeInfoServices represents inbound and outbound services that this node offers connections to.
         type: object
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     NodeInfoSoftware:
         properties:
             homepage:
@@ -97,7 +97,7 @@ definitions:
                 x-go-name: Version
         title: NodeInfoSoftware represents the name and version number of the software of this node.
         type: object
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     NodeInfoUsage:
         properties:
             localComments:
@@ -112,7 +112,7 @@ definitions:
                 $ref: '#/definitions/NodeInfoUsers'
         title: NodeInfoUsage represents usage information about this server, such as number of users.
         type: object
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     NodeInfoUsers:
         properties:
             activeHalfYear:
@@ -129,7 +129,7 @@ definitions:
                 x-go-name: Total
         title: NodeInfoUsers represents aggregate information about the users on the server.
         type: object
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     Source:
         description: Returned as an additional entity when verifying and updated credentials, as an attribute of Account.
         properties:
@@ -179,6 +179,13 @@ definitions:
                 description: The default posting content type for new statuses.
                 type: string
                 x-go-name: StatusContentType
+            web_layout:
+                description: |-
+                    Layout to use for the web view of the account.
+                    "microblog": default, classic microblog layout.
+                    "gallery": gallery layout with media only.
+                type: string
+                x-go-name: WebLayout
             web_visibility:
                 description: |-
                     Visibility level(s) of posts to show for this account via the web api.
@@ -189,7 +196,7 @@ definitions:
                 x-go-name: WebVisibility
         title: Source represents display or publishing preferences of user's own account.
         type: object
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     TimelineMarker:
         properties:
             last_read_id:
@@ -207,11 +214,11 @@ definitions:
                 x-go-name: Version
         title: TimelineMarker contains information about a user's progress through a specific timeline.
         type: object
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     WebPushNotificationPolicy:
         title: WebPushNotificationPolicy names sets of accounts that can generate notifications.
         type: string
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     account:
         description: The modelled account can be either a remote account, or one on this instance.
         properties:
@@ -393,7 +400,7 @@ definitions:
         title: Account models a fediverse account.
         type: object
         x-go-name: Account
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     accountDisplayRole:
         description: This is a subset of AccountRole.
         properties:
@@ -416,7 +423,7 @@ definitions:
         title: AccountDisplayRole models a public, displayable role of an account.
         type: object
         x-go-name: AccountDisplayRole
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     accountExportStats:
         description: |-
             AccountExportStats models an account's stats
@@ -466,7 +473,7 @@ definitions:
                 x-go-name: StatusesCount
         type: object
         x-go-name: AccountExportStats
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     accountRelationship:
         properties:
             blocked_by:
@@ -529,7 +536,7 @@ definitions:
         title: Relationship represents a relationship between accounts.
         type: object
         x-go-name: Relationship
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     accountRole:
         properties:
             color:
@@ -561,7 +568,7 @@ definitions:
         title: AccountRole models the role of an account.
         type: object
         x-go-name: AccountRole
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     adminAccountInfo:
         properties:
             account:
@@ -656,7 +663,7 @@ definitions:
         title: AdminAccountInfo models the admin view of an account's details.
         type: object
         x-go-name: AdminAccountInfo
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     adminActionResponse:
         description: |-
             AdminActionResponse models the server
@@ -669,7 +676,7 @@ definitions:
                 x-go-name: ActionID
         type: object
         x-go-name: AdminActionResponse
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     adminEmoji:
         properties:
             category:
@@ -736,7 +743,7 @@ definitions:
         title: AdminEmoji models the admin view of a custom emoji.
         type: object
         x-go-name: AdminEmoji
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     adminReport:
         properties:
             account:
@@ -817,7 +824,7 @@ definitions:
         title: AdminReport models the admin view of a report.
         type: object
         x-go-name: AdminReport
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     application:
         properties:
             client_id:
@@ -828,6 +835,11 @@ definitions:
                 description: Client secret associated with this application.
                 type: string
                 x-go-name: ClientSecret
+            created_at:
+                description: When the application was created. (ISO 8601 Datetime)
+                example: "2021-07-30T09:20:25+00:00"
+                type: string
+                x-go-name: CreatedAt
             id:
                 description: The ID of the application.
                 example: 01FBVD42CQ3ZEEVMW180SBX03B
@@ -843,6 +855,19 @@ definitions:
                 example: https://example.org/callback?some=query
                 type: string
                 x-go-name: RedirectURI
+            redirect_uris:
+                description: Post-authorization redirect URIs for the application (OAuth2).
+                example: '[https://example.org/callback?some=query]'
+                items:
+                    type: string
+                type: array
+                x-go-name: RedirectURIs
+            scopes:
+                description: OAuth scopes for this application.
+                items:
+                    type: string
+                type: array
+                x-go-name: Scopes
             vapid_key:
                 description: Push API key for this application.
                 type: string
@@ -855,7 +880,7 @@ definitions:
         title: Application models an api application.
         type: object
         x-go-name: Application
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     attachment:
         properties:
             blurhash:
@@ -914,7 +939,7 @@ definitions:
         title: Attachment models a media attachment.
         type: object
         x-go-name: Attachment
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     card:
         properties:
             author_name:
@@ -987,7 +1012,7 @@ definitions:
         title: Card represents a rich preview card that is generated using OpenGraph tags from a URL.
         type: object
         x-go-name: Card
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     conversation:
         description: |-
             Conversation represents a conversation
@@ -1016,7 +1041,7 @@ definitions:
                 x-go-name: Unread
         type: object
         x-go-name: Conversation
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     debugAPUrlResponse:
         description: |-
             DebugAPUrlResponse provides detailed debug
@@ -1056,7 +1081,7 @@ definitions:
                 x-go-name: ResponseHeaders
         type: object
         x-go-name: DebugAPUrlResponse
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     defaultPolicies:
         properties:
             direct:
@@ -1070,20 +1095,35 @@ definitions:
         title: Default interaction policies to use for new statuses by requesting account.
         type: object
         x-go-name: DefaultPolicies
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     domain:
         description: Domain represents a remote domain
         properties:
+            comment:
+                description: |-
+                    If the domain is blocked or allowed, what's the publicly-stated reason (if any).
+                    Alternative to `public_comment` to be used when serializing/deserializing via /api/v1/instance.
+                example: they smell
+                type: string
+                x-go-name: Comment
             domain:
                 description: The hostname of the domain.
                 example: example.org
                 type: string
                 x-go-name: Domain
             public_comment:
-                description: If the domain is blocked, what's the publicly-stated reason for the block.
+                description: |-
+                    If the domain is blocked or allowed, what's the publicly-stated reason (if any).
+                    Alternative to `comment` to be used when serializing/deserializing NOT via /api/v1/instance.
                 example: they smell
                 type: string
                 x-go-name: PublicComment
+            severity:
+                description: |-
+                    Severity of this entry.
+                    Only ever set for domain blocks, and if set, always="suspend".
+                type: string
+                x-go-name: Severity
             silenced_at:
                 description: Time at which this domain was silenced. Key will not be present on open domains.
                 example: "2021-07-30T09:20:25+00:00"
@@ -1096,9 +1136,16 @@ definitions:
                 x-go-name: SuspendedAt
         type: object
         x-go-name: Domain
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     domainPermission:
         properties:
+            comment:
+                description: |-
+                    If the domain is blocked or allowed, what's the publicly-stated reason (if any).
+                    Alternative to `public_comment` to be used when serializing/deserializing via /api/v1/instance.
+                example: they smell
+                type: string
+                x-go-name: Comment
             created_at:
                 description: Time at which the permission entry was created (ISO 8601 Datetime).
                 example: "2021-07-30T09:20:25+00:00"
@@ -1137,10 +1184,18 @@ definitions:
                 type: string
                 x-go-name: PrivateComment
             public_comment:
-                description: If the domain is blocked, what's the publicly-stated reason for the block.
+                description: |-
+                    If the domain is blocked or allowed, what's the publicly-stated reason (if any).
+                    Alternative to `comment` to be used when serializing/deserializing NOT via /api/v1/instance.
                 example: they smell
                 type: string
                 x-go-name: PublicComment
+            severity:
+                description: |-
+                    Severity of this entry.
+                    Only ever set for domain blocks, and if set, always="suspend".
+                type: string
+                x-go-name: Severity
             silenced_at:
                 description: Time at which this domain was silenced. Key will not be present on open domains.
                 example: "2021-07-30T09:20:25+00:00"
@@ -1159,7 +1214,7 @@ definitions:
         title: DomainPermission represents a permission applied to one domain (explicit block/allow).
         type: object
         x-go-name: DomainPermission
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     domainPermissionSubscription:
         properties:
             adopt_orphans:
@@ -1253,7 +1308,7 @@ definitions:
         title: DomainPermissionSubscription represents an auto-refreshing subscription to a list of domain permissions (allows, blocks).
         type: object
         x-go-name: DomainPermissionSubscription
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     emoji:
         properties:
             category:
@@ -1284,7 +1339,7 @@ definitions:
         title: Emoji represents a custom emoji.
         type: object
         x-go-name: Emoji
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     emojiCategory:
         properties:
             id:
@@ -1298,7 +1353,7 @@ definitions:
         title: EmojiCategory represents a custom emoji category.
         type: object
         x-go-name: EmojiCategory
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     field:
         properties:
             name:
@@ -1319,13 +1374,13 @@ definitions:
         title: Field represents a name/value pair to display on an account's profile.
         type: object
         x-go-name: Field
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     filterContext:
         description: v1 and v2 filter APIs use the same set of contexts.
         title: FilterContext represents the context in which to apply a filter.
         type: string
         x-go-name: FilterContext
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     filterKeyword:
         properties:
             id:
@@ -1345,7 +1400,7 @@ definitions:
         title: FilterKeyword represents text to filter within a v2 filter.
         type: object
         x-go-name: FilterKeyword
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     filterResult:
         properties:
             filter:
@@ -1365,7 +1420,7 @@ definitions:
         title: FilterResult is returned along with a filtered status to explain why it was filtered.
         type: object
         x-go-name: FilterResult
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     filterStatus:
         properties:
             id:
@@ -1379,7 +1434,7 @@ definitions:
         title: FilterStatus represents a single status to filter within a v2 filter.
         type: object
         x-go-name: FilterStatus
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     filterV1:
         description: |-
             Note that v1 filters are mapped to v2 filters and v2 filter keywords internally.
@@ -1428,7 +1483,7 @@ definitions:
         title: FilterV1 represents a user-defined filter for determining which statuses should not be shown to the user.
         type: object
         x-go-name: FilterV1
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     filterV2:
         description: v2 filters have names and can include multiple phrases and status IDs to filter.
         properties:
@@ -1474,7 +1529,7 @@ definitions:
         title: FilterV2 represents a user-defined filter for determining which statuses should not be shown to the user.
         type: object
         x-go-name: FilterV2
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     headerFilter:
         properties:
             created_at:
@@ -1508,7 +1563,7 @@ definitions:
         title: HeaderFilter represents a regex value filter applied to one particular HTTP header (allow / block).
         type: object
         x-go-name: HeaderFilter
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     hostmeta:
         description: 'See: https://www.rfc-editor.org/rfc/rfc6415.html#section-3'
         properties:
@@ -1522,7 +1577,7 @@ definitions:
         title: HostMeta represents a hostmeta document.
         type: object
         x-go-name: HostMeta
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     instanceConfigurationAccounts:
         properties:
             allow_custom_css:
@@ -1538,18 +1593,33 @@ definitions:
                 type: integer
                 x-go-name: MaxFeaturedTags
             max_profile_fields:
-                description: |-
-                    The maximum number of profile fields allowed for each account.
-                    Currently not configurable, so this is hardcoded to 6. (https://github.com/superseriousbusiness/gotosocial/issues/1876)
+                description: The maximum number of profile fields allowed for each account.
                 format: int64
                 type: integer
                 x-go-name: MaxProfileFields
         title: InstanceConfigurationAccounts models instance account config parameters.
         type: object
         x-go-name: InstanceConfigurationAccounts
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     instanceConfigurationMediaAttachments:
         properties:
+            description_limit:
+                description: |-
+                    The maximum size of a description, in characters.
+                    Omitted for /api/v1/instance response.
+                example: 5000
+                format: int64
+                type: integer
+                x-go-name: DescriptionLimit
+            description_minimum:
+                description: |-
+                    The minimum size required for a description, in characters.
+                    Omitted if zero/not set.
+                    Omitted for /api/v1/instance response.
+                example: 200
+                format: int64
+                type: integer
+                x-go-name: DescriptionMinimum
             image_matrix_limit:
                 description: |-
                     Max allowed image size in pixels as height*width.
@@ -1600,7 +1670,7 @@ definitions:
         title: InstanceConfigurationMediaAttachments models instance media attachment config parameters.
         type: object
         x-go-name: InstanceConfigurationMediaAttachments
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     instanceConfigurationPolls:
         properties:
             max_characters_per_option:
@@ -1630,7 +1700,7 @@ definitions:
         title: InstanceConfigurationPolls models instance poll config parameters.
         type: object
         x-go-name: InstanceConfigurationPolls
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     instanceConfigurationStatuses:
         properties:
             characters_reserved_per_url:
@@ -1663,7 +1733,7 @@ definitions:
         title: InstanceConfigurationStatuses models instance status config parameters.
         type: object
         x-go-name: InstanceConfigurationStatuses
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     instanceRule:
         properties:
             id:
@@ -1675,7 +1745,7 @@ definitions:
         title: InstanceRule represents a single instance rule.
         type: object
         x-go-name: InstanceRule
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     instanceV1:
         properties:
             account_domain:
@@ -1832,7 +1902,7 @@ definitions:
         title: InstanceV1 models information about this instance.
         type: object
         x-go-name: InstanceV1
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     instanceV1Configuration:
         properties:
             accounts:
@@ -1852,7 +1922,7 @@ definitions:
         title: InstanceV1Configuration models instance configuration parameters.
         type: object
         x-go-name: InstanceV1Configuration
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     instanceV1URLs:
         properties:
             streaming_api:
@@ -1863,7 +1933,7 @@ definitions:
         title: InstanceV1URLs models instance-relevant URLs for client application consumption.
         type: object
         x-go-name: InstanceV1URLs
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     instanceV2:
         properties:
             account_domain:
@@ -1922,7 +1992,7 @@ definitions:
                 x-go-name: Rules
             source_url:
                 description: The URL for the source code of the software running on this instance, in keeping with AGPL license requirements.
-                example: https://github.com/superseriousbusiness/gotosocial
+                example: https://codeberg.org/superseriousbusiness/gotosocial
                 type: string
                 x-go-name: SourceURL
             terms:
@@ -1955,7 +2025,7 @@ definitions:
         title: InstanceV2 models information about this instance.
         type: object
         x-go-name: InstanceV2
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     instanceV2Configuration:
         properties:
             accounts:
@@ -1981,7 +2051,7 @@ definitions:
         title: Configured values and limits for this instance.
         type: object
         x-go-name: InstanceV2Configuration
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     instanceV2ConfigurationTranslation:
         properties:
             enabled:
@@ -1993,7 +2063,7 @@ definitions:
         title: Hints related to translation.
         type: object
         x-go-name: InstanceV2ConfigurationTranslation
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     instanceV2ConfigurationVAPID:
         properties:
             public_key:
@@ -2003,7 +2073,7 @@ definitions:
         title: InstanceV2ConfigurationVAPID holds the instance's VAPID configuration.
         type: object
         x-go-name: InstanceV2ConfigurationVAPID
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     instanceV2Contact:
         properties:
             account:
@@ -2018,7 +2088,7 @@ definitions:
         title: Hints related to contacting a representative of the instance.
         type: object
         x-go-name: InstanceV2Contact
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     instanceV2Registrations:
         properties:
             approval_required:
@@ -2041,7 +2111,7 @@ definitions:
         title: Information about registering for this instance.
         type: object
         x-go-name: InstanceV2Registrations
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     instanceV2Thumbnail:
         properties:
             blurhash:
@@ -2087,7 +2157,7 @@ definitions:
         title: An image used to represent this instance.
         type: object
         x-go-name: InstanceV2Thumbnail
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     instanceV2ThumbnailVersions:
         properties:
             '@1x':
@@ -2105,7 +2175,7 @@ definitions:
         title: Links to scaled resolution images, for high DPI screens.
         type: object
         x-go-name: InstanceV2ThumbnailVersions
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     instanceV2URLs:
         properties:
             streaming:
@@ -2116,7 +2186,7 @@ definitions:
         title: InstanceV2URLs models instance-relevant URLs for client application consumption.
         type: object
         x-go-name: InstanceV2URLs
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     instanceV2Usage:
         properties:
             users:
@@ -2124,7 +2194,7 @@ definitions:
         title: Usage data for this instance.
         type: object
         x-go-name: InstanceV2Usage
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     instanceV2Users:
         properties:
             active_month:
@@ -2138,7 +2208,7 @@ definitions:
         title: Usage data related to users on this instance.
         type: object
         x-go-name: InstanceV2Users
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     interactionPolicy:
         properties:
             can_favourite:
@@ -2150,17 +2220,33 @@ definitions:
         title: Interaction policy of a status.
         type: object
         x-go-name: InteractionPolicy
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     interactionPolicyRules:
         properties:
             always:
-                description: Policy entries for accounts that can always do this type of interaction.
+                description: |-
+                    Policy entries for accounts that can always do this type of interaction.
+                    Deprecated: Use "automatic_approval" instead.
                 items:
                     $ref: '#/definitions/interactionPolicyValue'
                 type: array
                 x-go-name: Always
+            automatic_approval:
+                description: Policy entries for accounts that will receive automatic approval for this type of interaction.
+                items:
+                    $ref: '#/definitions/interactionPolicyValue'
+                type: array
+                x-go-name: AutomaticApproval
+            manual_approval:
+                description: Policy entries for accounts that require manual approval for this type of interaction.
+                items:
+                    $ref: '#/definitions/interactionPolicyValue'
+                type: array
+                x-go-name: ManualApproval
             with_approval:
-                description: Policy entries for accounts that require approval to do this type of interaction.
+                description: |-
+                    Policy entries for accounts that require approval to do this type of interaction.
+                    Deprecated: Use "manual_approval" instead.
                 items:
                     $ref: '#/definitions/interactionPolicyValue'
                 type: array
@@ -2168,7 +2254,7 @@ definitions:
         title: Rules for one interaction type.
         type: object
         x-go-name: PolicyRules
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     interactionPolicyValue:
         description: |-
             It can be EITHER one of the internal keywords listed below, OR a full-fledged ActivityPub URI of an Actor, like "https://example.org/users/some_user".
@@ -2185,7 +2271,7 @@ definitions:
         title: One interaction policy entry for a status.
         type: string
         x-go-name: PolicyValue
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     interactionRequest:
         properties:
             accepted_at:
@@ -2226,7 +2312,7 @@ definitions:
         title: InteractionRequest represents a pending, approved, or rejected interaction of type favourite, reply, or reblog.
         type: object
         x-go-name: InteractionRequest
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     list:
         properties:
             exclusive:
@@ -2254,7 +2340,7 @@ definitions:
         title: List represents a user-created list of accounts that the user follows.
         type: object
         x-go-name: List
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     markers:
         properties:
             home:
@@ -2264,7 +2350,7 @@ definitions:
         title: Marker represents the last read position within a user's timelines.
         type: object
         x-go-name: Marker
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     mediaDimensions:
         properties:
             aspect:
@@ -2322,7 +2408,7 @@ definitions:
         title: MediaDimensions models detailed properties of a piece of media.
         type: object
         x-go-name: MediaDimensions
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     mediaFocus:
         properties:
             x:
@@ -2342,7 +2428,7 @@ definitions:
         title: MediaFocus models the focal point of a piece of media.
         type: object
         x-go-name: MediaFocus
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     mediaMeta:
         description: This can be metadata about an image, an audio file, video, etc.
         properties:
@@ -2355,7 +2441,7 @@ definitions:
         title: MediaMeta models media metadata.
         type: object
         x-go-name: MediaMeta
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     mutedAccount:
         properties:
             acct:
@@ -2543,7 +2629,7 @@ definitions:
         title: MutedAccount extends Account with a field used only by the muted user list.
         type: object
         x-go-name: MutedAccount
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     nodeinfo:
         description: 'See: https://nodeinfo.diaspora.software/schema.html'
         properties:
@@ -2577,7 +2663,7 @@ definitions:
         title: Nodeinfo represents a version 2.1 or version 2.0 nodeinfo schema.
         type: object
         x-go-name: Nodeinfo
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     notification:
         properties:
             account:
@@ -2608,7 +2694,7 @@ definitions:
         title: Notification represents a notification of an event relevant to the user.
         type: object
         x-go-name: Notification
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     oauthToken:
         properties:
             access_token:
@@ -2634,7 +2720,7 @@ definitions:
         title: Token represents an OAuth token used for authenticating with the GoToSocial API and performing actions.
         type: object
         x-go-name: Token
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     poll:
         properties:
             emojis:
@@ -2697,7 +2783,7 @@ definitions:
         title: Poll represents a poll attached to a status.
         type: object
         x-go-name: Poll
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     pollOption:
         properties:
             title:
@@ -2712,7 +2798,7 @@ definitions:
         title: PollOption represents the current vote counts for different poll options.
         type: object
         x-go-name: PollOption
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     report:
         properties:
             action_taken:
@@ -2788,7 +2874,7 @@ definitions:
         title: Report models a moderation report submitted to the instance, either via the client API or via the federated API.
         type: object
         x-go-name: Report
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     searchResult:
         properties:
             accounts:
@@ -2809,7 +2895,7 @@ definitions:
         title: SearchResult models a search result.
         type: object
         x-go-name: SearchResult
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     status:
         properties:
             account:
@@ -2827,6 +2913,13 @@ definitions:
                 example: <p>Hey this is a status!</p>
                 type: string
                 x-go-name: Content
+            content_type:
+                description: |-
+                    Content type that was used to parse the status's text. Returned when
+                    status is deleted, so if the user is redrafting the message the client
+                    can default to the same content type.
+                type: string
+                x-go-name: ContentType
             created_at:
                 description: The date when this status was created (ISO 8601 Datetime).
                 example: "2021-07-30T09:20:25+00:00"
@@ -2965,7 +3058,7 @@ definitions:
         title: Status models a status or post.
         type: object
         x-go-name: Status
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     statusEdit:
         description: |-
             StatusEdit represents one historical revision of a status, containing
@@ -3011,7 +3104,7 @@ definitions:
                 x-go-name: SpoilerText
         type: object
         x-go-name: StatusEdit
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     statusReblogged:
         properties:
             account:
@@ -3029,6 +3122,13 @@ definitions:
                 example: <p>Hey this is a status!</p>
                 type: string
                 x-go-name: Content
+            content_type:
+                description: |-
+                    Content type that was used to parse the status's text. Returned when
+                    status is deleted, so if the user is redrafting the message the client
+                    can default to the same content type.
+                type: string
+                x-go-name: ContentType
             created_at:
                 description: The date when this status was created (ISO 8601 Datetime).
                 example: "2021-07-30T09:20:25+00:00"
@@ -3167,12 +3267,16 @@ definitions:
         title: StatusReblogged represents a reblogged status.
         type: object
         x-go-name: StatusReblogged
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     statusSource:
         description: |-
             StatusSource represents the source text of a
             status as submitted to the API when it was created.
         properties:
+            content_type:
+                description: Content type that was used to parse the text.
+                type: string
+                x-go-name: ContentType
             id:
                 description: ID of the status.
                 example: 01FBVD42CQ3ZEEVMW180SBX03B
@@ -3188,7 +3292,7 @@ definitions:
                 x-go-name: Text
         type: object
         x-go-name: StatusSource
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     swaggerCollection:
         properties:
             '@context':
@@ -3215,7 +3319,7 @@ definitions:
         title: SwaggerCollection represents an ActivityPub Collection.
         type: object
         x-go-name: SwaggerCollection
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/activitypub/users
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/activitypub/users
     swaggerCollectionPage:
         properties:
             id:
@@ -3250,7 +3354,7 @@ definitions:
         title: SwaggerCollectionPage represents one page of a collection.
         type: object
         x-go-name: SwaggerCollectionPage
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/activitypub/users
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/activitypub/users
     swaggerFeaturedCollection:
         properties:
             '@context':
@@ -3287,7 +3391,7 @@ definitions:
         title: SwaggerFeaturedCollection represents an ActivityPub OrderedCollection.
         type: object
         x-go-name: SwaggerFeaturedCollection
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/activitypub/users
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/activitypub/users
     tag:
         properties:
             following:
@@ -3317,7 +3421,7 @@ definitions:
         title: Tag represents a hashtag used within the content of a status.
         type: object
         x-go-name: Tag
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     theme:
         properties:
             description:
@@ -3335,7 +3439,7 @@ definitions:
         title: Theme represents one user-selectable preset CSS theme.
         type: object
         x-go-name: Theme
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     threadContext:
         description: |-
             ThreadContext models the tree or
@@ -3355,7 +3459,38 @@ definitions:
                 x-go-name: Descendants
         type: object
         x-go-name: ThreadContext
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
+    tokenInfo:
+        description: The actual access token itself will never be sent via the API.
+        properties:
+            application:
+                $ref: '#/definitions/application'
+            created_at:
+                description: When the token was created (ISO 8601 Datetime).
+                example: "2021-07-30T09:20:25+00:00"
+                type: string
+                x-go-name: CreatedAt
+            id:
+                description: Database ID of this token.
+                example: 01JMW7QBAZYZ8T8H73PCEX12XG
+                type: string
+                x-go-name: ID
+            last_used:
+                description: |-
+                    Approximate time (accurate to within an hour) when the token was last used (ISO 8601 Datetime).
+                    Omitted if token has never been used, or it is not known when it was last used (eg., it was last used before tracking "last_used" became a thing).
+                example: "2021-07-30T09:20:25+00:00"
+                type: string
+                x-go-name: LastUsed
+            scope:
+                description: OAuth scopes granted by the token, space-separated.
+                example: read write admin
+                type: string
+                x-go-name: Scope
+        title: TokenInfo represents metadata about one user-level access token.
+        type: object
+        x-go-name: TokenInfo
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     user:
         properties:
             admin:
@@ -3418,6 +3553,11 @@ definitions:
                 example: "2021-07-30T09:20:25+00:00"
                 type: string
                 x-go-name: ResetPasswordSentAt
+            two_factor_enabled_at:
+                description: Time at which 2fa was enabled for this user. (ISO 8601 Datetime)
+                example: "2021-07-30T09:20:25+00:00"
+                type: string
+                x-go-name: TwoFactorEnabledAt
             unconfirmed_email:
                 description: Unconfirmed email address of this user, if set.
                 example: someone.else@somewhere.else.example.org
@@ -3426,7 +3566,7 @@ definitions:
         title: User models fields relevant to one user.
         type: object
         x-go-name: User
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     webPushNotification:
         description: |-
             It does not contain an entire Notification, just the NotificationID and some preview information.
@@ -3473,7 +3613,7 @@ definitions:
         title: WebPushNotification represents a notification summary delivered to the client by the Web Push server.
         type: object
         x-go-name: WebPushNotification
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     webPushSubscription:
         properties:
             alerts:
@@ -3501,7 +3641,7 @@ definitions:
         title: WebPushSubscription represents a subscription to a Web Push server.
         type: object
         x-go-name: WebPushSubscription
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     webPushSubscriptionAlerts:
         properties:
             admin.report:
@@ -3559,7 +3699,7 @@ definitions:
         title: WebPushSubscriptionAlerts represents the specific events that this Web Push subscription will receive.
         type: object
         x-go-name: WebPushSubscriptionAlerts
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
     wellKnownResponse:
         description: See https://webfinger.net/
         properties:
@@ -3581,12 +3721,60 @@ definitions:
             For example, it would be returned from https://example.org/.well-known/webfinger?resource=acct:some_username@example.org
         type: object
         x-go-name: WellKnownResponse
-        x-go-package: github.com/superseriousbusiness/gotosocial/internal/api/model
+        x-go-package: code.superseriousbusiness.org/gotosocial/internal/api/model
 host: example.org
 info:
     contact:
         email: admin@gotosocial.org
         name: GoToSocial Authors
+    description: |-
+        This document describes the GoToSocial HTTP API.
+
+        For information on how to authenticate with the API using an OAuth access token, see the documentation here: https://docs.gotosocial.org/en/latest/api/authentication/.
+
+        Available scopes are:
+
+        admin: grants admin access to everything
+        admin:read: grants admin read access to everything
+        admin:read:accounts: grants admin read access to accounts
+        admin:read:domain_allows: grants admin read access to domain_allows
+        admin:read:domain_blocks: grants admin read access to domain_blocks
+        admin:read:reports: grants admin read access to reports
+        admin:write: grants admin write access to everything
+        admin:write:accounts: grants write read access to accounts
+        admin:write:domain_allows: grants admin write access to domain_allows
+        admin:write:domain_blocks: grants write read access to domain_blocks
+        admin:write:reports: grants admin write access to reports
+        profile: grants read access to verify_credentials
+        push: grants read/write access to push
+        read: grants read access to everything
+        read:accounts: grants read access to accounts
+        read:applications: grants read access to user-managed applications
+        read:blocks: grants read access to blocks
+        read:bookmarks: grants read access to bookmarks
+        read:favourites: grants read access to accounts
+        read:filters: grants read access to filters
+        read:follows: grants read access to follows
+        read:lists: grants read access to lists
+        read:mutes: grants read access to mutes
+        read:notifications: grants read access to notifications
+        read:search: grants read access to search
+        read:statuses: grants read access to statuses
+        write: grants write access to everything
+        write:accounts: grants write access to accounts
+        write:applications: grants write access to user-managed applications
+        write:blocks: grants write access to blocks
+        write:bookmarks: grants write access to bookmarks
+        write:conversations: grants write access to conversations
+        write:favourites: grants write access to favourites
+        write:filters: grants write access to filters
+        write:follows: grants write access to follows
+        write:lists: grants write access to lists
+        write:media: grants write access to media
+        write:mutes: grants write access to mutes
+        write:notifications: grants write access to notifications
+        write:reports: grants write access to reports
+        write:statuses: grants write access to statuses
     license:
         name: AGPL3
         url: https://www.gnu.org/licenses/agpl-3.0.en.html
@@ -4331,7 +4519,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - read:accounts
+                    - read:statuses
             summary: See statuses posted by the requested account.
             tags:
                 - accounts
@@ -4787,6 +4975,13 @@ paths:
                   in: formData
                   name: web_visibility
                   type: string
+                - description: |-
+                    Layout to use for the web view of the account.
+                    "microblog": default, classic microblog layout.
+                    "gallery": gallery layout with media only.
+                  in: formData
+                  name: web_layout
+                  type: string
                 - description: Name of 1st profile field to be added to this account's profile. (The index may be any string; add more indexes to send more fields.)
                   in: formData
                   name: fields_attributes[0][name]
@@ -5004,7 +5199,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - admin
+                    - admin:read:accounts
             summary: View + page through known accounts according to given filters.
             tags:
                 - admin
@@ -5038,7 +5233,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - admin
+                    - admin:read:accounts
             summary: View one account.
             tags:
                 - admin
@@ -5083,7 +5278,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - admin
+                    - admin:write:accounts
             summary: Perform an admin action on an account.
             tags:
                 - admin
@@ -5117,7 +5312,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - admin
+                    - admin:write:accounts
             summary: Approve pending account.
             tags:
                 - admin
@@ -5163,7 +5358,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - admin
+                    - admin:write:accounts
             summary: Reject pending account.
             tags:
                 - admin
@@ -5241,6 +5436,9 @@ paths:
                     description: not acceptable
                 "500":
                     description: internal server error
+            security:
+                - OAuth2 Bearer:
+                    - admin:read
             summary: View local and remote emojis available to / known by this instance.
             tags:
                 - admin
@@ -5287,7 +5485,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - admin
+                    - admin:write
             summary: Upload and create a new instance emoji.
             tags:
                 - admin
@@ -5327,7 +5525,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - admin
+                    - admin:write
             summary: Delete a **local** emoji with the given ID from the instance.
             tags:
                 - admin
@@ -5358,6 +5556,9 @@ paths:
                     description: not acceptable
                 "500":
                     description: internal server error
+            security:
+                - OAuth2 Bearer:
+                    - admin:read
             summary: Get the admin view of a single emoji.
             tags:
                 - admin
@@ -5429,7 +5630,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - admin
+                    - admin:write
             summary: Perform admin action on a local or remote emoji known to this instance.
             tags:
                 - admin
@@ -5457,6 +5658,9 @@ paths:
                     description: not acceptable
                 "500":
                     description: internal server error
+            security:
+                - OAuth2 Bearer:
+                    - admin:read
             summary: Get a list of existing emoji categories.
             tags:
                 - admin
@@ -5489,7 +5693,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - admin
+                    - admin:write
             summary: Perform a GET to the specified ActivityPub URL and return detailed debugging information.
             tags:
                 - debug
@@ -5514,7 +5718,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - admin
+                    - admin:write
             summary: Sweep/clear all in-memory caches.
             tags:
                 - debug
@@ -5549,7 +5753,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - admin
+                    - admin:read:domain_allows
             summary: View all domain allows currently in place.
             tags:
                 - admin
@@ -5612,7 +5816,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - admin
+                    - admin:write:domain_allows
             summary: Create one or more domain allows, from a string or a file.
             tags:
                 - admin
@@ -5648,7 +5852,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - admin
+                    - admin:write:domain_allows
             summary: Delete domain allow with the given ID.
             tags:
                 - admin
@@ -5681,8 +5885,55 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - admin
+                    - admin:read:domain_allows
             summary: View domain allow with the given ID.
+            tags:
+                - admin
+        put:
+            consumes:
+                - multipart/form-data
+            operationId: domainAllowUpdate
+            parameters:
+                - description: The id of the domain allow.
+                  in: path
+                  name: id
+                  required: true
+                  type: string
+                - description: Obfuscate the name of the domain when serving it publicly. Eg., `example.org` becomes something like `ex***e.org`.
+                  in: formData
+                  name: obfuscate
+                  type: boolean
+                - description: Public comment about this domain allow. This will be displayed alongside the domain allow if you choose to share allows.
+                  in: formData
+                  name: public_comment
+                  type: string
+                - description: Private comment about this domain allow. Will only be shown to other admins, so this is a useful way of internally keeping track of why a certain domain ended up allowed.
+                  in: formData
+                  name: private_comment
+                  type: string
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: The updated domain allow.
+                    schema:
+                        $ref: '#/definitions/domainPermission'
+                "400":
+                    description: bad request
+                "401":
+                    description: unauthorized
+                "403":
+                    description: forbidden
+                "404":
+                    description: not found
+                "406":
+                    description: not acceptable
+                "500":
+                    description: internal server error
+            security:
+                - OAuth2 Bearer:
+                    - admin:write:domain_allows
+            summary: Update a single domain allow.
             tags:
                 - admin
     /api/v1/admin/domain_blocks:
@@ -5716,7 +5967,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - admin
+                    - admin:read:domain_blocks
             summary: View all domain blocks currently in place.
             tags:
                 - admin
@@ -5779,7 +6030,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - admin
+                    - admin:write:domain_blocks
             summary: Create one or more domain blocks, from a string or a file.
             tags:
                 - admin
@@ -5815,7 +6066,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - admin
+                    - admin:write:domain_blocks
             summary: Delete domain block with the given ID.
             tags:
                 - admin
@@ -5848,8 +6099,55 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - admin
+                    - admin:read:domain_blocks
             summary: View domain block with the given ID.
+            tags:
+                - admin
+        put:
+            consumes:
+                - multipart/form-data
+            operationId: domainBlockUpdate
+            parameters:
+                - description: The id of the domain block.
+                  in: path
+                  name: id
+                  required: true
+                  type: string
+                - description: Obfuscate the name of the domain when serving it publicly. Eg., `example.org` becomes something like `ex***e.org`.
+                  in: formData
+                  name: obfuscate
+                  type: boolean
+                - description: Public comment about this domain block. This will be displayed alongside the domain block if you choose to share blocks.
+                  in: formData
+                  name: public_comment
+                  type: string
+                - description: Private comment about this domain block. Will only be shown to other admins, so this is a useful way of internally keeping track of why a certain domain ended up blocked.
+                  in: formData
+                  name: private_comment
+                  type: string
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: The updated domain block.
+                    schema:
+                        $ref: '#/definitions/domainPermission'
+                "400":
+                    description: bad request
+                "401":
+                    description: unauthorized
+                "403":
+                    description: forbidden
+                "404":
+                    description: not found
+                "406":
+                    description: not acceptable
+                "500":
+                    description: internal server error
+            security:
+                - OAuth2 Bearer:
+                    - admin:write:domain_blocks
+            summary: Update a single domain block.
             tags:
                 - admin
     /api/v1/admin/domain_keys_expire:
@@ -5900,7 +6198,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - admin
+                    - admin:write
             summary: Force expiry of cached public keys for all accounts on the given domain stored in your database.
             tags:
                 - admin
@@ -5976,7 +6274,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - admin
+                    - admin:read
             summary: View domain permission drafts.
             tags:
                 - admin
@@ -6027,7 +6325,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - admin
+                    - admin:write
             summary: Create a domain permission draft with the given parameters.
             tags:
                 - admin
@@ -6059,7 +6357,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - admin
+                    - admin:read
             summary: Get domain permission draft with the given ID.
             tags:
                 - admin
@@ -6101,7 +6399,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - admin
+                    - admin:write
             summary: Accept a domain permission draft, turning it into an enforced domain permission.
             tags:
                 - admin
@@ -6143,7 +6441,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - admin
+                    - admin:write
             summary: Remove a domain permission draft, optionally ignoring all future drafts targeting the given domain.
             tags:
                 - admin
@@ -6211,7 +6509,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - admin
+                    - admin:read
             summary: View domain permission excludes.
             tags:
                 - admin
@@ -6254,7 +6552,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - admin
+                    - admin:write
             summary: Create a domain permission exclude with the given parameters.
             tags:
                 - admin
@@ -6288,7 +6586,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - admin
+                    - admin:write
             summary: Remove a domain permission exclude.
             tags:
                 - admin
@@ -6319,7 +6617,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - admin
+                    - admin:read
             summary: Get domain permission exclude with the given ID.
             tags:
                 - admin
@@ -6387,7 +6685,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - admin
+                    - admin:read
             summary: View domain permission subscriptions.
             tags:
                 - admin
@@ -6462,7 +6760,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - admin
+                    - admin:write
             summary: Create a domain permission subscription with the given parameters.
             tags:
                 - admin
@@ -6535,7 +6833,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - admin
+                    - admin:write
             summary: Update a domain permission subscription with the given parameters.
             tags:
                 - admin
@@ -6567,7 +6865,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - admin
+                    - admin:read
             summary: Get domain permission subscription with the given ID.
             tags:
                 - admin
@@ -6611,7 +6909,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - admin
+                    - admin:write
             summary: Remove a domain permission subscription.
             tags:
                 - admin
@@ -6651,7 +6949,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - admin
+                    - admin:write
             summary: Test one domain permission subscription by making your instance fetch and parse it *without creating permissions*.
             tags:
                 - admin
@@ -6688,7 +6986,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - admin
+                    - admin:read
             summary: View all domain permission subscriptions of the given permission type, in priority order (highest to lowest).
             tags:
                 - admin
@@ -6733,7 +7031,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - admin
+                    - admin:write
             summary: Send a generic test email to a specified email address.
             tags:
                 - admin
@@ -6802,7 +7100,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - admin
+                    - admin:write
             summary: Create new "allow" HTTP request header filter.
             tags:
                 - admin
@@ -6830,7 +7128,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - admin
+                    - admin:write
             summary: Delete the "allow" header filter with the given ID.
             tags:
                 - admin
@@ -6859,7 +7157,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - admin
+                    - admin:read
             summary: Get "allow" header filter with the given ID.
             tags:
                 - admin
@@ -6928,7 +7226,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - admin
+                    - admin:write
             summary: Create new "block" HTTP request header filter.
             tags:
                 - admin
@@ -6956,7 +7254,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - admin
+                    - admin:write
             summary: Delete the "block" header filter with the given ID.
             tags:
                 - admin
@@ -6985,11 +7283,39 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - admin
+                    - admin:read
             summary: Get "block" header filter with the given ID.
             tags:
                 - admin
     /api/v1/admin/instance/rules:
+        get:
+            description: The rules will be returned in order (sorted by Order ascending).
+            operationId: adminsRuleGet
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: An array with all the rules for the local instance.
+                    schema:
+                        items:
+                            $ref: '#/definitions/instanceRule'
+                        type: array
+                "400":
+                    description: bad request
+                "401":
+                    description: unauthorized
+                "404":
+                    description: not found
+                "406":
+                    description: not acceptable
+                "500":
+                    description: internal server error
+            security:
+                - OAuth2 Bearer:
+                    - admin:read
+            summary: View instance rules, with IDs.
+            tags:
+                - admin
         post:
             consumes:
                 - multipart/form-data
@@ -7022,7 +7348,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - admin
+                    - admin:write
             summary: Create a new instance rule.
             tags:
                 - admin
@@ -7058,8 +7384,39 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - admin
+                    - admin:write
             summary: Delete an existing instance rule.
+            tags:
+                - admin
+        get:
+            operationId: adminRuleGet
+            parameters:
+                - description: The id of the rule.
+                  in: path
+                  name: id
+                  required: true
+                  type: string
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: The requested rule.
+                    schema:
+                        $ref: '#/definitions/instanceRule'
+                "400":
+                    description: bad request
+                "401":
+                    description: unauthorized
+                "404":
+                    description: not found
+                "406":
+                    description: not acceptable
+                "500":
+                    description: internal server error
+            security:
+                - OAuth2 Bearer:
+                    - admin:read
+            summary: View instance rule with the given id.
             tags:
                 - admin
         patch:
@@ -7100,7 +7457,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - admin
+                    - admin:write
             summary: Update an existing instance rule.
             tags:
                 - admin
@@ -7140,7 +7497,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - admin
+                    - admin:write
             summary: Clean up remote media older than the specified number of days.
             tags:
                 - admin
@@ -7174,7 +7531,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - admin
+                    - admin:write
             summary: Refetch media specified in the database but missing from storage.
             tags:
                 - admin
@@ -7248,7 +7605,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - admin
+                    - admin:read:reports
             summary: View user moderation reports.
             tags:
                 - admin
@@ -7280,7 +7637,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - admin
+                    - admin:read:reports
             summary: View user moderation report with the given id.
             tags:
                 - admin
@@ -7322,69 +7679,8 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - admin
+                    - admin:write:reports
             summary: Mark a report as resolved.
-            tags:
-                - admin
-    /api/v1/admin/rules:
-        get:
-            description: The rules will be returned in order (sorted by Order ascending).
-            operationId: adminsRuleGet
-            produces:
-                - application/json
-            responses:
-                "200":
-                    description: An array with all the rules for the local instance.
-                    schema:
-                        items:
-                            $ref: '#/definitions/instanceRule'
-                        type: array
-                "400":
-                    description: bad request
-                "401":
-                    description: unauthorized
-                "404":
-                    description: not found
-                "406":
-                    description: not acceptable
-                "500":
-                    description: internal server error
-            security:
-                - OAuth2 Bearer:
-                    - admin
-            summary: View instance rules, with IDs.
-            tags:
-                - admin
-    /api/v1/admin/rules/{id}:
-        get:
-            operationId: adminRuleGet
-            parameters:
-                - description: The id of the rule.
-                  in: path
-                  name: id
-                  required: true
-                  type: string
-            produces:
-                - application/json
-            responses:
-                "200":
-                    description: The requested rule.
-                    schema:
-                        $ref: '#/definitions/instanceRule'
-                "400":
-                    description: bad request
-                "401":
-                    description: unauthorized
-                "404":
-                    description: not found
-                "406":
-                    description: not acceptable
-                "500":
-                    description: internal server error
-            security:
-                - OAuth2 Bearer:
-                    - admin
-            summary: View instance rule with the given id.
             tags:
                 - admin
     /api/v1/announcements:
@@ -7410,12 +7706,68 @@ paths:
                 "500":
                     description: internal server error
             security:
-                - OAuth2 Bearer:
-                    - read:announcements
+                - OAuth2 Bearer: []
             summary: Get an array of currently active announcements.
             tags:
                 - announcements
     /api/v1/apps:
+        get:
+            description: |-
+                The next and previous queries can be parsed from the returned Link header.
+
+                Example:
+
+                ```
+                <https://example.org/api/v1/apps?limit=80&max_id=01FC0SKA48HNSVR6YKZCQGS2V8>; rel="next", <https://example.org/api/v1/apps?limit=80&min_id=01FC0SKW5JK2Q4EVAV2B462YY0>; rel="prev"
+                ````
+            operationId: appsGet
+            parameters:
+                - description: Return only items *OLDER* than the given max item ID. The item with the specified ID will not be included in the response.
+                  in: query
+                  name: max_id
+                  type: string
+                - description: Return only items *newer* than the given since item ID. The item with the specified ID will not be included in the response.
+                  in: query
+                  name: since_id
+                  type: string
+                - description: Return only items *immediately newer* than the given since item ID. The item with the specified ID will not be included in the response.
+                  in: query
+                  name: min_id
+                  type: string
+                - default: 20
+                  description: Number of items to return.
+                  in: query
+                  name: limit
+                  type: integer
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: ""
+                    headers:
+                        Link:
+                            description: Links to the next and previous queries.
+                            type: string
+                    schema:
+                        items:
+                            $ref: '#/definitions/application'
+                        type: array
+                "400":
+                    description: bad request
+                "401":
+                    description: unauthorized
+                "404":
+                    description: not found
+                "406":
+                    description: not acceptable
+                "500":
+                    description: internal server error
+            security:
+                - OAuth2 Bearer:
+                    - read:applications
+            summary: Get an array of applications that are managed by the requester.
+            tags:
+                - apps
         post:
             consumes:
                 - application/json
@@ -7425,8 +7777,10 @@ paths:
                 The registered application can be used to obtain an application token.
                 This can then be used to register a new account, or (through user auth) obtain an access token.
 
-                The parameters can also be given in the body of the request, as JSON, if the content-type is set to 'application/json'.
-                The parameters can also be given in the body of the request, as XML, if the content-type is set to 'application/xml'.
+                If the application was registered with a Bearer token passed in the Authorization header, the created application will be managed by the authenticated user (must have scope write:applications).
+
+                Parameters can also be given in the body of the request, as JSON, if the content-type is set to 'application/json'.
+                Parameters can also be given in the body of the request, as XML, if the content-type is set to 'application/xml'.
             operationId: appCreate
             parameters:
                 - description: The name of the application.
@@ -7436,16 +7790,17 @@ paths:
                   type: string
                   x-go-name: ClientName
                 - description: |-
-                    Where the user should be redirected after authorization.
+                    Single redirect URI or newline-separated list of redirect URIs (optional).
 
                     To display the authorization code to the user instead of redirecting to a web page, use `urn:ietf:wg:oauth:2.0:oob` in this parameter.
+
+                    If no redirect URIs are provided, defaults to `urn:ietf:wg:oauth:2.0:oob`.
                   in: formData
                   name: redirect_uris
-                  required: true
                   type: string
                   x-go-name: RedirectURIs
                 - description: |-
-                    Space separated list of scopes.
+                    Space separated list of scopes (optional).
 
                     If no scopes are provided, defaults to `read`.
                   in: formData
@@ -7477,6 +7832,69 @@ paths:
                 "500":
                     description: internal server error
             summary: Register a new application on this instance.
+            tags:
+                - apps
+    /api/v1/apps/{id}:
+        delete:
+            operationId: appDelete
+            parameters:
+                - description: The id of the application to delete.
+                  in: path
+                  name: id
+                  required: true
+                  type: string
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: The deleted application.
+                    schema:
+                        $ref: '#/definitions/application'
+                "400":
+                    description: bad request
+                "401":
+                    description: unauthorized
+                "404":
+                    description: not found
+                "406":
+                    description: not acceptable
+                "500":
+                    description: internal server error
+            security:
+                - OAuth2 Bearer:
+                    - write:applications
+            summary: Delete a single application managed by the requester.
+            tags:
+                - apps
+        get:
+            operationId: appGet
+            parameters:
+                - description: The id of the requested application.
+                  in: path
+                  name: id
+                  required: true
+                  type: string
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: The requested application.
+                    schema:
+                        $ref: '#/definitions/application'
+                "400":
+                    description: bad request
+                "401":
+                    description: unauthorized
+                "404":
+                    description: not found
+                "406":
+                    description: not acceptable
+                "500":
+                    description: internal server error
+            security:
+                - OAuth2 Bearer:
+                    - read:applications
+            summary: Get a single application managed by the requester.
             tags:
                 - apps
     /api/v1/blocks:
@@ -7725,8 +8143,7 @@ paths:
                 "500":
                     description: internal server error
             security:
-                - OAuth2 Bearer:
-                    - read:custom_emojis
+                - OAuth2 Bearer: []
             summary: Get an array of custom emojis available on the instance.
             tags:
                 - custom_emojis
@@ -7766,7 +8183,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - read:follows
+                    - read:accounts
             summary: Export a CSV file of accounts that follow you.
             tags:
                 - import-export
@@ -7848,7 +8265,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - read:account
+                    - read:accounts
             summary: Returns informational stats on the number of items that can be exported for requesting account.
             tags:
                 - import-export
@@ -8398,7 +8815,7 @@ paths:
                   type: file
                 - description: |-
                     Type of entries contained in the data file:
-                    - `following` - accounts to follow. - `blocks` - accounts to block.
+                    - `following` - accounts to follow. - `blocks` - accounts to block. - `mutes` - accounts to mute.
                   in: formData
                   name: type
                   required: true
@@ -8425,7 +8842,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - write:accounts
+                    - write
             summary: Upload some CSV-formatted data to your account.
             tags:
                 - import-export
@@ -8519,41 +8936,109 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - admin
+                    - admin:write
             summary: Update your instance information and/or upload a new avatar/header for the instance.
+            tags:
+                - instance
+    /api/v1/instance/domain_allows:
+        get:
+            description: OAuth token may need to be provided depending on setting `instance-expose-allowlist`.
+            operationId: instanceDomainAllowsGet
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: List of explicitly allowed domains.
+                    schema:
+                        items:
+                            $ref: '#/definitions/domain'
+                        type: array
+                "400":
+                    description: bad request
+                "401":
+                    description: unauthorized
+                "403":
+                    description: forbidden
+                "404":
+                    description: not found
+                "406":
+                    description: not acceptable
+                "500":
+                    description: internal server error
+            security:
+                - OAuth2 Bearer: []
+            summary: List explicitly allowed domains.
+            tags:
+                - instance
+    /api/v1/instance/domain_blocks:
+        get:
+            description: OAuth token may need to be provided depending on setting `instance-expose-blocklist`.
+            operationId: instanceDomainBlocksGet
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: List of blocked domains.
+                    schema:
+                        items:
+                            $ref: '#/definitions/domain'
+                        type: array
+                "400":
+                    description: bad request
+                "401":
+                    description: unauthorized
+                "403":
+                    description: forbidden
+                "404":
+                    description: not found
+                "406":
+                    description: not acceptable
+                "500":
+                    description: internal server error
+            security:
+                - OAuth2 Bearer: []
+            summary: List blocked domains.
             tags:
                 - instance
     /api/v1/instance/peers:
         get:
             operationId: instancePeersGet
             parameters:
-                - default: open
+                - default: flat
                   description: |-
                     Comma-separated list of filters to apply to results. Recognized filters are:
-                      - `open` -- include peers that are not suspended or silenced
-                      - `suspended` -- include peers that have been suspended.
+                      - `open` -- include known domains that are not in the domain blocklist
+                      - `allowed` -- include domains that are in the domain allowlist
+                      - `blocked` -- include domains that are in the domain blocklist
+                      - `suspended` -- DEPRECATED! Use `blocked` instead. Same as `blocked`: include domains that are in the domain blocklist;
 
-                    If filter is `open`, only instances that haven't been suspended or silenced will be returned.
+                    If filter is `open`, only domains that aren't in the blocklist will be shown.
 
-                    If filter is `suspended`, only suspended instances will be shown.
+                    If filter is `blocked`, only domains that *are* in the blocklist will be shown.
 
-                    If filter is `open,suspended`, then all known instances will be returned.
+                    If filter is `allowed`, only domains that are in the allowlist will be shown.
+
+                    If filter is `open,blocked`, then blocked domains and known domains not on the blocklist will be shown.
+
+                    If filter is `open,allowed`, then allowed domains and known domains not on the blocklist will be shown.
 
                     If filter is an empty string or not set, then `open` will be assumed as the default.
                   in: query
                   name: filter
                   type: string
+                - default: false
+                  description: If true, a "flat" array of strings will be returned corresponding to just domain names.
+                  in: query
+                  name: flat
+                  type: boolean
             produces:
                 - application/json
             responses:
                 "200":
                     description: |-
-                        If no filter parameter is provided, or filter is empty, then a legacy, Mastodon-API compatible response will be returned. This will consist of just a 'flat' array of strings like `["example.com", "example.org"]`, which corresponds to domains this instance peers with.
-
-                        If a filter parameter is provided, then an array of objects with at least a `domain` key set on each object will be returned.
-
+                        If no filter parameter is provided, or filter is empty, then a legacy, Mastodon-API compatible response will be returned. This will consist of just a 'flat' array of strings like `["example.com", "example.org"]`, which corresponds to setting a filter of `open` and flat=true.
+                        If a filter parameter is provided and flat is not true, then an array of objects with at least a `domain` key set on each object will be returned.
                         Domains that are silenced or suspended will also have a key `suspended_at` or `silenced_at` that contains an iso8601 date string. If one of these keys is not present on the domain object, it is open. Suspended instances may in some cases be obfuscated, which means they will have some letters replaced by `*` to make it more difficult for bad actors to target instances with harassment.
-
                         Whether a flat response or a more detailed response is returned, domains will be sorted alphabetically by hostname.
                     schema:
                         items:
@@ -8571,6 +9056,9 @@ paths:
                     description: not acceptable
                 "500":
                     description: internal server error
+            security:
+                - OAuth2 Bearer: []
+            summary: List peer domains.
             tags:
                 - instance
     /api/v1/instance/rules:
@@ -9645,7 +10133,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - read:notifications
+                    - write:notifications
             summary: Clear/delete all notifications for currently authorized user.
             tags:
                 - notifications
@@ -10160,7 +10648,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - read:reports
+                    - read:accounts
             summary: See reports created by the requesting account.
             tags:
                 - reports
@@ -10272,7 +10760,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - read:reports
+                    - read:accounts
             summary: Get one report with the given id.
             tags:
                 - reports
@@ -10397,10 +10885,14 @@ paths:
                   x-go-name: Federated
                 - description: |-
                     ISO 8601 Datetime at which to schedule a status.
-                    Providing this parameter will cause ScheduledStatus to be returned instead of Status.
-                    Must be at least 5 minutes in the future.
 
-                    This feature isn't implemented yet; attemping to set it will return 501 Not Implemented.
+                    Providing this parameter with a *future* time will cause ScheduledStatus to be returned instead of Status.
+                    Must be at least 5 minutes in the future.
+                    This feature isn't implemented yet.
+
+                    Providing this parameter with a *past* time will cause the status to be backdated,
+                    and will not push it to the user's followers. This is intended for importing old statuses.
+                  format: date-time
                   in: formData
                   name: scheduled_at
                   type: string
@@ -10469,6 +10961,76 @@ paths:
             summary: Create a new status using the given form field parameters.
             tags:
                 - statuses
+    /api/v1/statuses/{id}:
+        delete:
+            description: |-
+                The deleted status will be returned in the response. The `text` field will contain the original text of the status as it was submitted.
+                This is useful when doing a 'delete and redraft' type operation.
+            operationId: statusDelete
+            parameters:
+                - description: Target status ID.
+                  in: path
+                  name: id
+                  required: true
+                  type: string
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: The status that was just deleted.
+                    schema:
+                        $ref: '#/definitions/status'
+                "400":
+                    description: bad request
+                "401":
+                    description: unauthorized
+                "403":
+                    description: forbidden
+                "404":
+                    description: not found
+                "406":
+                    description: not acceptable
+                "500":
+                    description: internal server error
+            security:
+                - OAuth2 Bearer:
+                    - write:statuses
+            summary: Delete status with the given ID. The status must belong to you.
+            tags:
+                - statuses
+        get:
+            operationId: statusGet
+            parameters:
+                - description: Target status ID.
+                  in: path
+                  name: id
+                  required: true
+                  type: string
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: The requested status.
+                    schema:
+                        $ref: '#/definitions/status'
+                "400":
+                    description: bad request
+                "401":
+                    description: unauthorized
+                "403":
+                    description: forbidden
+                "404":
+                    description: not found
+                "406":
+                    description: not acceptable
+                "500":
+                    description: internal server error
+            security:
+                - OAuth2 Bearer:
+                    - read:statuses
+            summary: View status with the given ID.
+            tags:
+                - statuses
         put:
             consumes:
                 - application/json
@@ -10476,6 +11038,11 @@ paths:
             description: The parameters can also be given in the body of the request, as JSON, if the content-type is set to 'application/json'.
             operationId: statusEdit
             parameters:
+                - description: Target status ID.
+                  in: path
+                  name: id
+                  required: true
+                  type: string
                 - description: |-
                     Text content of the status.
                     If media_ids is provided, this becomes optional.
@@ -10575,76 +11142,6 @@ paths:
             summary: Edit an existing status using the given form field parameters.
             tags:
                 - statuses
-    /api/v1/statuses/{id}:
-        delete:
-            description: |-
-                The deleted status will be returned in the response. The `text` field will contain the original text of the status as it was submitted.
-                This is useful when doing a 'delete and redraft' type operation.
-            operationId: statusDelete
-            parameters:
-                - description: Target status ID.
-                  in: path
-                  name: id
-                  required: true
-                  type: string
-            produces:
-                - application/json
-            responses:
-                "200":
-                    description: The status that was just deleted.
-                    schema:
-                        $ref: '#/definitions/status'
-                "400":
-                    description: bad request
-                "401":
-                    description: unauthorized
-                "403":
-                    description: forbidden
-                "404":
-                    description: not found
-                "406":
-                    description: not acceptable
-                "500":
-                    description: internal server error
-            security:
-                - OAuth2 Bearer:
-                    - write:statuses
-            summary: Delete status with the given ID. The status must belong to you.
-            tags:
-                - statuses
-        get:
-            operationId: statusGet
-            parameters:
-                - description: Target status ID.
-                  in: path
-                  name: id
-                  required: true
-                  type: string
-            produces:
-                - application/json
-            responses:
-                "200":
-                    description: The requested status.
-                    schema:
-                        $ref: '#/definitions/status'
-                "400":
-                    description: bad request
-                "401":
-                    description: unauthorized
-                "403":
-                    description: forbidden
-                "404":
-                    description: not found
-                "406":
-                    description: not acceptable
-                "500":
-                    description: internal server error
-            security:
-                - OAuth2 Bearer:
-                    - read:statuses
-            summary: View status with the given ID.
-            tags:
-                - statuses
     /api/v1/statuses/{id}/bookmark:
         post:
             operationId: statusBookmark
@@ -10675,7 +11172,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - write:statuses
+                    - write:bookmarks
             summary: Bookmark status with the given ID.
             tags:
                 - statuses
@@ -10786,7 +11283,6 @@ paths:
                 - statuses
     /api/v1/statuses/{id}/history:
         get:
-            description: 'UNIMPLEMENTED: Currently this endpoint will always return an array of length 1, containing only the latest/current version of the status.'
             operationId: statusHistoryGet
             parameters:
                 - description: Target status ID.
@@ -11033,7 +11529,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - write:statuses
+                    - write:bookmarks
             summary: Unbookmark status with the given ID.
             tags:
                 - statuses
@@ -11067,7 +11563,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - write:statuses
+                    - write:favourites
             summary: Unstar/unlike/unfavourite the given status.
             tags:
                 - statuses
@@ -11311,8 +11807,7 @@ paths:
                 "500":
                     description: internal server error
             security:
-                - OAuth2 Bearer:
-                    - read:follows
+                - OAuth2 Bearer: []
             summary: Get details for a hashtag, including whether you currently follow it.
             tags:
                 - tags
@@ -11618,6 +12113,124 @@ paths:
             summary: See public statuses that use the given hashtag (case insensitive).
             tags:
                 - timelines
+    /api/v1/tokens:
+        get:
+            description: |-
+                The items will be returned in descending chronological order (newest first), with sequential IDs (bigger = newer).
+
+                The returned Link header can be used to generate the previous and next queries when paging up or down.
+
+                Example:
+
+                ```
+                <https://example.org/api/v1/tokens?limit=20&max_id=01FC3GSQ8A3MMJ43BPZSGEG29M>; rel="next", <https://example.org/api/v1/tokens?limit=20&min_id=01FC3KJW2GYXSDDRA6RWNDM46M>; rel="prev"
+                ````
+            operationId: tokensInfoGet
+            parameters:
+                - description: Return only items *OLDER* than the given max item ID. The item with the specified ID will not be included in the response.
+                  in: query
+                  name: max_id
+                  type: string
+                - description: Return only items *newer* than the given since item ID. The item with the specified ID will not be included in the response.
+                  in: query
+                  name: since_id
+                  type: string
+                - description: Return only items *immediately newer* than the given since item ID. The item with the specified ID will not be included in the response.
+                  in: query
+                  name: min_id
+                  type: string
+                - default: 20
+                  description: Number of items to return.
+                  in: query
+                  name: limit
+                  type: integer
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: Array of token info entries.
+                    headers:
+                        Link:
+                            description: Links to the next and previous queries.
+                            type: string
+                    schema:
+                        items:
+                            $ref: '#/definitions/tokenInfo'
+                        type: array
+                "400":
+                    description: bad request
+                "401":
+                    description: unauthorized
+            security:
+                - OAuth2 Bearer:
+                    - read:accounts
+            summary: See info about tokens created for/by your account.
+            tags:
+                - tokens
+    /api/v1/tokens/{id}:
+        get:
+            operationId: tokenInfoGet
+            parameters:
+                - description: The id of the requested token.
+                  in: path
+                  name: id
+                  required: true
+                  type: string
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: The requested token.
+                    schema:
+                        $ref: '#/definitions/tokenInfo'
+                "400":
+                    description: bad request
+                "401":
+                    description: unauthorized
+                "404":
+                    description: not found
+                "406":
+                    description: not acceptable
+                "500":
+                    description: internal server error
+            security:
+                - OAuth2 Bearer:
+                    - read:accounts
+            summary: Get information about a single token.
+            tags:
+                - tokens
+    /api/v1/tokens/{id}/invalidate:
+        post:
+            operationId: tokenInvalidatePost
+            parameters:
+                - description: The id of the target token.
+                  in: path
+                  name: id
+                  required: true
+                  type: string
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: Info about the invalidated token.
+                    schema:
+                        $ref: '#/definitions/tokenInfo'
+                "400":
+                    description: bad request
+                "401":
+                    description: unauthorized
+                "404":
+                    description: not found
+                "406":
+                    description: not acceptable
+                "500":
+                    description: internal server error
+            security:
+                - OAuth2 Bearer:
+                    - write:accounts
+            summary: Invalidate the target token, removing it from the database and making it unusable.
+            tags:
+                - tokens
     /api/v1/user:
         get:
             operationId: getUser
@@ -11640,8 +12253,148 @@ paths:
                     description: internal error
             security:
                 - OAuth2 Bearer:
-                    - read:user
+                    - read:accounts
             summary: Get your own user model.
+            tags:
+                - user
+    /api/v1/user/2fa/disable:
+        post:
+            consumes:
+                - application/json
+                - application/x-www-form-urlencoded
+            description: |-
+                If 2fa is already disabled for this user, code 409 Conflict will be returned.
+
+                If the instance is running with OIDC enabled, two factor authentication cannot be turned on or off in GtS, it must be enabled or disabled using the OIDC provider. All calls to 2fa api endpoints will return 422 Unprocessable Entity while OIDC is enabled.
+            operationId: TwoFactorDisablePost
+            parameters:
+                - description: User's current password, for verification.
+                  in: formData
+                  name: password
+                  type: string
+            responses:
+                "200":
+                    description: QR code
+                "401":
+                    description: unauthorized
+                "403":
+                    description: forbidden
+                "406":
+                    description: not acceptable
+                "409":
+                    description: conflict
+                "422":
+                    description: unprocessable entity
+                "500":
+                    description: internal error
+            security:
+                - OAuth2 Bearer:
+                    - write:accounts
+            summary: Disable 2fa for the authorized user. User's current password must be provided for verification purposes.
+            tags:
+                - user
+    /api/v1/user/2fa/enable:
+        post:
+            consumes:
+                - application/json
+                - application/x-www-form-urlencoded
+            description: |-
+                If 2fa is already enabled for this user, code 409 Conflict will be returned.
+
+                If the instance is running with OIDC enabled, two factor authentication cannot be turned on or off in GtS, it must be enabled or disabled using the OIDC provider. All calls to 2fa api endpoints will return 422 Unprocessable Entity while OIDC is enabled.
+            operationId: TwoFactorEnablePost
+            parameters:
+                - description: |-
+                    2fa code from the user's authenticator app.
+                    Sample: 123456
+                  in: formData
+                  name: code
+                  type: string
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: QR code
+                "401":
+                    description: unauthorized
+                "403":
+                    description: forbidden
+                "406":
+                    description: not acceptable
+                "409":
+                    description: conflict
+                "422":
+                    description: unprocessable entity
+                "500":
+                    description: internal error
+            security:
+                - OAuth2 Bearer:
+                    - write:accounts
+            summary: Enable 2fa for the authorized user, using the provided code from an authenticator app, and return an array of one-time recovery codes to allow bypassing 2fa.
+            tags:
+                - user
+    /api/v1/user/2fa/qr.png:
+        get:
+            description: |-
+                For the plaintext version of the QR code URI, call /api/v1/user/2fa/qruri instead.
+
+                If 2fa is already enabled for this user, the QR code (with its secret) will not be shared again. Instead, code 409 Conflict will be returned. To get a fresh secret, first disable 2fa using POST /api/v1/user/2fa/disable, and then call this endpoint again.
+
+                If the instance is running with OIDC enabled, two factor authentication cannot be turned on or off in GtS, it must be enabled or disabled using the OIDC provider. All calls to 2fa api endpoints will return 422 Unprocessable Entity while OIDC is enabled.
+            operationId: TwoFactorQRCodePngGet
+            produces:
+                - image/png
+            responses:
+                "200":
+                    description: QR code png
+                "401":
+                    description: unauthorized
+                "403":
+                    description: forbidden
+                "406":
+                    description: not acceptable
+                "409":
+                    description: conflict
+                "422":
+                    description: unprocessable entity
+                "500":
+                    description: internal error
+            security:
+                - OAuth2 Bearer:
+                    - read:accounts
+            summary: Return a QR code png to allow the authorized user to enable 2fa for their login.
+            tags:
+                - user
+    /api/v1/user/2fa/qruri:
+        get:
+            description: |-
+                For a png of the QR code, call /api/v1/user/2fa/qr.png instead.
+
+                If 2fa is already enabled for this user, the QR code URI (with its secret) will not be shared again. Instead, code 409 Conflict will be returned. To get a fresh secret, first disable 2fa using POST /api/v1/user/2fa/disable, and then call this endpoint again.
+
+                If the instance is running with OIDC enabled, two factor authentication cannot be turned on or off in GtS, it must be enabled or disabled using the OIDC provider. All calls to 2fa api endpoints will return 422 Unprocessable Entity while OIDC is enabled.
+            operationId: TwoFactorQRCodeURIGet
+            produces:
+                - text/plain
+            responses:
+                "200":
+                    description: QR code uri
+                "401":
+                    description: unauthorized
+                "403":
+                    description: forbidden
+                "406":
+                    description: not acceptable
+                "409":
+                    description: conflict
+                "422":
+                    description: unprocessable entity
+                "500":
+                    description: internal error
+            security:
+                - OAuth2 Bearer:
+                    - read:accounts
+            summary: Return a QR code uri to allow the authorized user to enable 2fa for their login.
             tags:
                 - user
     /api/v1/user/email_change:
@@ -11685,7 +12438,7 @@ paths:
                     description: internal error
             security:
                 - OAuth2 Bearer:
-                    - write:user
+                    - write:accounts
             summary: Request changing the email address of authenticated user.
             tags:
                 - user
@@ -11734,7 +12487,7 @@ paths:
                     description: internal error
             security:
                 - OAuth2 Bearer:
-                    - write:user
+                    - write:accounts
             summary: Change the password of authenticated user.
             tags:
                 - user
@@ -11835,7 +12588,7 @@ paths:
                     description: internal server error
             security:
                 - OAuth2 Bearer:
-                    - admin
+                    - admin:read:accounts
             summary: View + page through known accounts according to given filters.
             tags:
                 - admin
@@ -12555,6 +13308,43 @@ paths:
             summary: Returns a compliant nodeinfo response to node info queries.
             tags:
                 - nodeinfo
+    /oauth/revoke:
+        post:
+            consumes:
+                - multipart/form-data
+            operationId: oauthTokenRevoke
+            parameters:
+                - description: The client ID, obtained during app registration.
+                  in: formData
+                  name: client_id
+                  required: true
+                  type: string
+                - description: The client secret, obtained during app registration.
+                  in: formData
+                  name: client_secret
+                  required: true
+                  type: string
+                - description: The previously obtained token, to be invalidated.
+                  in: formData
+                  name: token
+                  required: true
+                  type: string
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: OK - If you own the provided token, the API call will provide OK and an empty response `{}`. This operation is idempotent, so calling this API multiple times will still return OK.
+                "400":
+                    description: bad request
+                "403":
+                    description: forbidden - If you provide a token you do not own, the API call will return a 403 error.
+                "406":
+                    description: not acceptable
+                "500":
+                    description: internal server error
+            summary: Revoke an access token to make it no longer valid for use.
+            tags:
+                - oauth
     /readyz:
         get:
             description: If GtS is not ready, 500 Internal Error will be returned, and an error will be logged (but not returned to the caller, to avoid leaking internals).
@@ -12722,32 +13512,46 @@ securityDefinitions:
         flow: accessCode
         scopes:
             admin: grants admin access to everything
-            admin:accounts: grants admin access to accounts
+            admin:read: grants admin read access to everything
+            admin:read:accounts: grants admin read access to accounts
+            admin:read:domain_allows: grants admin read access to domain_allows
+            admin:read:domain_blocks: grants admin read access to domain_blocks
+            admin:read:reports: grants admin read access to reports
+            admin:write: grants admin write access to everything
+            admin:write:accounts: grants write read access to accounts
+            admin:write:domain_allows: grants admin write access to domain_allows
+            admin:write:domain_blocks: grants write read access to domain_blocks
+            admin:write:reports: grants admin write access to reports
+            profile: grants read access to verify_credentials
+            push: grants read/write access to push
             read: grants read access to everything
             read:accounts: grants read access to accounts
-            read:blocks: grant read access to blocks
-            read:custom_emojis: grant read access to custom_emojis
-            read:favourites: grant read access to favourites
-            read:filters: grant read access to filters
-            read:follows: grant read access to follows
-            read:lists: grant read access to lists
-            read:media: grant read access to media
-            read:mutes: grant read access to mutes
+            read:applications: grants read access to user-managed applications
+            read:blocks: grants read access to blocks
+            read:bookmarks: grants read access to bookmarks
+            read:favourites: grants read access to accounts
+            read:filters: grants read access to filters
+            read:follows: grants read access to follows
+            read:lists: grants read access to lists
+            read:mutes: grants read access to mutes
             read:notifications: grants read access to notifications
-            read:search: grant read access to searches
+            read:search: grants read access to search
             read:statuses: grants read access to statuses
-            read:streaming: grants read access to streaming api
-            read:user: grants read access to user-level info
             write: grants write access to everything
             write:accounts: grants write access to accounts
+            write:applications: grants write access to user-managed applications
             write:blocks: grants write access to blocks
+            write:bookmarks: grants write access to bookmarks
+            write:conversations: grants write access to conversations
+            write:favourites: grants write access to favourites
             write:filters: grants write access to filters
             write:follows: grants write access to follows
             write:lists: grants write access to lists
             write:media: grants write access to media
             write:mutes: grants write access to mutes
+            write:notifications: grants write access to notifications
+            write:reports: grants write access to reports
             write:statuses: grants write access to statuses
-            write:user: grants write access to user-level info
         tokenUrl: https://example.org/oauth/token
         type: oauth2
 swagger: "2.0"

@@ -22,13 +22,13 @@ import (
 	"errors"
 	"slices"
 
-	"github.com/superseriousbusiness/gotosocial/internal/db"
-	"github.com/superseriousbusiness/gotosocial/internal/gtscontext"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/log"
-	"github.com/superseriousbusiness/gotosocial/internal/state"
-	"github.com/superseriousbusiness/gotosocial/internal/util/xslices"
+	"code.superseriousbusiness.org/gotosocial/internal/db"
+	"code.superseriousbusiness.org/gotosocial/internal/gtscontext"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/log"
+	"code.superseriousbusiness.org/gotosocial/internal/state"
+	"code.superseriousbusiness.org/gotosocial/internal/util/xslices"
 	"github.com/uptrace/bun"
 )
 
@@ -380,8 +380,8 @@ func (p *pollDB) PutPollVote(ctx context.Context, vote *gtsmodel.PollVote) error
 				return err
 			}
 
-			// Increment poll votes for choices.
-			poll.IncrementVotes(vote.Choices)
+			// Increment vote choices and voters count.
+			poll.IncrementVotes(vote.Choices, true)
 
 			// Finally, update the poll entry.
 			_, err := tx.NewUpdate().
@@ -391,6 +391,17 @@ func (p *pollDB) PutPollVote(ctx context.Context, vote *gtsmodel.PollVote) error
 				Exec(ctx)
 			return err
 		})
+	})
+}
+
+func (p *pollDB) UpdatePollVote(ctx context.Context, vote *gtsmodel.PollVote, cols ...string) error {
+	return p.state.Caches.DB.PollVote.Store(vote, func() error {
+		_, err := p.db.NewUpdate().
+			Model(vote).
+			Column(cols...).
+			Where("? = ?", bun.Ident("id"), vote.ID).
+			Exec(ctx)
+		return err
 	})
 }
 
@@ -487,8 +498,8 @@ func updatePollCounts(ctx context.Context, tx bun.Tx, deleted *gtsmodel.PollVote
 		return err
 	}
 
-	// Decrement votes for these choices.
-	poll.DecrementVotes(deleted.Choices)
+	// Decrement vote choices and voters count.
+	poll.DecrementVotes(deleted.Choices, true)
 
 	// Finally, update the poll entry.
 	if _, err := tx.NewUpdate().

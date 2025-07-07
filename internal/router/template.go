@@ -25,19 +25,20 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"slices"
 	"strings"
-	"time"
+	"sync"
 	"unsafe"
 
+	apimodel "code.superseriousbusiness.org/gotosocial/internal/api/model"
+	"code.superseriousbusiness.org/gotosocial/internal/config"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/log"
+	"code.superseriousbusiness.org/gotosocial/internal/regexes"
+	"code.superseriousbusiness.org/gotosocial/internal/text"
+	"code.superseriousbusiness.org/gotosocial/internal/util"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/render"
-	apimodel "github.com/superseriousbusiness/gotosocial/internal/api/model"
-	"github.com/superseriousbusiness/gotosocial/internal/config"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/log"
-	"github.com/superseriousbusiness/gotosocial/internal/regexes"
-	"github.com/superseriousbusiness/gotosocial/internal/text"
-	"github.com/superseriousbusiness/gotosocial/internal/util"
 )
 
 // LoadTemplates loads templates found at `web-template-base-dir`
@@ -77,6 +78,10 @@ func LoadTemplates(engine *gin.Engine) error {
 
 	// Set additional "include" functions to render
 	// provided template name using the base template.
+
+	// Include renders the given template with the given data.
+	// Unlike `template`, `include` can be chained with `indent`
+	// to produce nicely-indented HTML.
 	funcMap["include"] = func(name string, data any) (template.HTML, error) {
 		var buf strings.Builder
 		err := tmpl.ExecuteTemplate(&buf, name, data)
@@ -86,6 +91,25 @@ func LoadTemplates(engine *gin.Engine) error {
 		return noescape(buf.String()), err
 	}
 
+	// includeIndex is like `include` but an index can be specified at
+	// `.Index` and data will be nested at `.Item`. Useful when ranging.
+	funcMap["includeIndex"] = func(name string, data any, index int) (template.HTML, error) {
+		var buf strings.Builder
+		withIndex := struct {
+			Item  any
+			Index int
+		}{
+			Item:  data,
+			Index: index,
+		}
+		err := tmpl.ExecuteTemplate(&buf, name, withIndex)
+
+		// Template was already escaped by
+		// ExecuteTemplate so we can trust it.
+		return noescape(buf.String()), err
+	}
+
+	// includeAttr is like `include` but for element attributes.
 	funcMap["includeAttr"] = func(name string, data any) (template.HTMLAttr, error) {
 		var buf strings.Builder
 		err := tmpl.ExecuteTemplate(&buf, name, data)
@@ -112,25 +136,25 @@ func LoadTemplates(engine *gin.Engine) error {
 }
 
 var funcMap = template.FuncMap{
-	"add":              add,
-	"acctInstance":     acctInstance,
-	"demojify":         demojify,
-	"deref":            deref,
-	"emojify":          emojify,
-	"escape":           escape,
-	"increment":        increment,
-	"indent":           indent,
-	"indentAttr":       indentAttr,
-	"isNil":            isNil,
-	"outdentPre":       outdentPre,
-	"noescapeAttr":     noescapeAttr,
-	"noescape":         noescape,
-	"oddOrEven":        oddOrEven,
-	"subtract":         subtract,
-	"timestampPrecise": timestampPrecise,
-	"timestamp":        timestamp,
-	"timestampVague":   timestampVague,
-	"visibilityIcon":   visibilityIcon,
+	"add":                 add,
+	"acctInstance":        acctInstance,
+	"objectPosition":      objectPosition,
+	"demojify":            demojify,
+	"deref":               deref,
+	"emojify":             emojify,
+	"escape":              escape,
+	"increment":           increment,
+	"indent":              indent,
+	"indentAttr":          indentAttr,
+	"isNil":               isNil,
+	"outdentPreformatted": outdentPreformatted,
+	"noescapeAttr":        noescapeAttr,
+	"noescape":            noescape,
+	"oddOrEven":           oddOrEven,
+	"subtract":            subtract,
+	"timestampPrecise":    timestampPrecise,
+	"timestampVague":      timestampVague,
+	"visibilityIcon":      visibilityIcon,
 }
 
 func oddOrEven(n int) string {
@@ -173,29 +197,6 @@ const (
 	monthYear    = "Jan, 2006"
 	badTimestamp = "bad timestamp"
 )
-
-func timestamp(stamp string) string {
-	t, err := util.ParseISO8601(stamp)
-	if err != nil {
-		log.Errorf(nil, "error parsing timestamp %s: %s", stamp, err)
-		return badTimestamp
-	}
-
-	t = t.Local()
-
-	tYear, tMonth, tDay := t.Date()
-	now := time.Now()
-	currentYear, currentMonth, currentDay := now.Date()
-
-	switch {
-	case tYear == currentYear && tMonth == currentMonth && tDay == currentDay:
-		return "Today, " + t.Format(justTime)
-	case tYear == currentYear:
-		return t.Format(dateTime)
-	default:
-		return t.Format(dateYear)
-	}
-}
 
 func timestampPrecise(stamp string) string {
 	t, err := util.ParseISO8601(stamp)
@@ -292,11 +293,31 @@ func subtract(n1 int, n2 int) int {
 }
 
 var (
-	indentRegex  = regexp.MustCompile(`(?m)^`)
+	// Find starts of lines to replace with indent.
+	indentRegex = regexp.MustCompile(`(?m)^`)
+
+	// One indent level.
 	indentStr    = "    "
 	indentStrLen = len(indentStr)
-	indents      = strings.Repeat(indentStr, 12)
-	indentPre    = regexp.MustCompile(fmt.Sprintf(`(?Ums)^((?:%s)+)<pre>.*</pre>`, indentStr))
+
+	// Preformatted slice of indents.
+	indents = strings.Repeat(indentStr, 12)
+
+	// Measure indent at the start of a line.
+	indentDepthStr = fmt.Sprintf(`^((?:%s)+)`, indentStr)
+	indentDepth    = regexp.MustCompile(`(?m)` + indentDepthStr)
+
+	// Find <pre> tags and determine how indented they are.
+	indentPre = regexp.MustCompile(fmt.Sprintf(`(?Ums)%s<pre>.*</pre>`, indentDepthStr))
+	// Find content of alt or title attributes.
+	indentAltOrTitle = regexp.MustCompile(`(?Ums)\b(?:alt|title)="(.*)"(?:\b|>|$)`)
+
+	// Map of lazily-compiled replaceIndent
+	// regexes, keyed by the indent they
+	// replace, to avoid recompilation.
+	//
+	// At *most* 12 entries long.
+	replaceIndents = sync.Map{}
 )
 
 // indent appropriately indents the given html
@@ -319,32 +340,104 @@ func indentAttr(n int, html template.HTMLAttr) template.HTMLAttr {
 	return noescapeAttr(out)
 }
 
-// outdentPre outdents all `<pre></pre>` tags in the
-// given HTML so that they render correctly in code
-// blocks, even if they were indented before.
-func outdentPre(html template.HTML) template.HTML {
+// outdentPreformatted outdents all preformatted text in
+// the given HTML, ie., in `alt` and `title` attributes,
+// and between `<pre>` tags, so that it renders correctly,
+// even if it was indented before.
+func outdentPreformatted(html template.HTML) template.HTML {
 	input := string(html)
 	output := regexes.ReplaceAllStringFunc(indentPre, input,
 		func(match string, buf *bytes.Buffer) string {
 			// Reuse the regex to pull out submatches.
 			matches := indentPre.FindAllStringSubmatch(match, -1)
+
+			// Ensure matches
+			// expected length.
 			if len(matches) != 1 {
 				return match
 			}
 
+			// Ensure inner matches
+			// expected length.
+			innerMatches := matches[0]
+			if len(innerMatches) != 2 {
+				return match
+			}
+
 			var (
-				indented = matches[0][0]
-				indent   = matches[0][1]
+				indentedContent = innerMatches[0]
+				indent          = innerMatches[1]
 			)
 
-			// Outdent everything in the inner match, add
-			// a newline at the end to make it a bit neater.
-			outdented := strings.ReplaceAll(indented, indent, "")
+			// Outdent everything in the inner match.
+			outdented := strings.ReplaceAll(indentedContent, indent, "")
 
 			// Replace original match with the outdented version.
-			return strings.ReplaceAll(match, indented, outdented)
+			return strings.ReplaceAll(match, indentedContent, outdented)
 		},
 	)
+
+	output = regexes.ReplaceAllStringFunc(indentAltOrTitle, output,
+		func(match string, buf *bytes.Buffer) string {
+			// Reuse the regex to pull out submatches.
+			matches := indentAltOrTitle.FindAllStringSubmatch(match, -1)
+
+			// Ensure matches
+			// expected length.
+			if len(matches) != 1 {
+				return match
+			}
+
+			// Ensure inner matches
+			// expected length.
+			innerMatches := matches[0]
+			if len(innerMatches) != 2 {
+				return match
+			}
+
+			// The content of the alt or title
+			// attr inside quotation marks.
+			indentedContent := innerMatches[1]
+
+			// Find all indents in this text.
+			indents := indentDepth.FindAllString(indentedContent, -1)
+			if len(indents) == 0 {
+				// No indents in this text,
+				// it's probably just something
+				// inline like `alt="whatever"`.
+				return match
+			}
+
+			// Find the shortest indent as this
+			// is undoubtedly the one we added.
+			//
+			// By targeting the shortest one we
+			// avoid removing user-inserted
+			// whitespace at the start of lines
+			// of alt text (eg., in poetry etc).
+			slices.Sort(indents)
+			indent := indents[0]
+
+			// Load or create + store the
+			// regex to replace this indent,
+			// avoiding recompilation.
+			var replaceIndent *regexp.Regexp
+			if replaceIndentI, ok := replaceIndents.Load(indent); ok {
+				// Got regex for this indent.
+				replaceIndent = replaceIndentI.(*regexp.Regexp)
+			} else {
+				// No regex stored for
+				// this indent yet, store it.
+				replaceIndent = regexp.MustCompile(`(?m)^` + indent)
+				replaceIndents.Store(indent, replaceIndent)
+			}
+
+			// Remove all occurrences of the indent
+			// at the start of a line in the match.
+			return replaceIndent.ReplaceAllString(match, "")
+		},
+	)
+
 	return noescape(output)
 }
 
@@ -366,4 +459,13 @@ func deref(i any) any {
 	}
 
 	return vOf.Elem()
+}
+
+// objectPosition formats the given focus coordinates to a
+// string suitable for use as a css object-position value.
+func objectPosition(focusX float32, focusY float32) string {
+	const fmts = "%.2f"
+	xPos := ((focusX / 2) + .5) * 100
+	yPos := ((focusY / -2) + .5) * 100
+	return fmt.Sprintf(fmts, xPos) + "%" + " " + fmt.Sprintf(fmts, yPos) + "%"
 }

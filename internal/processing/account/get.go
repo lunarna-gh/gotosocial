@@ -22,12 +22,12 @@ import (
 	"errors"
 	"net/url"
 
-	apimodel "github.com/superseriousbusiness/gotosocial/internal/api/model"
-	"github.com/superseriousbusiness/gotosocial/internal/db"
-	"github.com/superseriousbusiness/gotosocial/internal/gtscontext"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/log"
+	apimodel "code.superseriousbusiness.org/gotosocial/internal/api/model"
+	"code.superseriousbusiness.org/gotosocial/internal/db"
+	"code.superseriousbusiness.org/gotosocial/internal/gtscontext"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/log"
 )
 
 // Get processes the given request for account information.
@@ -66,10 +66,13 @@ func (p *Processor) Get(ctx context.Context, requestingAccount *gtsmodel.Account
 
 		// Perform a last-minute fetch of target account to
 		// ensure remote account header / avatar is cached.
+		//
+		// Match by URI only.
 		latest, _, err := p.federator.GetAccountByURI(
 			gtscontext.SetFastFail(ctx),
 			requestingAccount.Username,
 			targetAccountURI,
+			false,
 		)
 		if err != nil {
 			log.Errorf(ctx, "error fetching latest target account: %v", err)

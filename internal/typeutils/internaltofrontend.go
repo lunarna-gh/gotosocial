@@ -28,20 +28,21 @@ import (
 	"strings"
 	"time"
 
+	apimodel "code.superseriousbusiness.org/gotosocial/internal/api/model"
+	"code.superseriousbusiness.org/gotosocial/internal/config"
+	"code.superseriousbusiness.org/gotosocial/internal/db"
+	statusfilter "code.superseriousbusiness.org/gotosocial/internal/filter/status"
+	"code.superseriousbusiness.org/gotosocial/internal/filter/usermute"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/id"
+	"code.superseriousbusiness.org/gotosocial/internal/language"
+	"code.superseriousbusiness.org/gotosocial/internal/log"
+	"code.superseriousbusiness.org/gotosocial/internal/media"
+	"code.superseriousbusiness.org/gotosocial/internal/text"
+	"code.superseriousbusiness.org/gotosocial/internal/uris"
+	"code.superseriousbusiness.org/gotosocial/internal/util"
 	"codeberg.org/gruf/go-debug"
-	apimodel "github.com/superseriousbusiness/gotosocial/internal/api/model"
-	"github.com/superseriousbusiness/gotosocial/internal/config"
-	"github.com/superseriousbusiness/gotosocial/internal/db"
-	statusfilter "github.com/superseriousbusiness/gotosocial/internal/filter/status"
-	"github.com/superseriousbusiness/gotosocial/internal/filter/usermute"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/id"
-	"github.com/superseriousbusiness/gotosocial/internal/language"
-	"github.com/superseriousbusiness/gotosocial/internal/log"
-	"github.com/superseriousbusiness/gotosocial/internal/media"
-	"github.com/superseriousbusiness/gotosocial/internal/uris"
-	"github.com/superseriousbusiness/gotosocial/internal/util"
 )
 
 const (
@@ -49,8 +50,7 @@ const (
 	instancePollsMinExpiration               = 300     // seconds
 	instancePollsMaxExpiration               = 2629746 // seconds
 	instanceAccountsMaxFeaturedTags          = 10
-	instanceAccountsMaxProfileFields         = 6 // FIXME: https://github.com/superseriousbusiness/gotosocial/issues/1876
-	instanceSourceURL                        = "https://github.com/superseriousbusiness/gotosocial"
+	instanceSourceURL                        = "https://codeberg.org/superseriousbusiness/gotosocial"
 	instanceMastodonVersion                  = "3.5.3"
 )
 
@@ -98,6 +98,10 @@ func (c *Converter) UserToAPIUser(ctx context.Context, u *gtsmodel.User) *apimod
 		user.ResetPasswordSentAt = util.FormatISO8601(u.ResetPasswordSentAt)
 	}
 
+	if !u.TwoFactorEnabledAt.IsZero() {
+		user.TwoFactorEnabledAt = util.FormatISO8601(u.TwoFactorEnabledAt)
+	}
+
 	return user
 }
 
@@ -134,8 +138,9 @@ func (c *Converter) AccountToAPIAccountSensitive(ctx context.Context, a *gtsmode
 	}
 
 	apiAccount.Source = &apimodel.Source{
-		Privacy:             c.VisToAPIVis(ctx, a.Settings.Privacy),
-		WebVisibility:       c.VisToAPIVis(ctx, a.Settings.WebVisibility),
+		Privacy:             VisToAPIVis(a.Settings.Privacy),
+		WebVisibility:       VisToAPIVis(a.Settings.WebVisibility),
+		WebLayout:           a.Settings.WebLayout.String(),
 		Sensitive:           *a.Settings.Sensitive,
 		Language:            a.Settings.Language,
 		StatusContentType:   statusContentType,
@@ -219,6 +224,14 @@ func (c *Converter) AccountToWebAccount(
 				PreviewMIMEType: ogHeader.Thumbnail.ContentType,
 			}
 		}
+	}
+
+	// Check for presence of settings before
+	// populating settings-specific thingies,
+	// as instance account doesn't store a
+	// settings struct.
+	if a.Settings != nil {
+		webAccount.WebLayout = a.Settings.WebLayout.String()
 	}
 
 	return webAccount, nil
@@ -351,7 +364,6 @@ func (c *Converter) accountToAPIAccountPublic(ctx context.Context, a *gtsmodel.A
 	var (
 		locked       = util.PtrOrValue(a.Locked, true)
 		discoverable = util.PtrOrValue(a.Discoverable, false)
-		bot          = util.PtrOrValue(a.Bot, false)
 	)
 
 	// Remaining properties are simple and
@@ -364,7 +376,7 @@ func (c *Converter) accountToAPIAccountPublic(ctx context.Context, a *gtsmodel.A
 		DisplayName:       a.DisplayName,
 		Locked:            locked,
 		Discoverable:      discoverable,
-		Bot:               bot,
+		Bot:               a.ActorType.IsBot(),
 		CreatedAt:         util.FormatISO8601(a.CreatedAt),
 		Note:              a.Note,
 		URL:               a.URL,
@@ -508,7 +520,7 @@ func (c *Converter) AccountToAPIAccountBlocked(ctx context.Context, a *gtsmodel.
 		ID:        a.ID,
 		Username:  a.Username,
 		Acct:      acct,
-		Bot:       *a.Bot,
+		Bot:       a.ActorType.IsBot(),
 		CreatedAt: util.FormatISO8601(a.CreatedAt),
 		URL:       a.URL,
 		// Empty array (not nillable).
@@ -622,14 +634,22 @@ func (c *Converter) AppToAPIAppSensitive(ctx context.Context, a *gtsmodel.Applic
 		return nil, gtserror.Newf("error getting VAPID public key: %w", err)
 	}
 
+	createdAt, err := id.TimeFromULID(a.ID)
+	if err != nil {
+		return nil, gtserror.Newf("error converting id to time: %w", err)
+	}
+
 	return &apimodel.Application{
 		ID:           a.ID,
+		CreatedAt:    util.FormatISO8601(createdAt),
 		Name:         a.Name,
 		Website:      a.Website,
-		RedirectURI:  a.RedirectURI,
+		RedirectURI:  strings.Join(a.RedirectURIs, "\n"),
+		RedirectURIs: a.RedirectURIs,
 		ClientID:     a.ClientID,
 		ClientSecret: a.ClientSecret,
 		VapidKey:     vapidKeyPair.Public,
+		Scopes:       strings.Split(a.Scopes, " "),
 	}, nil
 }
 
@@ -1123,13 +1143,16 @@ func (c *Converter) StatusToWebStatus(
 	}
 
 	webStatus := &apimodel.WebStatus{
-		Status:  apiStatus,
-		Account: acct,
+		Status:         apiStatus,
+		SpoilerContent: s.ContentWarning,
+		Account:        acct,
 	}
 
 	// Whack a newline before and after each "pre" to make it easier to outdent it.
 	webStatus.Content = strings.ReplaceAll(webStatus.Content, "<pre>", "\n<pre>")
 	webStatus.Content = strings.ReplaceAll(webStatus.Content, "</pre>", "</pre>\n")
+	webStatus.SpoilerContent = strings.ReplaceAll(webStatus.SpoilerContent, "<pre>", "\n<pre>")
+	webStatus.SpoilerContent = strings.ReplaceAll(webStatus.SpoilerContent, "</pre>", "</pre>\n")
 
 	// Add additional information for template.
 	// Assume empty langs, hope for not empty language.
@@ -1193,6 +1216,45 @@ func (c *Converter) StatusToWebStatus(
 	// Mark local.
 	webStatus.Local = *s.Local
 
+	// Get edit history for this
+	// status, if it's been edited.
+	if webStatus.EditedAt != nil {
+		// Make sure edits are populated.
+		if len(s.Edits) != len(s.EditIDs) {
+			s.Edits, err = c.state.DB.GetStatusEditsByIDs(ctx, s.EditIDs)
+			if err != nil && !errors.Is(err, db.ErrNoEntries) {
+				err := gtserror.Newf("db error getting status edits: %w", err)
+				return nil, err
+			}
+		}
+
+		// Include each historical entry
+		// (this includes the created date).
+		for _, edit := range s.Edits {
+			webStatus.EditTimeline = append(
+				webStatus.EditTimeline,
+				util.FormatISO8601(edit.CreatedAt),
+			)
+		}
+
+		// Make sure to include latest revision.
+		webStatus.EditTimeline = append(
+			webStatus.EditTimeline,
+			*webStatus.EditedAt,
+		)
+
+		// Sort the slice so it goes from
+		// newest -> oldest, like a timeline.
+		//
+		// It'll look something like:
+		//
+		//	- edit3 date (ie., latest version)
+		//	- edit2 date (if we have it)
+		//	- edit1 date (if we have it)
+		//	- created date
+		slices.Reverse(webStatus.EditTimeline)
+	}
+
 	// Set additional templating
 	// variables on media attachments.
 
@@ -1215,10 +1277,11 @@ func (c *Converter) StatusToWebStatus(
 	for i, apiAttachment := range apiStatus.MediaAttachments {
 		ogAttachment := ogAttachments[apiAttachment.ID]
 		webStatus.MediaAttachments[i] = &apimodel.WebAttachment{
-			Attachment:      apiAttachment,
-			Sensitive:       apiStatus.Sensitive,
-			MIMEType:        ogAttachment.File.ContentType,
-			PreviewMIMEType: ogAttachment.Thumbnail.ContentType,
+			Attachment:       apiAttachment,
+			Sensitive:        apiStatus.Sensitive,
+			MIMEType:         ogAttachment.File.ContentType,
+			PreviewMIMEType:  ogAttachment.Thumbnail.ContentType,
+			ParentStatusLink: apiStatus.URL,
 		}
 	}
 
@@ -1370,8 +1433,7 @@ func (c *Converter) baseStatusToFrontend(
 		InReplyToID:        nil, // Set below.
 		InReplyToAccountID: nil, // Set below.
 		Sensitive:          *s.Sensitive,
-		SpoilerText:        s.ContentWarning,
-		Visibility:         c.VisToAPIVis(ctx, s.Visibility),
+		Visibility:         VisToAPIVis(s.Visibility),
 		LocalOnly:          s.IsLocalOnly(),
 		Language:           nil, // Set below.
 		URI:                s.URI,
@@ -1389,7 +1451,13 @@ func (c *Converter) baseStatusToFrontend(
 		Emojis:             apiEmojis,
 		Card:               nil, // TODO: implement cards
 		Text:               s.Text,
+		ContentType:        ContentTypeToAPIContentType(s.ContentType),
 		InteractionPolicy:  *apiInteractionPolicy,
+
+		// Mastodon API says spoiler_text should be *text*, not HTML, so
+		// parse any HTML back to plaintext when serializing via the API,
+		// attempting to preserve semantic intent to keep it readable.
+		SpoilerText: text.ParseHTMLToPlain(s.ContentWarning),
 	}
 
 	if at := s.EditedAt; !at.IsZero() {
@@ -1401,14 +1469,28 @@ func (c *Converter) baseStatusToFrontend(
 	apiStatus.InReplyToAccountID = util.PtrIf(s.InReplyToAccountID)
 	apiStatus.Language = util.PtrIf(s.Language)
 
-	if app := s.CreatedWithApplication; app != nil {
-		apiStatus.Application, err = c.AppToAPIAppPublic(ctx, app)
+	switch {
+	case s.CreatedWithApplication != nil:
+		// App exists for this status and is set.
+		apiStatus.Application, err = c.AppToAPIAppPublic(ctx, s.CreatedWithApplication)
 		if err != nil {
 			return nil, gtserror.Newf(
 				"error converting application %s: %w",
 				s.CreatedWithApplicationID, err,
 			)
 		}
+
+	case s.CreatedWithApplicationID != "":
+		// App existed for this status but not
+		// anymore, it's probably been cleaned up.
+		// Set a dummy application.
+		apiStatus.Application = &apimodel.Application{
+			Name: "unknown application",
+		}
+
+	default:
+		// No app stored for this (probably remote)
+		// status, so nothing to do (app is optional).
 	}
 
 	if s.Poll != nil {
@@ -1610,7 +1692,7 @@ func (c *Converter) StatusToAPIEdits(ctx context.Context, status *gtsmodel.Statu
 }
 
 // VisToAPIVis converts a gts visibility into its api equivalent
-func (c *Converter) VisToAPIVis(ctx context.Context, m gtsmodel.Visibility) apimodel.Visibility {
+func VisToAPIVis(m gtsmodel.Visibility) apimodel.Visibility {
 	switch m {
 	case gtsmodel.VisibilityPublic:
 		return apimodel.VisibilityPublic
@@ -1620,6 +1702,19 @@ func (c *Converter) VisToAPIVis(ctx context.Context, m gtsmodel.Visibility) apim
 		return apimodel.VisibilityPrivate
 	case gtsmodel.VisibilityDirect:
 		return apimodel.VisibilityDirect
+	case gtsmodel.VisibilityNone:
+		return apimodel.VisibilityNone
+	}
+	return ""
+}
+
+// Converts a gts status content type into its api equivalent
+func ContentTypeToAPIContentType(m gtsmodel.StatusContentType) apimodel.StatusContentType {
+	switch m {
+	case gtsmodel.StatusContentTypePlain:
+		return apimodel.StatusContentTypePlain
+	case gtsmodel.StatusContentTypeMarkdown:
+		return apimodel.StatusContentTypeMarkdown
 	}
 	return ""
 }
@@ -1718,7 +1813,7 @@ func (c *Converter) InstanceToAPIV1Instance(ctx context.Context, i *gtsmodel.Ins
 	instance.Configuration.Polls.MaxExpiration = instancePollsMaxExpiration
 	instance.Configuration.Accounts.AllowCustomCSS = config.GetAccountsAllowCustomCSS()
 	instance.Configuration.Accounts.MaxFeaturedTags = instanceAccountsMaxFeaturedTags
-	instance.Configuration.Accounts.MaxProfileFields = instanceAccountsMaxProfileFields
+	instance.Configuration.Accounts.MaxProfileFields = config.GetAccountsMaxProfileFields()
 	instance.Configuration.Emojis.EmojiSizeLimit = int(config.GetMediaEmojiLocalMaxSize()) // #nosec G115 -- Already validated.
 	instance.Configuration.OIDCEnabled = config.GetOIDCEnabled()
 
@@ -1870,6 +1965,8 @@ func (c *Converter) InstanceToAPIV2Instance(ctx context.Context, i *gtsmodel.Ins
 	instance.Configuration.Statuses.CharactersReservedPerURL = instanceStatusesCharactersReservedPerURL
 	instance.Configuration.Statuses.SupportedMimeTypes = instanceStatusesSupportedMimeTypes
 	instance.Configuration.MediaAttachments.SupportedMimeTypes = media.SupportedMIMETypes
+	instance.Configuration.MediaAttachments.DescriptionLimit = config.GetMediaDescriptionMaxChars()
+	instance.Configuration.MediaAttachments.DescriptionMinimum = config.GetMediaDescriptionMinChars()
 
 	// NOTE: we use the local max sizes here
 	// as it hints to apps like Tusky for image
@@ -1894,7 +1991,7 @@ func (c *Converter) InstanceToAPIV2Instance(ctx context.Context, i *gtsmodel.Ins
 	instance.Configuration.Polls.MaxExpiration = instancePollsMaxExpiration
 	instance.Configuration.Accounts.AllowCustomCSS = config.GetAccountsAllowCustomCSS()
 	instance.Configuration.Accounts.MaxFeaturedTags = instanceAccountsMaxFeaturedTags
-	instance.Configuration.Accounts.MaxProfileFields = instanceAccountsMaxProfileFields
+	instance.Configuration.Accounts.MaxProfileFields = config.GetAccountsMaxProfileFields()
 	instance.Configuration.Emojis.EmojiSizeLimit = int(config.GetMediaEmojiLocalMaxSize()) // #nosec G115 -- Already validated.
 	instance.Configuration.OIDCEnabled = config.GetOIDCEnabled()
 
@@ -1957,58 +2054,41 @@ func (c *Converter) NotificationToAPINotification(
 	filters []*gtsmodel.Filter,
 	mutes *usermute.CompiledUserMuteList,
 ) (*apimodel.Notification, error) {
-	if n.TargetAccount == nil {
-		tAccount, err := c.state.DB.GetAccountByID(ctx, n.TargetAccountID)
-		if err != nil {
-			return nil, fmt.Errorf("NotificationToapi: error getting target account with id %s from the db: %s", n.TargetAccountID, err)
-		}
-		n.TargetAccount = tAccount
+	// Ensure notif populated.
+	if err := c.state.DB.PopulateNotification(ctx, n); err != nil {
+		return nil, gtserror.Newf("error populating notification: %w", err)
 	}
 
-	if n.OriginAccount == nil {
-		ogAccount, err := c.state.DB.GetAccountByID(ctx, n.OriginAccountID)
-		if err != nil {
-			return nil, fmt.Errorf("NotificationToapi: error getting origin account with id %s from the db: %s", n.OriginAccountID, err)
-		}
-		n.OriginAccount = ogAccount
-	}
-
+	// Get account that triggered this notif.
 	apiAccount, err := c.AccountToAPIAccountPublic(ctx, n.OriginAccount)
 	if err != nil {
-		return nil, fmt.Errorf("NotificationToapi: error converting account to api: %s", err)
+		return nil, gtserror.Newf("error converting account to api: %w", err)
 	}
 
+	// Get status that triggered this notif, if set.
 	var apiStatus *apimodel.Status
-	if n.StatusID != "" {
-		if n.Status == nil {
-			status, err := c.state.DB.GetStatusByID(ctx, n.StatusID)
-			if err != nil {
-				return nil, fmt.Errorf("NotificationToapi: error getting status with id %s from the db: %s", n.StatusID, err)
-			}
-			n.Status = status
+	if n.Status != nil {
+		apiStatus, err = c.StatusToAPIStatus(
+			ctx, n.Status,
+			n.TargetAccount,
+			statusfilter.FilterContextNotifications,
+			filters, mutes,
+		)
+		if err != nil && !errors.Is(err, statusfilter.ErrHideStatus) {
+			return nil, gtserror.Newf("error converting status to api: %w", err)
 		}
 
-		if n.Status.Account == nil {
-			if n.Status.AccountID == n.TargetAccount.ID {
-				n.Status.Account = n.TargetAccount
-			} else if n.Status.AccountID == n.OriginAccount.ID {
-				n.Status.Account = n.OriginAccount
-			}
+		if apiStatus == nil {
+			// Notif filtered for this
+			// status, nothing to do.
+			return nil, err
 		}
 
-		var err error
-		apiStatus, err = c.StatusToAPIStatus(ctx, n.Status, n.TargetAccount, statusfilter.FilterContextNotifications, filters, mutes)
-		if err != nil {
-			if errors.Is(err, statusfilter.ErrHideStatus) {
-				return nil, err
-			}
-			return nil, fmt.Errorf("NotificationToapi: error converting status to api: %s", err)
+		if apiStatus.Reblog != nil {
+			// Use the actual reblog status
+			// for the notifications endpoint.
+			apiStatus = apiStatus.Reblog.Status
 		}
-	}
-
-	if apiStatus != nil && apiStatus.Reblog != nil {
-		// use the actual reblog status for the notifications endpoint
-		apiStatus = apiStatus.Reblog.Status
 	}
 
 	return &apimodel.Notification{
@@ -2059,7 +2139,7 @@ func (c *Converter) ConversationToAPIConversation(
 	// If no other accounts are involved in this convo,
 	// just include the requesting account and return.
 	//
-	// See: https://github.com/superseriousbusiness/gotosocial/issues/3385#issuecomment-2394033477
+	// See: https://codeberg.org/superseriousbusiness/gotosocial/issues/3385#issuecomment-2394033477
 	otherAcctsLen := len(conversation.OtherAccounts)
 	if otherAcctsLen == 0 {
 		apiAcct, err := c.AccountToAPIAccountPublic(ctx, requester)
@@ -2130,7 +2210,7 @@ func (c *Converter) DomainPermToAPIDomainPerm(
 	domainPerm := &apimodel.DomainPermission{
 		Domain: apimodel.Domain{
 			Domain:        domain,
-			PublicComment: d.GetPublicComment(),
+			PublicComment: util.Ptr(d.GetPublicComment()),
 		},
 	}
 
@@ -2141,8 +2221,8 @@ func (c *Converter) DomainPermToAPIDomainPerm(
 	}
 
 	domainPerm.ID = d.GetID()
-	domainPerm.Obfuscate = util.PtrOrZero(d.GetObfuscate())
-	domainPerm.PrivateComment = d.GetPrivateComment()
+	domainPerm.Obfuscate = d.GetObfuscate()
+	domainPerm.PrivateComment = util.Ptr(d.GetPrivateComment())
 	domainPerm.SubscriptionID = d.GetSubscriptionID()
 	domainPerm.CreatedBy = d.GetCreatedByAccountID()
 	if createdAt := d.GetCreatedAt(); !createdAt.IsZero() {
@@ -2781,18 +2861,28 @@ func (c *Converter) InteractionPolicyToAPIInteractionPolicy(
 ) (*apimodel.InteractionPolicy, error) {
 	apiPolicy := &apimodel.InteractionPolicy{
 		CanFavourite: apimodel.PolicyRules{
-			Always:       policyValsToAPIPolicyVals(policy.CanLike.Always),
-			WithApproval: policyValsToAPIPolicyVals(policy.CanLike.WithApproval),
+			AutomaticApproval: policyValsToAPIPolicyVals(policy.CanLike.AutomaticApproval),
+			ManualApproval:    policyValsToAPIPolicyVals(policy.CanLike.ManualApproval),
 		},
 		CanReply: apimodel.PolicyRules{
-			Always:       policyValsToAPIPolicyVals(policy.CanReply.Always),
-			WithApproval: policyValsToAPIPolicyVals(policy.CanReply.WithApproval),
+			AutomaticApproval: policyValsToAPIPolicyVals(policy.CanReply.AutomaticApproval),
+			ManualApproval:    policyValsToAPIPolicyVals(policy.CanReply.ManualApproval),
 		},
 		CanReblog: apimodel.PolicyRules{
-			Always:       policyValsToAPIPolicyVals(policy.CanAnnounce.Always),
-			WithApproval: policyValsToAPIPolicyVals(policy.CanAnnounce.WithApproval),
+			AutomaticApproval: policyValsToAPIPolicyVals(policy.CanAnnounce.AutomaticApproval),
+			ManualApproval:    policyValsToAPIPolicyVals(policy.CanAnnounce.ManualApproval),
 		},
 	}
+
+	defer func() {
+		// Include deprecated fields for back-compat. TODO: Remove these in 0.21.0.
+		apiPolicy.CanFavourite.Always = apiPolicy.CanFavourite.AutomaticApproval
+		apiPolicy.CanFavourite.WithApproval = apiPolicy.CanFavourite.ManualApproval
+		apiPolicy.CanReply.Always = apiPolicy.CanReply.AutomaticApproval
+		apiPolicy.CanReply.WithApproval = apiPolicy.CanReply.ManualApproval
+		apiPolicy.CanReblog.Always = apiPolicy.CanReblog.AutomaticApproval
+		apiPolicy.CanReblog.WithApproval = apiPolicy.CanReblog.ManualApproval
+	}()
 
 	if status == nil || requester == nil {
 		// We're done here!
@@ -2809,16 +2899,16 @@ func (c *Converter) InteractionPolicyToAPIInteractionPolicy(
 		return nil, err
 	}
 
-	if likeable.Permission == gtsmodel.PolicyPermissionPermitted {
+	if likeable.Permission == gtsmodel.PolicyPermissionAutomaticApproval {
 		// We can do this!
-		apiPolicy.CanFavourite.Always = append(
-			apiPolicy.CanFavourite.Always,
+		apiPolicy.CanFavourite.AutomaticApproval = append(
+			apiPolicy.CanFavourite.AutomaticApproval,
 			apimodel.PolicyValueMe,
 		)
-	} else if likeable.Permission == gtsmodel.PolicyPermissionWithApproval {
+	} else if likeable.Permission == gtsmodel.PolicyPermissionManualApproval {
 		// We can do this with approval.
-		apiPolicy.CanFavourite.WithApproval = append(
-			apiPolicy.CanFavourite.WithApproval,
+		apiPolicy.CanFavourite.ManualApproval = append(
+			apiPolicy.CanFavourite.ManualApproval,
 			apimodel.PolicyValueMe,
 		)
 	}
@@ -2829,16 +2919,16 @@ func (c *Converter) InteractionPolicyToAPIInteractionPolicy(
 		return nil, err
 	}
 
-	if replyable.Permission == gtsmodel.PolicyPermissionPermitted {
+	if replyable.Permission == gtsmodel.PolicyPermissionAutomaticApproval {
 		// We can do this!
-		apiPolicy.CanReply.Always = append(
-			apiPolicy.CanReply.Always,
+		apiPolicy.CanReply.AutomaticApproval = append(
+			apiPolicy.CanReply.AutomaticApproval,
 			apimodel.PolicyValueMe,
 		)
-	} else if replyable.Permission == gtsmodel.PolicyPermissionWithApproval {
+	} else if replyable.Permission == gtsmodel.PolicyPermissionManualApproval {
 		// We can do this with approval.
-		apiPolicy.CanReply.WithApproval = append(
-			apiPolicy.CanReply.WithApproval,
+		apiPolicy.CanReply.ManualApproval = append(
+			apiPolicy.CanReply.ManualApproval,
 			apimodel.PolicyValueMe,
 		)
 	}
@@ -2849,16 +2939,16 @@ func (c *Converter) InteractionPolicyToAPIInteractionPolicy(
 		return nil, err
 	}
 
-	if boostable.Permission == gtsmodel.PolicyPermissionPermitted {
+	if boostable.Permission == gtsmodel.PolicyPermissionAutomaticApproval {
 		// We can do this!
-		apiPolicy.CanReblog.Always = append(
-			apiPolicy.CanReblog.Always,
+		apiPolicy.CanReblog.AutomaticApproval = append(
+			apiPolicy.CanReblog.AutomaticApproval,
 			apimodel.PolicyValueMe,
 		)
-	} else if boostable.Permission == gtsmodel.PolicyPermissionWithApproval {
+	} else if boostable.Permission == gtsmodel.PolicyPermissionManualApproval {
 		// We can do this with approval.
-		apiPolicy.CanReblog.WithApproval = append(
-			apiPolicy.CanReblog.WithApproval,
+		apiPolicy.CanReblog.ManualApproval = append(
+			apiPolicy.CanReblog.ManualApproval,
 			apimodel.PolicyValueMe,
 		)
 	}
@@ -3064,5 +3154,41 @@ func (c *Converter) WebPushSubscriptionToAPIWebPushSubscription(
 		},
 		Policy:   webPushNotificationPolicyToAPIWebPushNotificationPolicy(subscription.Policy),
 		Standard: true,
+	}, nil
+}
+
+func (c *Converter) TokenToAPITokenInfo(
+	ctx context.Context,
+	token *gtsmodel.Token,
+) (*apimodel.TokenInfo, error) {
+	createdAt, err := id.TimeFromULID(token.ID)
+	if err != nil {
+		err := gtserror.Newf("error parsing time from token id: %w", err)
+		return nil, err
+	}
+
+	var lastUsed string
+	if !token.LastUsed.IsZero() {
+		lastUsed = util.FormatISO8601(token.LastUsed)
+	}
+
+	application, err := c.state.DB.GetApplicationByClientID(ctx, token.ClientID)
+	if err != nil {
+		err := gtserror.Newf("db error getting application with client id %s: %w", token.ClientID, err)
+		return nil, err
+	}
+
+	apiApplication, err := c.AppToAPIAppPublic(ctx, application)
+	if err != nil {
+		err := gtserror.Newf("error converting application to api application: %w", err)
+		return nil, err
+	}
+
+	return &apimodel.TokenInfo{
+		ID:          token.ID,
+		CreatedAt:   util.FormatISO8601(createdAt),
+		LastUsed:    lastUsed,
+		Scope:       token.Scope,
+		Application: apiApplication,
 	}, nil
 }

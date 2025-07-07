@@ -20,16 +20,20 @@ package user
 import (
 	"context"
 
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/validate"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/validate"
+	"codeberg.org/gruf/go-byteutil"
 	"golang.org/x/crypto/bcrypt"
 )
 
 // PasswordChange processes a password change request for the given user.
 func (p *Processor) PasswordChange(ctx context.Context, user *gtsmodel.User, oldPassword string, newPassword string) gtserror.WithCode {
 	// Ensure provided oldPassword is the correct current password.
-	if err := bcrypt.CompareHashAndPassword([]byte(user.EncryptedPassword), []byte(oldPassword)); err != nil {
+	if err := bcrypt.CompareHashAndPassword(
+		byteutil.S2B(user.EncryptedPassword),
+		byteutil.S2B(oldPassword),
+	); err != nil {
 		err := gtserror.Newf("%w", err)
 		return gtserror.NewErrorUnauthorized(err, "old password was incorrect")
 	}
@@ -48,7 +52,7 @@ func (p *Processor) PasswordChange(ctx context.Context, user *gtsmodel.User, old
 
 	// Hash the new password.
 	encryptedPassword, err := bcrypt.GenerateFromPassword(
-		[]byte(newPassword),
+		byteutil.S2B(newPassword),
 		bcrypt.DefaultCost,
 	)
 	if err != nil {

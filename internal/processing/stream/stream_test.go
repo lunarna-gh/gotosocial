@@ -18,14 +18,14 @@
 package stream_test
 
 import (
+	"code.superseriousbusiness.org/gotosocial/internal/admin"
+	"code.superseriousbusiness.org/gotosocial/internal/db"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/oauth"
+	"code.superseriousbusiness.org/gotosocial/internal/processing/stream"
+	"code.superseriousbusiness.org/gotosocial/internal/state"
+	"code.superseriousbusiness.org/gotosocial/testrig"
 	"github.com/stretchr/testify/suite"
-	"github.com/superseriousbusiness/gotosocial/internal/admin"
-	"github.com/superseriousbusiness/gotosocial/internal/db"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/oauth"
-	"github.com/superseriousbusiness/gotosocial/internal/processing/stream"
-	"github.com/superseriousbusiness/gotosocial/internal/state"
-	"github.com/superseriousbusiness/gotosocial/testrig"
 )
 
 type StreamTestSuite struct {
@@ -52,7 +52,7 @@ func (suite *StreamTestSuite) SetupTest() {
 	suite.db = testrig.NewTestDB(&suite.state)
 	suite.state.DB = suite.db
 	suite.state.AdminActions = admin.New(suite.state.DB, &suite.state.Workers)
-	suite.oauthServer = testrig.NewTestOauthServer(suite.db)
+	suite.oauthServer = testrig.NewTestOauthServer(&suite.state)
 	suite.streamProcessor = stream.New(&suite.state, suite.oauthServer)
 
 	testrig.StandardDBSetup(suite.db, suite.testAccounts)

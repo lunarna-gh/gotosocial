@@ -26,16 +26,16 @@ import (
 	"testing"
 	"time"
 
+	"code.superseriousbusiness.org/gotosocial/internal/ap"
+	apimodel "code.superseriousbusiness.org/gotosocial/internal/api/model"
+	"code.superseriousbusiness.org/gotosocial/internal/db"
+	"code.superseriousbusiness.org/gotosocial/internal/gtscontext"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/messages"
+	"code.superseriousbusiness.org/gotosocial/internal/stream"
+	"code.superseriousbusiness.org/gotosocial/internal/util"
+	"code.superseriousbusiness.org/gotosocial/testrig"
 	"github.com/stretchr/testify/suite"
-	"github.com/superseriousbusiness/gotosocial/internal/ap"
-	apimodel "github.com/superseriousbusiness/gotosocial/internal/api/model"
-	"github.com/superseriousbusiness/gotosocial/internal/db"
-	"github.com/superseriousbusiness/gotosocial/internal/gtscontext"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/messages"
-	"github.com/superseriousbusiness/gotosocial/internal/stream"
-	"github.com/superseriousbusiness/gotosocial/internal/util"
-	"github.com/superseriousbusiness/gotosocial/testrig"
 )
 
 type FromFediAPITestSuite struct {
@@ -102,7 +102,7 @@ func (suite *FromFediAPITestSuite) TestProcessFederationAnnounce() {
 	suite.Equal(gtsmodel.NotificationReblog, notif.NotificationType)
 	suite.Equal(boostedStatus.AccountID, notif.TargetAccountID)
 	suite.Equal(announceStatus.AccountID, notif.OriginAccountID)
-	suite.Equal(announceStatus.ID, notif.StatusID)
+	suite.Equal(announceStatus.ID, notif.StatusOrEditID)
 	suite.False(*notif.Read)
 }
 
@@ -173,7 +173,7 @@ func (suite *FromFediAPITestSuite) TestProcessReplyMention() {
 	suite.Equal(gtsmodel.NotificationMention, notif.NotificationType)
 	suite.Equal(replyingStatus.InReplyToAccountID, notif.TargetAccountID)
 	suite.Equal(replyingStatus.AccountID, notif.OriginAccountID)
-	suite.Equal(replyingStatus.ID, notif.StatusID)
+	suite.Equal(replyingStatus.ID, notif.StatusOrEditID)
 	suite.False(*notif.Read)
 
 	ctx, _ := context.WithTimeout(context.Background(), time.Second*5)
@@ -245,7 +245,7 @@ func (suite *FromFediAPITestSuite) TestProcessFave() {
 	suite.Equal(gtsmodel.NotificationFavourite, notif.NotificationType)
 	suite.Equal(fave.TargetAccountID, notif.TargetAccountID)
 	suite.Equal(fave.AccountID, notif.OriginAccountID)
-	suite.Equal(fave.StatusID, notif.StatusID)
+	suite.Equal(fave.StatusID, notif.StatusOrEditID)
 	suite.False(*notif.Read)
 
 	ctx, _ := context.WithTimeout(context.Background(), time.Second*5)
@@ -318,7 +318,7 @@ func (suite *FromFediAPITestSuite) TestProcessFaveWithDifferentReceivingAccount(
 	suite.Equal(gtsmodel.NotificationFavourite, notif.NotificationType)
 	suite.Equal(fave.TargetAccountID, notif.TargetAccountID)
 	suite.Equal(fave.AccountID, notif.OriginAccountID)
-	suite.Equal(fave.StatusID, notif.StatusID)
+	suite.Equal(fave.StatusID, notif.StatusOrEditID)
 	suite.False(*notif.Read)
 
 	// 2. no notification should be streamed to the account that received the fave message, because they weren't the target
@@ -732,6 +732,52 @@ func (suite *FromFediAPITestSuite) TestUndoAnnounce() {
 		return errors.Is(err, db.ErrNoEntries)
 	}) {
 		suite.FailNow("timed out waiting for boost to be removed")
+	}
+}
+
+func (suite *FromFediAPITestSuite) TestUpdateNote() {
+	var (
+		ctx            = context.Background()
+		testStructs    = testrig.SetupTestStructs(rMediaPath, rTemplatePath)
+		requestingAcct = suite.testAccounts["remote_account_2"]
+		receivingAcct  = suite.testAccounts["local_account_1"]
+	)
+	defer testrig.TearDownTestStructs(testStructs)
+
+	update := testrig.NewTestActivities(suite.testAccounts)["remote_account_2_status_1_update"]
+	statusable := update.Activity.GetActivityStreamsObject().At(0).GetActivityStreamsNote()
+	noteURI := ap.GetJSONLDId(statusable)
+
+	// Get the OG status.
+	status, err := testStructs.State.DB.GetStatusByURI(ctx, noteURI.String())
+	if err != nil {
+		suite.FailNow(err.Error())
+	}
+
+	// Process the Update.
+	err = testStructs.Processor.Workers().ProcessFromFediAPI(ctx, &messages.FromFediAPI{
+		APObjectType:   ap.ObjectNote,
+		APActivityType: ap.ActivityUpdate,
+		GTSModel:       status, // original status
+		APObject:       (ap.Statusable)(statusable),
+		Receiving:      receivingAcct,
+		Requesting:     requestingAcct,
+	})
+	suite.NoError(err)
+
+	// Wait for side effects to trigger:
+	// zork should have a mention notif.
+	if !testrig.WaitFor(func() bool {
+		_, err := testStructs.State.DB.GetNotification(
+			gtscontext.SetBarebones(ctx),
+			gtsmodel.NotificationMention,
+			receivingAcct.ID,
+			requestingAcct.ID,
+			status.ID,
+		)
+		return err == nil
+	}) {
+		suite.FailNow("timed out waiting for mention notif")
 	}
 }
 

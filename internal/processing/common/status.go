@@ -21,14 +21,14 @@ import (
 	"context"
 	"errors"
 
-	apimodel "github.com/superseriousbusiness/gotosocial/internal/api/model"
-	"github.com/superseriousbusiness/gotosocial/internal/db"
-	"github.com/superseriousbusiness/gotosocial/internal/federation/dereferencing"
-	statusfilter "github.com/superseriousbusiness/gotosocial/internal/filter/status"
-	"github.com/superseriousbusiness/gotosocial/internal/filter/usermute"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/log"
+	apimodel "code.superseriousbusiness.org/gotosocial/internal/api/model"
+	"code.superseriousbusiness.org/gotosocial/internal/db"
+	"code.superseriousbusiness.org/gotosocial/internal/federation/dereferencing"
+	statusfilter "code.superseriousbusiness.org/gotosocial/internal/filter/status"
+	"code.superseriousbusiness.org/gotosocial/internal/filter/usermute"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/log"
 )
 
 // GetOwnStatus fetches the given status with ID,
@@ -306,25 +306,10 @@ func (p *Processor) InvalidateTimelinedStatus(ctx context.Context, accountID str
 		return gtserror.Newf("db error getting lists for account %s: %w", accountID, err)
 	}
 
-	// Start new log entry with
-	// the above calling func's name.
-	l := log.
-		WithContext(ctx).
-		WithField("caller", log.Caller(3)).
-		WithField("accountID", accountID).
-		WithField("statusID", statusID)
-
-	// Unprepare item from home + list timelines, just log
-	// if something goes wrong since this is not a showstopper.
-
-	if err := p.state.Timelines.Home.UnprepareItem(ctx, accountID, statusID); err != nil {
-		l.Errorf("error unpreparing item from home timeline: %v", err)
-	}
-
+	// Unprepare item from home + list timelines.
+	p.state.Caches.Timelines.Home.MustGet(accountID).UnprepareByStatusIDs(statusID)
 	for _, list := range lists {
-		if err := p.state.Timelines.List.UnprepareItem(ctx, list.ID, statusID); err != nil {
-			l.Errorf("error unpreparing item from list timeline %s: %v", list.ID, err)
-		}
+		p.state.Caches.Timelines.List.MustGet(list.ID).UnprepareByStatusIDs(statusID)
 	}
 
 	return nil

@@ -21,16 +21,16 @@ import (
 	"context"
 	"net/http"
 
+	"code.superseriousbusiness.org/activity/streams/vocab"
+	"code.superseriousbusiness.org/gotosocial/internal/ap"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/id"
+	"code.superseriousbusiness.org/gotosocial/internal/log"
+	"code.superseriousbusiness.org/gotosocial/internal/messages"
 	"github.com/miekg/dns"
-	"github.com/superseriousbusiness/activity/streams/vocab"
-	"github.com/superseriousbusiness/gotosocial/internal/ap"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/id"
-	"github.com/superseriousbusiness/gotosocial/internal/log"
-	"github.com/superseriousbusiness/gotosocial/internal/messages"
 )
 
-func (f *federatingDB) Flag(ctx context.Context, flaggable vocab.ActivityStreamsFlag) error {
+func (f *DB) Flag(ctx context.Context, flaggable vocab.ActivityStreamsFlag) error {
 	log.DebugKV(ctx, "flag", serialize{flaggable})
 
 	// Mark activity as handled.

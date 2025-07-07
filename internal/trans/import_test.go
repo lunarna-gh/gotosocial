@@ -23,12 +23,12 @@ import (
 	"os"
 	"testing"
 
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/state"
+	"code.superseriousbusiness.org/gotosocial/internal/trans"
+	"code.superseriousbusiness.org/gotosocial/testrig"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/suite"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/state"
-	"github.com/superseriousbusiness/gotosocial/internal/trans"
-	"github.com/superseriousbusiness/gotosocial/testrig"
 )
 
 type ImportMinimalTestSuite struct {
@@ -103,8 +103,7 @@ func (suite *ImportMinimalTestSuite) TestImportMinimalOK() {
 	suite.Equal(testAccountBefore.DisplayName, testAccountAfter.DisplayName)
 	suite.Equal(testAccountBefore.Note, testAccountAfter.Note)
 	suite.Equal(testAccountBefore.NoteRaw, testAccountAfter.NoteRaw)
-	suite.Equal(testAccountBefore.Memorial, testAccountAfter.Memorial)
-	suite.Equal(testAccountBefore.Bot, testAccountAfter.Bot)
+	suite.Equal(testAccountBefore.MemorializedAt, testAccountAfter.MemorializedAt)
 	suite.Equal(testAccountBefore.Locked, testAccountAfter.Locked)
 	suite.Equal(testAccountBefore.URI, testAccountAfter.URI)
 	suite.Equal(testAccountBefore.URL, testAccountAfter.URL)

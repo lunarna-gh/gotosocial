@@ -6,7 +6,7 @@ GoToSocial 也会为其向其他服务器发送的所有 `GET` 和 `POST` 请求
 
 这种行为与 Mastodon 的 [AUTHORIZED_FETCH / "安全模式"](https://docs.joinmastodon.org/admin/config/#authorized_fetch) 等效。
 
-GoToSocial 使用 [superseriousbusiness/httpsig](https://github.com/superseriousbusiness/httpsig) 库（从 go-fed 派生）来为发出的请求签名，并解析和验证传入请求的签名。该库严格遵循 [Cavage HTTP Signature RFC](https://datatracker.ietf.org/doc/html/draft-cavage-http-signatures-12)，这是其他实现（如 Mastodon、Pixelfed、Akkoma/Pleroma 等）使用的同一份 RFC。（此 RFC 后来被 [httpbis HTTP Signature RFC](https://datatracker.ietf.org/doc/html/draft-ietf-httpbis-message-signatures) 取代，但尚未广泛实施。）
+GoToSocial 使用 [superseriousbusiness/httpsig](https://codeberg.org/superseriousbusiness/httpsig) 库（从 go-fed 派生）来为发出的请求签名，并解析和验证传入请求的签名。该库严格遵循 [Cavage HTTP Signature RFC](https://datatracker.ietf.org/doc/html/draft-cavage-http-signatures-12)，这是其他实现（如 Mastodon、Pixelfed、Akkoma/Pleroma 等）使用的同一份 RFC。（此 RFC 后来被 [httpbis HTTP Signature RFC](https://datatracker.ietf.org/doc/html/draft-ietf-httpbis-message-signatures) 取代，但尚未广泛实施。）
 
 ## 查询参数
 
@@ -20,11 +20,11 @@ GoToSocial 使用 [superseriousbusiness/httpsig](https://github.com/superserious
 
 接收请求时，GtS 将首先尝试验证包含查询参数的签名。如果签名验证失败，它将尝试在不包含查询参数的情况下重新验证签名。
 
-详细信息请参见 [#894](https://github.com/superseriousbusiness/gotosocial/issues/894)。
+详细信息请参见 [#894](https://codeberg.org/superseriousbusiness/gotosocial/issues/894)。
 
 ## 传入请求
 
-GoToSocial 的请求签名验证在 [internal/federation](https://github.com/superseriousbusiness/gotosocial/blob/main/internal/federation/authenticate.go) 中实现。
+GoToSocial 的请求签名验证在 [internal/federation](https://codeberg.org/superseriousbusiness/gotosocial/src/branch/main/internal/federation/authenticate.go) 中实现。
 
 GoToSocial 将尝试按以下算法顺序解析签名，成功后将停止：
 
@@ -36,9 +36,9 @@ ED25519
 
 ## 发出请求
 
-GoToSocial 的请求签名在 [internal/transport](https://github.com/superseriousbusiness/gotosocial/blob/main/internal/transport/signing.go) 中实现。
+GoToSocial 的请求签名在 [internal/transport](https://codeberg.org/superseriousbusiness/gotosocial/src/branch/main/internal/transport/signing.go) 中实现。
 
-一旦解决了 https://github.com/superseriousbusiness/gotosocial/issues/2991 ，GoToSocial 将使用 `(created)` 伪标头代替 `date`。
+一旦解决了 https://codeberg.org/superseriousbusiness/gotosocial/issues/2991 ，GoToSocial 将使用 `(created)` 伪标头代替 `date`。
 
 然而，目前在组装签名时：
 
@@ -82,4 +82,4 @@ https://example.org/users/example_user#main-key
 
 与 GoToSocial 联合的外站服务器应从 `publicKey` 字段提取公钥。然后，它们应该使用公钥的 `owner` 字段签名 `GET` 请求，进一步解引用 Actor 的完整版本。
 
-这种行为是为了避免外站服务器对完整 Actor 端点进行未签名的 `GET` 请求引入的。然而，由于不合规且引发问题，此行为可能会在未来发生变化。在 [此问题](https://github.com/superseriousbusiness/gotosocial/issues/1186) 中进行跟踪。
+这种行为是为了避免外站服务器对完整 Actor 端点进行未签名的 `GET` 请求引入的。然而，由于不合规且引发问题，此行为可能会在未来发生变化。在 [此问题](https://codeberg.org/superseriousbusiness/gotosocial/issues/1186) 中进行跟踪。

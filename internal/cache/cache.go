@@ -20,10 +20,11 @@ package cache
 import (
 	"time"
 
+	"code.superseriousbusiness.org/gotosocial/internal/cache/headerfilter"
+	"code.superseriousbusiness.org/gotosocial/internal/config"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/log"
 	"codeberg.org/gruf/go-cache/v3/ttl"
-	"github.com/superseriousbusiness/gotosocial/internal/cache/headerfilter"
-	"github.com/superseriousbusiness/gotosocial/internal/config"
-	"github.com/superseriousbusiness/gotosocial/internal/log"
 )
 
 type Caches struct {
@@ -44,6 +45,9 @@ type Caches struct {
 	// To ensure up-to-date fields, cache is keyed as:
 	// `[status.ID][status.UpdatedAt.Unix()]`
 	StatusesFilterableFields *ttl.Cache[string, []string]
+
+	// Timelines ...
+	Timelines TimelineCaches
 
 	// Visibility provides access to the item visibility
 	// cache. (used by the visibility filter).
@@ -69,7 +73,6 @@ func (c *Caches) Init() {
 	c.initBlock()
 	c.initBlockIDs()
 	c.initBoostOfIDs()
-	c.initClient()
 	c.initConversation()
 	c.initConversationLastStatusIDs()
 	c.initDomainAllow()
@@ -87,12 +90,14 @@ func (c *Caches) Init() {
 	c.initFollowRequest()
 	c.initFollowRequestIDs()
 	c.initFollowingTagIDs()
+	c.initHomeTimelines()
 	c.initInReplyToIDs()
 	c.initInstance()
 	c.initInteractionRequest()
 	c.initList()
 	c.initListIDs()
 	c.initListedIDs()
+	c.initListTimelines()
 	c.initMarker()
 	c.initMedia()
 	c.initMention()
@@ -109,6 +114,7 @@ func (c *Caches) Init() {
 	c.initStatusEdit()
 	c.initStatusFave()
 	c.initStatusFaveIDs()
+	c.initStatusesFilterableFields()
 	c.initTag()
 	c.initThreadMute()
 	c.initToken()
@@ -120,21 +126,22 @@ func (c *Caches) Init() {
 	c.initWebPushSubscription()
 	c.initWebPushSubscriptionIDs()
 	c.initVisibility()
-	c.initStatusesFilterableFields()
 }
 
 // Start will start any caches that require a background
 // routine, which usually means any kind of TTL caches.
-func (c *Caches) Start() {
+func (c *Caches) Start() error {
 	log.Infof(nil, "start: %p", c)
 
-	tryUntil("starting webfinger cache", 5, func() bool {
-		return c.Webfinger.Start(5 * time.Minute)
-	})
+	if !c.Webfinger.Start(5 * time.Minute) {
+		return gtserror.New("could not start webfinger cache")
+	}
 
-	tryUntil("starting statusesFilterableFields cache", 5, func() bool {
-		return c.StatusesFilterableFields.Start(5 * time.Minute)
-	})
+	if !c.StatusesFilterableFields.Start(5 * time.Minute) {
+		return gtserror.New("could not start statusesFilterableFields cache")
+	}
+
+	return nil
 }
 
 // Stop will stop any caches that require a background
@@ -142,8 +149,12 @@ func (c *Caches) Start() {
 func (c *Caches) Stop() {
 	log.Infof(nil, "stop: %p", c)
 
-	tryUntil("stopping webfinger cache", 5, c.Webfinger.Stop)
-	tryUntil("stopping statusesFilterableFields cache", 5, c.StatusesFilterableFields.Stop)
+	if c.Webfinger != nil {
+		_ = c.Webfinger.Stop()
+	}
+	if c.StatusesFilterableFields != nil {
+		_ = c.StatusesFilterableFields.Stop()
+	}
 }
 
 // Sweep will sweep all the available caches to ensure none
@@ -161,7 +172,6 @@ func (c *Caches) Sweep(threshold float64) {
 	c.DB.Block.Trim(threshold)
 	c.DB.BlockIDs.Trim(threshold)
 	c.DB.BoostOfIDs.Trim(threshold)
-	c.DB.Client.Trim(threshold)
 	c.DB.Conversation.Trim(threshold)
 	c.DB.ConversationLastStatusIDs.Trim(threshold)
 	c.DB.Emoji.Trim(threshold)
@@ -202,6 +212,8 @@ func (c *Caches) Sweep(threshold float64) {
 	c.DB.User.Trim(threshold)
 	c.DB.UserMute.Trim(threshold)
 	c.DB.UserMuteIDs.Trim(threshold)
+	c.Timelines.Home.Trim()
+	c.Timelines.List.Trim()
 	c.Visibility.Trim(threshold)
 }
 

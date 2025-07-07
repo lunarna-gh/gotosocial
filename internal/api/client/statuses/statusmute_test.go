@@ -27,12 +27,12 @@ import (
 	"strings"
 	"testing"
 
+	"code.superseriousbusiness.org/gotosocial/internal/api/client/statuses"
+	apiutil "code.superseriousbusiness.org/gotosocial/internal/api/util"
+	"code.superseriousbusiness.org/gotosocial/internal/oauth"
+	"code.superseriousbusiness.org/gotosocial/testrig"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/suite"
-	"github.com/superseriousbusiness/gotosocial/internal/api/client/statuses"
-	apiutil "github.com/superseriousbusiness/gotosocial/internal/api/util"
-	"github.com/superseriousbusiness/gotosocial/internal/oauth"
-	"github.com/superseriousbusiness/gotosocial/testrig"
 )
 
 type StatusMuteTestSuite struct {
@@ -108,7 +108,7 @@ func (suite *StatusMuteTestSuite) TestMuteUnmuteStatus() {
   "muted": true,
   "bookmarked": false,
   "pinned": false,
-  "content": "hello everyone!",
+  "content": "\u003cp\u003ehello everyone!\u003c/p\u003e",
   "reblog": null,
   "application": {
     "name": "really cool gts application",
@@ -149,8 +149,14 @@ func (suite *StatusMuteTestSuite) TestMuteUnmuteStatus() {
   "card": null,
   "poll": null,
   "text": "hello everyone!",
+  "content_type": "text/plain",
   "interaction_policy": {
     "can_favourite": {
+      "automatic_approval": [
+        "public",
+        "me"
+      ],
+      "manual_approval": [],
       "always": [
         "public",
         "me"
@@ -158,6 +164,11 @@ func (suite *StatusMuteTestSuite) TestMuteUnmuteStatus() {
       "with_approval": []
     },
     "can_reply": {
+      "automatic_approval": [
+        "public",
+        "me"
+      ],
+      "manual_approval": [],
       "always": [
         "public",
         "me"
@@ -165,6 +176,11 @@ func (suite *StatusMuteTestSuite) TestMuteUnmuteStatus() {
       "with_approval": []
     },
     "can_reblog": {
+      "automatic_approval": [
+        "public",
+        "me"
+      ],
+      "manual_approval": [],
       "always": [
         "public",
         "me"
@@ -197,7 +213,7 @@ func (suite *StatusMuteTestSuite) TestMuteUnmuteStatus() {
   "muted": false,
   "bookmarked": false,
   "pinned": false,
-  "content": "hello everyone!",
+  "content": "\u003cp\u003ehello everyone!\u003c/p\u003e",
   "reblog": null,
   "application": {
     "name": "really cool gts application",
@@ -238,8 +254,14 @@ func (suite *StatusMuteTestSuite) TestMuteUnmuteStatus() {
   "card": null,
   "poll": null,
   "text": "hello everyone!",
+  "content_type": "text/plain",
   "interaction_policy": {
     "can_favourite": {
+      "automatic_approval": [
+        "public",
+        "me"
+      ],
+      "manual_approval": [],
       "always": [
         "public",
         "me"
@@ -247,6 +269,11 @@ func (suite *StatusMuteTestSuite) TestMuteUnmuteStatus() {
       "with_approval": []
     },
     "can_reply": {
+      "automatic_approval": [
+        "public",
+        "me"
+      ],
+      "manual_approval": [],
       "always": [
         "public",
         "me"
@@ -254,6 +281,11 @@ func (suite *StatusMuteTestSuite) TestMuteUnmuteStatus() {
       "with_approval": []
     },
     "can_reblog": {
+      "automatic_approval": [
+        "public",
+        "me"
+      ],
+      "manual_approval": [],
       "always": [
         "public",
         "me"

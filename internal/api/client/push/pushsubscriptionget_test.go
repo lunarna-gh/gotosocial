@@ -24,11 +24,11 @@ import (
 	"net/http"
 	"net/http/httptest"
 
-	"github.com/superseriousbusiness/gotosocial/internal/api/client/push"
-	apimodel "github.com/superseriousbusiness/gotosocial/internal/api/model"
-	"github.com/superseriousbusiness/gotosocial/internal/config"
-	"github.com/superseriousbusiness/gotosocial/internal/oauth"
-	"github.com/superseriousbusiness/gotosocial/testrig"
+	"code.superseriousbusiness.org/gotosocial/internal/api/client/push"
+	apimodel "code.superseriousbusiness.org/gotosocial/internal/api/model"
+	"code.superseriousbusiness.org/gotosocial/internal/config"
+	"code.superseriousbusiness.org/gotosocial/internal/oauth"
+	"code.superseriousbusiness.org/gotosocial/testrig"
 )
 
 // getSubscription gets the push subscription for the named account and token.
@@ -95,7 +95,7 @@ func (suite *PushTestSuite) TestGetSubscription() {
 func (suite *PushTestSuite) TestGetMissingSubscription() {
 	accountFixtureName := "local_account_1"
 	// This token should not have a subscription.
-	tokenFixtureName := "local_account_1_user_authorization_token"
+	tokenFixtureName := "local_account_1_push_only"
 
 	_, err := suite.getSubscription(accountFixtureName, tokenFixtureName, 404)
 	suite.NoError(err)

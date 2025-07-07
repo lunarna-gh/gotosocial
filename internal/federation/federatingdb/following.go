@@ -21,8 +21,8 @@ import (
 	"context"
 	"net/url"
 
-	"github.com/superseriousbusiness/activity/streams/vocab"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/activity/streams/vocab"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
 )
 
 // Following obtains the Following Collection for an actor with the
@@ -31,8 +31,8 @@ import (
 // If modified, the library will then call Update.
 //
 // The library makes this call only after acquiring a lock first.
-func (f *federatingDB) Following(ctx context.Context, actorIRI *url.URL) (following vocab.ActivityStreamsCollection, err error) {
-	acct, err := f.getAccountForIRI(ctx, actorIRI)
+func (f *DB) Following(ctx context.Context, actorIRI *url.URL) (following vocab.ActivityStreamsCollection, err error) {
+	acct, err := f.state.DB.GetAccountByURI(ctx, actorIRI.String())
 	if err != nil {
 		return nil, err
 	}

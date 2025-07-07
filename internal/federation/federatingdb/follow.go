@@ -21,15 +21,15 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/superseriousbusiness/activity/streams/vocab"
-	"github.com/superseriousbusiness/gotosocial/internal/ap"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/id"
-	"github.com/superseriousbusiness/gotosocial/internal/log"
-	"github.com/superseriousbusiness/gotosocial/internal/messages"
+	"code.superseriousbusiness.org/activity/streams/vocab"
+	"code.superseriousbusiness.org/gotosocial/internal/ap"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/id"
+	"code.superseriousbusiness.org/gotosocial/internal/log"
+	"code.superseriousbusiness.org/gotosocial/internal/messages"
 )
 
-func (f *federatingDB) Follow(ctx context.Context, followable vocab.ActivityStreamsFollow) error {
+func (f *DB) Follow(ctx context.Context, followable vocab.ActivityStreamsFollow) error {
 	log.DebugKV(ctx, "follow", serialize{followable})
 
 	// Mark activity as handled.

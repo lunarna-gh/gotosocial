@@ -2,6 +2,11 @@
 version: 2
 project_name: gotosocial
 
+# https://goreleaser.com/scm/gitea/#urls
+gitea_urls:
+  api: https://codeberg.org/api/v1
+  download: https://codeberg.org
+
 # https://goreleaser.com/customization/hooks/
 before:
   hooks:
@@ -12,6 +17,8 @@ before:
   - yarn --cwd ./web/source install
   - yarn --cwd ./web/source ts-patch install # https://typia.io/docs/setup/#manual-setup
   - yarn --cwd ./web/source build
+  # Bundle all licenses into web/assets/all_licenses.txt
+  - ./scripts/bundle_licenses.sh
 
 # https://goreleaser.com/customization/build/
 builds:
@@ -102,15 +109,21 @@ dockers:
     ids:
     - gotosocial
     image_templates:
-    - "superseriousbusiness/{{ .ProjectName }}:{{ .Version }}-amd64"
-    - "superseriousbusiness/{{ .ProjectName }}:latest-amd64"
-    - "{{ if .IsSnapshot }}superseriousbusiness/{{ .ProjectName }}:snapshot-amd64{{ end }}"
+    - "{{ if not .IsSnapshot }}superseriousbusiness/{{ .ProjectName }}:{{ .Version }}-amd64{{ end }}"                 # Use version tag (eg., `0.19.0`, `0.19.0-rc1`) for proper releases and prereleases.
+    - "{{ if and (not .Prerelease) (not .IsSnapshot) }}superseriousbusiness/{{ .ProjectName }}:latest-amd64{{ end }}" # Only use `latest` for proper releases, not prereleases or snapshots.
+    - "{{ if .IsSnapshot }}superseriousbusiness/{{ .ProjectName }}:snapshot-amd64{{ end }}"                           # Only use `snapshot` for snapshot builds triggered by merge to main.
     build_flag_templates:
     - "--platform=linux/amd64"
-    - "--label=org.opencontainers.image.created={{.Date}}"
-    - "--label=org.opencontainers.image.title={{.ProjectName}}"
-    - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+    - "--label=org.opencontainers.image.title=GoToSocial"
+    - "--label=org.opencontainers.image.authors=GoToSocial Authors"
+    - "--label=org.opencontainers.image.description=Fast, fun, small ActivityPub server."
+    - "--label=org.opencontainers.image.url=https://docs.gotosocial.org"
+    - "--label=org.opencontainers.image.documentation=https://docs.gotosocial.org/en/latest/getting_started/installation/container/"
+    - "--label=org.opencontainers.image.source=https://codeberg.org/superseriousbusiness/gotosocial"
     - "--label=org.opencontainers.image.version={{.Version}}"
+    - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+    - "--label=org.opencontainers.image.created={{.Date}}"
+    - "--label=org.opencontainers.image.licenses=AGPL-3.0-or-later"
     extra_files:
     - web
     - go.mod
@@ -125,15 +138,21 @@ dockers:
     ids:
     - gotosocial
     image_templates:
-    - "superseriousbusiness/{{ .ProjectName }}:{{ .Version }}-arm64v8"
-    - "superseriousbusiness/{{ .ProjectName }}:latest-arm64v8"
-    - "{{ if .IsSnapshot }}superseriousbusiness/{{ .ProjectName }}:snapshot-arm64v8{{ end }}"
+    - "{{ if not .IsSnapshot }}superseriousbusiness/{{ .ProjectName }}:{{ .Version }}-arm64v8{{ end }}"                 # Use version tag (eg., `0.19.0`, `0.19.0-rc1`) for proper releases and prereleases.
+    - "{{ if and (not .Prerelease) (not .IsSnapshot) }}superseriousbusiness/{{ .ProjectName }}:latest-arm64v8{{ end }}" # Only use `latest` for proper releases, not prereleases or snapshots.
+    - "{{ if .IsSnapshot }}superseriousbusiness/{{ .ProjectName }}:snapshot-arm64v8{{ end }}"                           # Only use `snapshot` for snapshot builds triggered by merge to main.
     build_flag_templates:
     - "--platform=linux/arm64/v8"
-    - "--label=org.opencontainers.image.created={{.Date}}"
-    - "--label=org.opencontainers.image.title={{.ProjectName}}"
-    - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+    - "--label=org.opencontainers.image.title=GoToSocial"
+    - "--label=org.opencontainers.image.authors=GoToSocial Authors"
+    - "--label=org.opencontainers.image.description=Fast, fun, small ActivityPub server."
+    - "--label=org.opencontainers.image.url=https://docs.gotosocial.org"
+    - "--label=org.opencontainers.image.documentation=https://docs.gotosocial.org/en/latest/getting_started/installation/container/"
+    - "--label=org.opencontainers.image.source=https://codeberg.org/superseriousbusiness/gotosocial"
     - "--label=org.opencontainers.image.version={{.Version}}"
+    - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+    - "--label=org.opencontainers.image.created={{.Date}}"
+    - "--label=org.opencontainers.image.licenses=AGPL-3.0-or-later"
     extra_files:
     - web
     - go.mod
@@ -143,14 +162,17 @@ dockers:
 
 # https://goreleaser.com/customization/docker_manifest/
 docker_manifests:
-  - name_template: superseriousbusiness/{{ .ProjectName }}:{{ .Version }}
+  # Use version tag (eg., `0.19.0`, `0.19.0-rc1`) for proper releases and prereleases.
+  - name_template: "{{ if not .IsSnapshot }}superseriousbusiness/{{ .ProjectName }}:{{ .Version }}{{ end }}"
     image_templates:
     - superseriousbusiness/{{ .ProjectName }}:{{ .Version }}-amd64
     - superseriousbusiness/{{ .ProjectName }}:{{ .Version }}-arm64v8
-  - name_template: superseriousbusiness/{{ .ProjectName }}:latest
+  # Only use `latest` for proper releases, not prereleases or snapshots.
+  - name_template: "{{ if and (not .Prerelease) (not .IsSnapshot) }}superseriousbusiness/{{ .ProjectName }}:latest{{ end }}"
     image_templates:
     - superseriousbusiness/{{ .ProjectName }}:latest-amd64
     - superseriousbusiness/{{ .ProjectName }}:latest-arm64v8
+  # Only use `snapshot` for snapshot builds triggered by merge to main.
   - name_template: "{{ if .IsSnapshot }}superseriousbusiness/{{ .ProjectName }}:snapshot{{ end }}"
     image_templates:
     - superseriousbusiness/{{ .ProjectName }}:snapshot-amd64
@@ -217,6 +239,10 @@ source:
 
 # https://goreleaser.com/customization/release/
 release:
+  # https://goreleaser.com/customization/release/#gitea
+  gitea:
+    owner: superseriousbusiness
+    name: gotosocial
   draft: true
   prerelease: auto
   header: |
@@ -239,8 +265,8 @@ release:
     #### Binary/tar
     
     1. Stop GoToSocial.
-    2. **Back up your database!** If you're running on SQLite, this is as simple as copying your `sqlite.db` file, eg., `cp sqlite.db sqlite.db.backup`.
-    3. Download and untar the new release, including the web assets and html templates.
+    2. **Back up your database!** If you're running on SQLite, this is as simple as copying your `sqlite.db` file, eg., `cp sqlite.db sqlite.db.backup`. On Postgres you can do this with [pg_dump](https://www.postgresql.org/docs/current/backup-dump.html).
+    3. Download and untar the new release, **including the web assets and html templates**, not just the binary.
     4. Edit your config.yaml file if necessary (see below).
     5. Start GoToSocial.
     6. Wait patiently for any migrations to run, **do not interrupt migrations or you could leave your db in a broken state and will have to restore from backup**!
@@ -249,8 +275,8 @@ release:
     #### Docker
     
     1. Stop GoToSocial.
-    2. **Back up your database!** If you're running on SQLite, this is as simple as copying your `sqlite.db` file, eg., `cp sqlite.db sqlite.db.backup`.
-    3. Pull the new docker container (`superseriousbusiness/gotosocial:{{ .Version }}` or `superseriousbusiness/gotosocial:latest`)
+    2. **Back up your database!** If you're running on SQLite, this is as simple as copying your `sqlite.db` file, eg., `cp sqlite.db sqlite.db.backup`. On Postgres you can do this with [pg_dump](https://www.postgresql.org/docs/current/backup-dump.html).
+    3. Pull the new docker container with `docker pull docker.io/superseriousbusiness/gotosocial:{{ .Version }}` or `docker pull docker.io/superseriousbusiness/gotosocial:latest` if this is a stable release and not a release candidate.
     4. Edit your config.yaml file or environment variables if necessary (see below).
     5. Start GoToSocial.
     6. Wait patiently for any migrations to run, **do not interrupt migrations or you could leave your db in a broken state and will have to restore from backup**!
@@ -263,7 +289,7 @@ release:
     - Changed `pee pee` to `poo poo`.
     - Changed `wee wee` to `more wee wee`.
     
-    You can see a diff of the config file here: https://github.com/superseriousbusiness/gotosocial/compare/{{ .PreviousTag }}...{{ .Tag }}#diff-c071e03510b2c57e193a44503fd9528a785f0f411497cc75841a9f8d0b1ac622
+    You can see a diff of the config file here: https://codeberg.org/superseriousbusiness/gotosocial/compare/{{ .PreviousTag }}...{{ .Tag }}#diff-c071e03510b2c57e193a44503fd9528a785f0f411497cc75841a9f8d0b1ac622
     
     ### Database Migrations
     
@@ -283,14 +309,14 @@ release:
     
     GoToSocial releases binary builds for 64-bit Linux, FreeBSD, and NetBSD operating systems. We also release Docker builds for 64-bit Linux.
 
-    | OS      | Architecture            | Support level                      | Binary archive                                                                                                                                                       | Docker                                                  |
-    | ------- | ----------------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
-    | Linux   | x86-64/AMD64 (64-bit)   | 🟢 Full                            | [linux_amd64.tar.gz](https://github.com/superseriousbusiness/gotosocial/releases/download/{{ .Tag }}/gotosocial_{{ .Version }}_linux_amd64.tar.gz)                   | `superseriousbusiness/gotosocial:{{ .Version }}`        |
-    | Linux   | Armv8/ARM64 (64-bit)    | 🟢 Full                            | [linux_arm64.tar.gz](https://github.com/superseriousbusiness/gotosocial/releases/download/{{ .Tag }}/gotosocial_{{ .Version }}_linux_arm64.tar.gz)                   | `superseriousbusiness/gotosocial:{{ .Version }}`        |
-    | FreeBSD | x86-64/AMD64 (64-bit)   | 🟢 Full                            | [freebsd_amd64.tar.gz](https://github.com/superseriousbusiness/gotosocial/releases/download/{{ .Tag }}/gotosocial_{{ .Version }}_freebsd_amd64.tar.gz)               | Not provided                                            |
-    | FreeBSD | Armv8/ARM64 (64-bit)    | 🟢 Full                            | [freebsd_arm64.tar.gz](https://github.com/superseriousbusiness/gotosocial/releases/download/{{ .Tag }}/gotosocial_{{ .Version }}_freebsd_arm64.tar.gz)               | Not provided                                            |
-    | NetBSD  | x86-64/AMD64 (64-bit)   | 🟢 Full                            | [netbsd_amd64.tar.gz](https://github.com/superseriousbusiness/gotosocial/releases/download/{{ .Tag }}/gotosocial_{{ .Version }}_netbsd_amd64.tar.gz)                 | Not provided                                            |
-    | NetBSD  | Armv8/ARM64 (64-bit)    | 🟢 Full                            | [netbsd_arm64.tar.gz](https://github.com/superseriousbusiness/gotosocial/releases/download/{{ .Tag }}/gotosocial_{{ .Version }}_netbsd_arm64.tar.gz)                 | Not provided                                            |
+    | OS      | Architecture            | Support level                      | Binary archive                                                                                                                                                       | Docker                                                     |
+    | ------- | ----------------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+    | Linux   | x86-64/AMD64 (64-bit)   | 🟢 Full                            | [linux_amd64.tar.gz](https://codeberg.org/superseriousbusiness/gotosocial/releases/download/{{ .Tag }}/gotosocial_{{ .Version }}_linux_amd64.tar.gz)                 | `docker.io/superseriousbusiness/gotosocial:{{ .Version }}` |
+    | Linux   | Armv8/ARM64 (64-bit)    | 🟢 Full                            | [linux_arm64.tar.gz](https://codeberg.org/superseriousbusiness/gotosocial/releases/download/{{ .Tag }}/gotosocial_{{ .Version }}_linux_arm64.tar.gz)                 | `docker.io/superseriousbusiness/gotosocial:{{ .Version }}` |
+    | FreeBSD | x86-64/AMD64 (64-bit)   | 🟢 Full                            | [freebsd_amd64.tar.gz](https://codeberg.org/superseriousbusiness/gotosocial/releases/download/{{ .Tag }}/gotosocial_{{ .Version }}_freebsd_amd64.tar.gz)             | Not provided                                               |
+    | FreeBSD | Armv8/ARM64 (64-bit)    | 🟢 Full                            | [freebsd_arm64.tar.gz](https://codeberg.org/superseriousbusiness/gotosocial/releases/download/{{ .Tag }}/gotosocial_{{ .Version }}_freebsd_arm64.tar.gz)             | Not provided                                               |
+    | NetBSD  | x86-64/AMD64 (64-bit)   | 🟢 Full                            | [netbsd_amd64.tar.gz](https://codeberg.org/superseriousbusiness/gotosocial/releases/download/{{ .Tag }}/gotosocial_{{ .Version }}_netbsd_amd64.tar.gz)               | Not provided                                               |
+    | NetBSD  | Armv8/ARM64 (64-bit)    | 🟢 Full                            | [netbsd_arm64.tar.gz](https://codeberg.org/superseriousbusiness/gotosocial/releases/download/{{ .Tag }}/gotosocial_{{ .Version }}_netbsd_arm64.tar.gz)               | Not provided                                               |
     
     #### `nowasm`
     
@@ -304,7 +330,7 @@ release:
 
 # https://goreleaser.com/customization/changelog/
 changelog:
-  use: github
+  use: gitea
   groups:
     - title: Features and performance
       regexp: '^.*\[(?:feature|performance).*\].*$'

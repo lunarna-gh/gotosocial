@@ -27,11 +27,11 @@ import (
 	"strings"
 	"testing"
 
+	"code.superseriousbusiness.org/gotosocial/internal/api/client/statuses"
+	"code.superseriousbusiness.org/gotosocial/internal/oauth"
+	"code.superseriousbusiness.org/gotosocial/testrig"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/suite"
-	"github.com/superseriousbusiness/gotosocial/internal/api/client/statuses"
-	"github.com/superseriousbusiness/gotosocial/internal/oauth"
-	"github.com/superseriousbusiness/gotosocial/testrig"
 )
 
 type StatusHistoryTestSuite struct {
@@ -91,7 +91,7 @@ func (suite *StatusHistoryTestSuite) TestGetHistory() {
 
 	suite.Equal(`[
   {
-    "content": "hello everyone!",
+    "content": "\u003cp\u003ehello everyone!\u003c/p\u003e",
     "spoiler_text": "introduction post",
     "sensitive": true,
     "created_at": "2021-10-20T10:40:37.000Z",

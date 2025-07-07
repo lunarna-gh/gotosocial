@@ -22,13 +22,13 @@ import (
 	"errors"
 	"fmt"
 
-	apimodel "github.com/superseriousbusiness/gotosocial/internal/api/model"
-	"github.com/superseriousbusiness/gotosocial/internal/db"
-	statusfilter "github.com/superseriousbusiness/gotosocial/internal/filter/status"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/log"
-	"github.com/superseriousbusiness/gotosocial/internal/util"
+	apimodel "code.superseriousbusiness.org/gotosocial/internal/api/model"
+	"code.superseriousbusiness.org/gotosocial/internal/db"
+	statusfilter "code.superseriousbusiness.org/gotosocial/internal/filter/status"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/log"
+	"code.superseriousbusiness.org/gotosocial/internal/util"
 )
 
 // StatusesGet fetches a number of statuses (in time descending order) from the
@@ -143,6 +143,8 @@ func (p *Processor) StatusesGet(
 func (p *Processor) WebStatusesGet(
 	ctx context.Context,
 	targetAccountID string,
+	mediaOnly bool,
+	limit int,
 	maxID string,
 ) (*apimodel.PageableResponse, gtserror.WithCode) {
 	account, err := p.state.DB.GetAccountByID(ctx, targetAccountID)
@@ -159,7 +161,13 @@ func (p *Processor) WebStatusesGet(
 		return nil, gtserror.NewErrorNotFound(err)
 	}
 
-	statuses, err := p.state.DB.GetAccountWebStatuses(ctx, account, 10, maxID)
+	statuses, err := p.state.DB.GetAccountWebStatuses(
+		ctx,
+		account,
+		mediaOnly,
+		limit,
+		maxID,
+	)
 	if err != nil && !errors.Is(err, db.ErrNoEntries) {
 		return nil, gtserror.NewErrorInternalError(err)
 	}
@@ -198,6 +206,7 @@ func (p *Processor) WebStatusesGet(
 func (p *Processor) WebStatusesGetPinned(
 	ctx context.Context,
 	targetAccountID string,
+	mediaOnly bool,
 ) ([]*apimodel.WebStatus, gtserror.WithCode) {
 	statuses, err := p.state.DB.GetAccountPinnedStatuses(ctx, targetAccountID)
 	if err != nil && !errors.Is(err, db.ErrNoEntries) {
@@ -206,6 +215,11 @@ func (p *Processor) WebStatusesGetPinned(
 
 	webStatuses := make([]*apimodel.WebStatus, 0, len(statuses))
 	for _, status := range statuses {
+		if mediaOnly && len(status.Attachments) == 0 {
+			// No media, skip.
+			continue
+		}
+
 		// Ensure visible via the web.
 		visible, err := p.visFilter.StatusVisible(ctx, nil, status)
 		if err != nil {

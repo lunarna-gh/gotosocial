@@ -18,7 +18,7 @@
 */
 
 import React from "react";
-import { useVerifyCredentialsQuery } from "../../../lib/query/oauth";
+import { useVerifyCredentialsQuery } from "../../../lib/query/login";
 import Loading from "../../../components/loading";
 import { Error as ErrorC } from "../../../components/error";
 import BasicSettings from "./basic-settings";

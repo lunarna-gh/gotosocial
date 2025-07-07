@@ -21,10 +21,10 @@ import (
 	"context"
 	"fmt"
 
+	"code.superseriousbusiness.org/gotosocial/cmd/gotosocial/action"
+	"code.superseriousbusiness.org/gotosocial/internal/config"
+	"code.superseriousbusiness.org/gotosocial/internal/log"
 	"github.com/spf13/cobra"
-	"github.com/superseriousbusiness/gotosocial/cmd/gotosocial/action"
-	"github.com/superseriousbusiness/gotosocial/internal/config"
-	"github.com/superseriousbusiness/gotosocial/internal/log"
 )
 
 type preRunArgs struct {
@@ -43,16 +43,16 @@ type preRunArgs struct {
 // env vars or cli flag.
 func preRun(a preRunArgs) error {
 	if err := config.BindFlags(a.cmd); err != nil {
-		return fmt.Errorf("error binding flags: %s", err)
+		return fmt.Errorf("error binding flags: %w", err)
 	}
 
-	if err := config.Reload(); err != nil {
-		return fmt.Errorf("error reloading config: %s", err)
+	if err := config.LoadConfigFile(); err != nil {
+		return fmt.Errorf("error loading config file: %w", err)
 	}
 
 	if !a.skipValidation {
 		if err := config.Validate(); err != nil {
-			return fmt.Errorf("invalid config: %s", err)
+			return fmt.Errorf("invalid config: %w", err)
 		}
 	}
 

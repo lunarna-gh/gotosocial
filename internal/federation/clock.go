@@ -20,7 +20,7 @@ package federation
 import (
 	"time"
 
-	"github.com/superseriousbusiness/activity/pub"
+	"code.superseriousbusiness.org/activity/pub"
 )
 
 /*

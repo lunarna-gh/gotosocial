@@ -26,13 +26,13 @@ import (
 	"strconv"
 	"strings"
 
-	filtersV1 "github.com/superseriousbusiness/gotosocial/internal/api/client/filters/v1"
-	apimodel "github.com/superseriousbusiness/gotosocial/internal/api/model"
-	"github.com/superseriousbusiness/gotosocial/internal/config"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/oauth"
-	"github.com/superseriousbusiness/gotosocial/internal/stream"
-	"github.com/superseriousbusiness/gotosocial/testrig"
+	filtersV1 "code.superseriousbusiness.org/gotosocial/internal/api/client/filters/v1"
+	apimodel "code.superseriousbusiness.org/gotosocial/internal/api/model"
+	"code.superseriousbusiness.org/gotosocial/internal/config"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/oauth"
+	"code.superseriousbusiness.org/gotosocial/internal/stream"
+	"code.superseriousbusiness.org/gotosocial/testrig"
 )
 
 func (suite *FiltersTestSuite) postFilter(
@@ -256,7 +256,7 @@ func (suite *FiltersTestSuite) postFilterWithExpiration(phrase *string, expiresI
 	return filter
 }
 
-// Regression test for https://github.com/superseriousbusiness/gotosocial/issues/3497
+// Regression test for https://codeberg.org/superseriousbusiness/gotosocial/issues/3497
 func (suite *FiltersTestSuite) TestPostFilterWithEmptyStringExpiration() {
 	title := "Form Sins"
 	expiresInStr := ""
@@ -264,7 +264,7 @@ func (suite *FiltersTestSuite) TestPostFilterWithEmptyStringExpiration() {
 	suite.Nil(filter.ExpiresAt)
 }
 
-// Regression test related to https://github.com/superseriousbusiness/gotosocial/issues/3497
+// Regression test related to https://codeberg.org/superseriousbusiness/gotosocial/issues/3497
 func (suite *FiltersTestSuite) TestPostFilterWithNullExpirationJSON() {
 	requestJson := `{
 		"phrase": "JSON Sins",

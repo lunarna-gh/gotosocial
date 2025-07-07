@@ -1,8 +1,9 @@
+//go:build go1.22 && !go1.25
+
 package structr
 
 import (
 	"fmt"
-	"os"
 	"reflect"
 	"runtime"
 	"strings"
@@ -36,6 +37,11 @@ type struct_field struct {
 	// offsets defines whereabouts in
 	// memory this field is located.
 	offsets []next_offset
+
+	// determines whether field type
+	// is ptr-like in-memory, and so
+	// requires a further dereference.
+	likeptr bool
 }
 
 // next_offset defines a next offset location
@@ -64,7 +70,7 @@ func find_field(t reflect.Type, names []string) (sfield struct_field) {
 			name := names[0]
 			names = names[1:]
 			if !is_exported(name) {
-				panicf("field is not exported: %s", name)
+				panic(fmt.Sprintf("field is not exported: %s", name))
 			}
 			return name
 		}
@@ -88,7 +94,7 @@ func find_field(t reflect.Type, names []string) (sfield struct_field) {
 
 		// Check for valid struct type.
 		if t.Kind() != reflect.Struct {
-			panicf("field %s is not struct (or ptr-to): %s", t, name)
+			panic(fmt.Sprintf("field %s is not struct (or ptr-to): %s", t, name))
 		}
 
 		var ok bool
@@ -96,7 +102,7 @@ func find_field(t reflect.Type, names []string) (sfield struct_field) {
 		// Look for next field by name.
 		field, ok = t.FieldByName(name)
 		if !ok {
-			panicf("unknown field: %s", name)
+			panic(fmt.Sprintf("unknown field: %s", name))
 		}
 
 		// Set next offset value.
@@ -106,6 +112,9 @@ func find_field(t reflect.Type, names []string) (sfield struct_field) {
 		// Set the next type.
 		t = field.Type
 	}
+
+	// Check if ptr-like in-memory.
+	sfield.likeptr = like_ptr(t)
 
 	// Set final type.
 	sfield.rtype = t
@@ -126,10 +135,14 @@ func find_field(t reflect.Type, names []string) (sfield struct_field) {
 // extract_fields extracts given structfields from the provided value type,
 // this is done using predetermined struct field memory offset locations.
 func extract_fields(ptr unsafe.Pointer, fields []struct_field) []unsafe.Pointer {
+
 	// Prepare slice of field value pointers.
 	ptrs := make([]unsafe.Pointer, len(fields))
-	for i, field := range fields {
+	if len(ptrs) != len(fields) {
+		panic(assert("BCE"))
+	}
 
+	for i, field := range fields {
 		// loop scope.
 		fptr := ptr
 
@@ -145,7 +158,7 @@ func extract_fields(ptr unsafe.Pointer, fields []struct_field) []unsafe.Pointer 
 				offset.offset)
 		}
 
-		if like_ptr(field.rtype) && fptr != nil {
+		if field.likeptr && fptr != nil {
 			// Further dereference value ptr.
 			fptr = *(*unsafe.Pointer)(fptr)
 		}
@@ -162,9 +175,63 @@ func extract_fields(ptr unsafe.Pointer, fields []struct_field) []unsafe.Pointer 
 	return ptrs
 }
 
-// like_ptr returns whether type's kind is ptr-like.
+// pkey_field contains pre-prepared type
+// information about a primary key struct's
+// field member, including memory offset.
+type pkey_field struct {
+	rtype reflect.Type
+
+	// offsets defines whereabouts in
+	// memory this field is located.
+	offsets []next_offset
+
+	// determines whether field type
+	// is ptr-like in-memory, and so
+	// requires a further dereference.
+	likeptr bool
+}
+
+// extract_pkey will extract a pointer from 'ptr', to
+// the primary key struct field defined by 'field'.
+func extract_pkey(ptr unsafe.Pointer, field pkey_field) unsafe.Pointer {
+	for _, offset := range field.offsets {
+		// Dereference any ptrs to offset.
+		ptr = deref(ptr, offset.derefs)
+		if ptr == nil {
+			return nil
+		}
+
+		// Jump forward by offset to next ptr.
+		ptr = unsafe.Pointer(uintptr(ptr) +
+			offset.offset)
+	}
+
+	if field.likeptr && ptr != nil {
+		// Further dereference value ptr.
+		ptr = *(*unsafe.Pointer)(ptr)
+	}
+
+	return ptr
+}
+
+// like_ptr returns whether type's kind is ptr-like in-memory,
+// which indicates it may need a final additional dereference.
 func like_ptr(t reflect.Type) bool {
 	switch t.Kind() {
+	case reflect.Array:
+		switch n := t.Len(); n {
+		case 1:
+			// specifically single elem arrays
+			// follow like_ptr for contained type.
+			return like_ptr(t.Elem())
+		}
+	case reflect.Struct:
+		switch n := t.NumField(); n {
+		case 1:
+			// specifically single field structs
+			// follow like_ptr for contained type.
+			return like_ptr(t.Field(0).Type)
+		}
 	case reflect.Pointer,
 		reflect.Map,
 		reflect.Chan,
@@ -191,17 +258,12 @@ func eface_data(a any) unsafe.Pointer {
 	return (*eface)(unsafe.Pointer(&a)).data
 }
 
-// panicf provides a panic with string formatting.
-func panicf(format string, args ...any) {
-	panic(fmt.Sprintf(format, args...))
-}
-
-// should_not_reach can be called to indicated a
-// block of code should not be able to be reached,
-// else it prints callsite info with a BUG report.
+// assert can be called to indicated a block
+// of code should not be able to be reached,
+// it returns a BUG report with callsite.
 //
 //go:noinline
-func should_not_reach() {
+func assert(assert string) string {
 	pcs := make([]uintptr, 1)
 	_ = runtime.Callers(2, pcs)
 	fn := runtime.FuncForPC(pcs[0])
@@ -212,5 +274,11 @@ func should_not_reach() {
 			funcname = funcname[i+1:]
 		}
 	}
-	os.Stderr.WriteString("BUG: assertion failed in " + funcname + "\n")
+	var buf strings.Builder
+	buf.Grow(32 + len(assert) + len(funcname))
+	buf.WriteString("BUG: assertion \"")
+	buf.WriteString(assert)
+	buf.WriteString("\" failed in ")
+	buf.WriteString(funcname)
+	return buf.String()
 }

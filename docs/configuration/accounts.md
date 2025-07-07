@@ -20,6 +20,28 @@ accounts-registration-open: false
 # Default: true
 accounts-reason-required: true
 
+# Int. Number of approved sign-ups allowed within
+# 24hrs before new account registration is closed.
+#
+# Leaving this count at the default essentially limits
+# your instance to growing by 10 accounts per day.
+#
+# Setting this number to 0 or less removes the limit.
+#
+# Default: 10
+accounts-registration-daily-limit: 10
+
+# Int. Number of new account sign-ups allowed in the pending
+# approval queue before new account registration is closed.
+#
+# This can be used to essentially "throttle" the sign-up
+# queue to prevent instance admins becoming overwhelmed.
+#
+# Setting this number to 0 or less removes the limit.
+#
+# Default: 20
+accounts-registration-backlog-limit: 20
+
 # Bool. Allow accounts on this instance to set custom CSS for their profile pages and statuses.
 # Enabling this setting will allow accounts to upload custom CSS via the /user settings page,
 # which will then be rendered on the web view of the account's profile and statuses.
@@ -42,4 +64,12 @@ accounts-allow-custom-css: false
 # Examples: [500, 5000, 9999]
 # Default: 10000
 accounts-custom-css-length: 10000
+
+# Int. The maximum number of profile fields allowed for each account.
+#
+# Note that going way higher than the default might break federation.
+#
+# Examples: [4, 6, 12]
+# Default: 6
+accounts-max-profile-fields: 6
 ```

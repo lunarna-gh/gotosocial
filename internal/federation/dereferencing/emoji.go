@@ -23,13 +23,13 @@ import (
 	"io"
 	"net/url"
 
-	"github.com/superseriousbusiness/gotosocial/internal/config"
-	"github.com/superseriousbusiness/gotosocial/internal/db"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/log"
-	"github.com/superseriousbusiness/gotosocial/internal/media"
-	"github.com/superseriousbusiness/gotosocial/internal/util"
+	"code.superseriousbusiness.org/gotosocial/internal/config"
+	"code.superseriousbusiness.org/gotosocial/internal/db"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/log"
+	"code.superseriousbusiness.org/gotosocial/internal/media"
+	"code.superseriousbusiness.org/gotosocial/internal/util"
 )
 
 // GetEmoji fetches the emoji with given shortcode,
@@ -134,19 +134,23 @@ func (d *Dereferencer) RefreshEmoji(
 	*gtsmodel.Emoji,
 	error,
 ) {
-	// Check emoji is up-to-date
-	// with provided extra info.
-	switch {
-	case info.URI != nil &&
-		*info.URI != emoji.URI:
+	// Check uri up-to-date.
+	if info.URI != nil &&
+		*info.URI != emoji.URI {
 		emoji.URI = *info.URI
 		force = true
-	case info.ImageRemoteURL != nil &&
-		*info.ImageRemoteURL != emoji.ImageRemoteURL:
+	}
+
+	// Check image remote URL up-to-date.
+	if info.ImageRemoteURL != nil &&
+		*info.ImageRemoteURL != emoji.ImageRemoteURL {
 		emoji.ImageRemoteURL = *info.ImageRemoteURL
 		force = true
-	case info.ImageStaticRemoteURL != nil &&
-		*info.ImageStaticRemoteURL != emoji.ImageStaticRemoteURL:
+	}
+
+	// Check image static remote URL up-to-date.
+	if info.ImageStaticRemoteURL != nil &&
+		*info.ImageStaticRemoteURL != emoji.ImageStaticRemoteURL {
 		emoji.ImageStaticRemoteURL = *info.ImageStaticRemoteURL
 		force = true
 	}

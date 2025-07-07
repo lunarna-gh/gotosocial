@@ -81,12 +81,18 @@ polls can have up to
 <b>{{- .instance.Configuration.Polls.MaxCharactersPerOption }} characters per option</b>.
 {{- end -}}
 
+{{- define "profileLimits" -}}
+Profiles can have up to
+<b>{{- .instance.Configuration.Accounts.MaxProfileFields }} profile fields</b>.
+{{- end -}}
+
 {{- with . }}
 <main class="about">
     <nav class="about-section" aria-labelledby="toc">
         <h3 id="toc">table of contents</h3>
         <div class="about-section-contents">
             <ol>
+<<<<<<< HEAD
                 <li><a href="#about">about {{ .instance.Title -}}</a></li>
                 <li><a href="#contact">contact</a></li>
                 <li><a href="#features">features</a></li>
@@ -95,6 +101,16 @@ polls can have up to
                 <li><a href="#rules">rules</a></li>
                 <li><a href="#terms">terms and conditions</a></li>
                 <li><a href="#moderated-servers">moderated servers</a></li>
+=======
+                <li><a href="#about">About {{ .instance.Title -}}</a></li>
+                <li><a href="#contact">Contact</a></li>
+                <li><a href="#features">Features</a></li>
+                <li><a href="#languages">Languages</a></li>
+                <li><a href="#signup">Register an Account on {{ .instance.Title -}}</a></li>
+                <li><a href="#rules">Rules</a></li>
+                <li><a href="#terms">Terms and Conditions</a></li>
+                <li><a href="#domain-permissions">Domain permissions</a></li>
+>>>>>>> ec4d4d01150ae979896496651bc64e4148d94a06
             </ol>
         </div>
     </nav>
@@ -138,6 +154,7 @@ polls can have up to
 	    	<li>i modified gotosocial to make unlisted posts linkable but invisible on profile pages. repository is at the bottom of the page</li>
                 <li>{{- template "statusLimits" . -}}</li>
                 <li>{{- template "pollLimits" . -}}</li>
+                <li>{{- template "profileLimits" . -}}</li>
                 <li>{{- template "customCSSLimits" . -}}</li>
             </ul>
         </div>
@@ -167,25 +184,55 @@ polls can have up to
             {{- end }}
         </div>
     </section>
+<<<<<<< HEAD
     <section class="about-section" role="region" aria-labelledby="moderated-servers">
         <h3 id="moderated-servers">moderated servers</h3>
+=======
+    <section class="about-section" role="region" aria-labelledby="domain-permissions">
+        <h3 id="domain-permissions">Domain permissions</h3>
+>>>>>>> ec4d4d01150ae979896496651bc64e4148d94a06
         <div class="about-section-contents">
             <p>
                 ActivityPub instances federate with other instances by exchanging data with them over the network.
                 Exchanged data includes things like accounts, statuses, likes, boosts, and media attachments.
-                This exchange of data can be prevented for instances on specific domains via a domain block created
-                by an instance admin. When an instance is domain blocked by another instance:
+            </p>
+            <p>
+                This exchange of data is open by default but can be <strong>blocked</strong> for instances
+                on specific domains via a domain block created by an instance admin.
+            </p>
+            <p>
+                Alternatively, if this instance is running in allowlist mode, exchange of data with remote
+                instances must be explicitly <strong>allowed</strong> via a domain allow entry.
+            </p>
+            <p>
+                For more information on domain blocks, domain allows, etc, see the following pages (all links open in a new tab):
             </p>
             <ul>
-                <li>Any existing data from the blocked instance is deleted from the storage of the instance doing the blocking.</li>
-                <li>Interaction between the two instances is cut off in both directions; neither instance can interact with the other.</li>
-                <li>No new data from the blocked instance will be created on the instance that blocks it.</li>
+                <li><a href="https://docs.gotosocial.org/en/latest/admin/federation_modes/" target="_blank" rel="noreferrer">Federation modes</a></li>
+                <li><a href="https://docs.gotosocial.org/en/latest/admin/domain_blocks/" target="_blank" rel="noreferrer">Domain blocks</a></li>
+                <li><a href="https://docs.gotosocial.org/en/latest/admin/domain_permission_subscriptions/" target="_blank" rel="noreferrer">Domain permission subscriptions</a></li>
+            </ul>
+            <h4>Blocked domains</h4>
+            <p>When a domain block entry is created on this instance:</p>
+            <ul>
+                <li>No new data from instances on the blocked domain will be created on this instance.</li>
+                <li>Interaction between this instance and blocked instances is cut off in both directions.</li>
+                <li>(In case of an exact match): Any existing data from blocked instances are deleted from the storage of this instance.</li>
             </ul>
             <p>
                 {{- if .blocklistExposed }}
-                <a href="/about/suspended">View the list of domains blocked by this instance</a>
+                <a href="/about/domain_blocks">View the list of domains blocked by this instance</a>
                 {{- else }}
-                This instance does not publically share their list of blocked domains.
+                This instance does not publically share its list of blocked domains.
+                {{- end }}
+            </p>
+            <h4>Allowed domains</h4>
+            <p>When an admin adds an explicit domain allow entry, instances on the domain and its subdomains are allowed to federate with this instance.</p>
+            <p>
+                {{- if .allowlistExposed }}
+                <a href="/about/domain_allows">View the list of domains explicitly allowed by this instance</a>
+                {{- else }}
+                This instance does not publically share its list of explicitly allowed domains.
                 {{- end }}
             </p>
         </div>

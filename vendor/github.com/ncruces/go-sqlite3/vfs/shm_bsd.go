@@ -68,15 +68,10 @@ func (s *vfsShm) Close() error {
 	panic(util.AssertErr())
 }
 
-func (s *vfsShm) shmOpen() _ErrorCode {
+func (s *vfsShm) shmOpen() (rc _ErrorCode) {
 	if s.vfsShmParent != nil {
 		return _OK
 	}
-
-	var f *os.File
-	// Close file on error.
-	// Keep this here to avoid confusing checklocks.
-	defer func() { f.Close() }()
 
 	vfsShmListMtx.Lock()
 	defer vfsShmListMtx.Unlock()
@@ -98,11 +93,16 @@ func (s *vfsShm) shmOpen() _ErrorCode {
 	}
 
 	// Always open file read-write, as it will be shared.
-	f, err = os.OpenFile(s.path,
+	f, err := os.OpenFile(s.path,
 		os.O_RDWR|os.O_CREATE|_O_NOFOLLOW, 0666)
 	if err != nil {
 		return _CANTOPEN
 	}
+	defer func() {
+		if rc != _OK {
+			f.Close()
+		}
+	}()
 
 	// Dead man's switch.
 	if lock, rc := osTestLock(f, _SHM_DMS, 1); rc != _OK {
@@ -131,7 +131,6 @@ func (s *vfsShm) shmOpen() _ErrorCode {
 		File: f,
 		info: fi,
 	}
-	f = nil // Don't close the file.
 	for i, g := range vfsShmList {
 		if g == nil {
 			vfsShmList[i] = s.vfsShmParent
@@ -142,7 +141,7 @@ func (s *vfsShm) shmOpen() _ErrorCode {
 	return _OK
 }
 
-func (s *vfsShm) shmMap(ctx context.Context, mod api.Module, id, size int32, extend bool) (uint32, _ErrorCode) {
+func (s *vfsShm) shmMap(ctx context.Context, mod api.Module, id, size int32, extend bool) (ptr_t, _ErrorCode) {
 	// Ensure size is a multiple of the OS page size.
 	if int(size)&(unix.Getpagesize()-1) != 0 {
 		return 0, _IOERR_SHMMAP

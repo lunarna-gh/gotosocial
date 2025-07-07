@@ -22,9 +22,9 @@ import (
 	"os"
 	"strings"
 
-	terminator "codeberg.org/superseriousbusiness/exif-terminator"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/log"
+	terminator "code.superseriousbusiness.org/exif-terminator"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/log"
 )
 
 // clearMetadata performs our best-attempt at cleaning metadata from

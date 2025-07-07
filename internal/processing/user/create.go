@@ -22,14 +22,14 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/superseriousbusiness/gotosocial/internal/ap"
-	apimodel "github.com/superseriousbusiness/gotosocial/internal/api/model"
-	"github.com/superseriousbusiness/gotosocial/internal/config"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/messages"
-	"github.com/superseriousbusiness/gotosocial/internal/text"
-	"github.com/superseriousbusiness/oauth2/v4"
+	"code.superseriousbusiness.org/gotosocial/internal/ap"
+	apimodel "code.superseriousbusiness.org/gotosocial/internal/api/model"
+	"code.superseriousbusiness.org/gotosocial/internal/config"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/messages"
+	"code.superseriousbusiness.org/gotosocial/internal/text"
+	"code.superseriousbusiness.org/oauth2/v4"
 )
 
 // Create processes the given form for creating a new user+account.
@@ -44,34 +44,43 @@ func (p *Processor) Create(
 	app *gtsmodel.Application,
 	form *apimodel.AccountCreateRequest,
 ) (*gtsmodel.User, gtserror.WithCode) {
-	const (
-		usersPerDay = 10
-		regBacklog  = 20
+	var (
+		usersPerDay = config.GetAccountsRegistrationDailyLimit()
+		regBacklog  = config.GetAccountsRegistrationBacklogLimit()
 	)
 
-	// Ensure no more than usersPerDay
+	// If usersPerDay limit is in place,
+	// ensure no more than usersPerDay
 	// have registered in the last 24h.
-	newUsersCount, err := p.state.DB.CountApprovedSignupsSince(ctx, time.Now().Add(-24*time.Hour))
-	if err != nil {
-		err := fmt.Errorf("db error counting new users: %w", err)
-		return nil, gtserror.NewErrorInternalError(err)
+	if usersPerDay > 0 {
+		newUsersCount, err := p.state.DB.CountApprovedSignupsSince(ctx, time.Now().Add(-24*time.Hour))
+		if err != nil {
+			err := fmt.Errorf("db error counting new users: %w", err)
+			return nil, gtserror.NewErrorInternalError(err)
+		}
+
+		if newUsersCount >= usersPerDay {
+			err := fmt.Errorf("this instance has hit its limit of new sign-ups for today (%d); you can try again tomorrow", usersPerDay)
+			return nil, gtserror.NewErrorUnprocessableEntity(err, err.Error())
+		}
 	}
 
-	if newUsersCount >= usersPerDay {
-		err := fmt.Errorf("this instance has hit its limit of new sign-ups for today; you can try again tomorrow")
-		return nil, gtserror.NewErrorUnprocessableEntity(err, err.Error())
-	}
+	// If registration backlog limit is
+	// in place, ensure backlog isn't full.
+	if regBacklog > 0 {
+		backlogLen, err := p.state.DB.CountUnhandledSignups(ctx)
+		if err != nil {
+			err := fmt.Errorf("db error counting registration backlog length: %w", err)
+			return nil, gtserror.NewErrorInternalError(err)
+		}
 
-	// Ensure the new users backlog isn't full.
-	backlogLen, err := p.state.DB.CountUnhandledSignups(ctx)
-	if err != nil {
-		err := fmt.Errorf("db error counting registration backlog length: %w", err)
-		return nil, gtserror.NewErrorInternalError(err)
-	}
-
-	if backlogLen >= regBacklog {
-		err := fmt.Errorf("this instance's sign-up backlog is currently full; you must wait until pending sign-ups are handled by the admin(s)")
-		return nil, gtserror.NewErrorUnprocessableEntity(err, err.Error())
+		if backlogLen >= regBacklog {
+			err := fmt.Errorf(
+				"this instance's sign-up backlog is currently full (%d sign-ups pending approval); "+
+					"you must wait until some pending sign-ups are handled by the admin(s)", regBacklog,
+			)
+			return nil, gtserror.NewErrorUnprocessableEntity(err, err.Error())
+		}
 	}
 
 	emailAvailable, err := p.state.DB.IsEmailAvailable(ctx, form.Email)
@@ -113,7 +122,7 @@ func (p *Processor) Create(
 		Username: form.Username,
 		Email:    form.Email,
 		Password: form.Password,
-		Reason:   text.SanitizeToPlaintext(reason),
+		Reason:   text.StripHTMLFromText(reason),
 		SignUpIP: form.IP,
 		Locale:   form.Locale,
 		AppID:    app.ID,

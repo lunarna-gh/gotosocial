@@ -23,10 +23,10 @@ import (
 	"encoding/json"
 	"testing"
 
+	statusfilter "code.superseriousbusiness.org/gotosocial/internal/filter/status"
+	"code.superseriousbusiness.org/gotosocial/internal/stream"
+	"code.superseriousbusiness.org/gotosocial/internal/typeutils"
 	"github.com/stretchr/testify/suite"
-	statusfilter "github.com/superseriousbusiness/gotosocial/internal/filter/status"
-	"github.com/superseriousbusiness/gotosocial/internal/stream"
-	"github.com/superseriousbusiness/gotosocial/internal/typeutils"
 )
 
 type StatusUpdateTestSuite struct {
@@ -71,7 +71,7 @@ func (suite *StatusUpdateTestSuite) TestStreamNotification() {
   "muted": false,
   "bookmarked": false,
   "pinned": false,
-  "content": "dark souls status bot: \"thoughts of dog\"",
+  "content": "\u003cp\u003edark souls status bot: \"thoughts of dog\"\u003c/p\u003e",
   "reblog": null,
   "account": {
     "id": "01F8MH5ZK5VRH73AKHQM6Y9VNX",
@@ -135,6 +135,11 @@ func (suite *StatusUpdateTestSuite) TestStreamNotification() {
   "poll": null,
   "interaction_policy": {
     "can_favourite": {
+      "automatic_approval": [
+        "public",
+        "me"
+      ],
+      "manual_approval": [],
       "always": [
         "public",
         "me"
@@ -142,6 +147,11 @@ func (suite *StatusUpdateTestSuite) TestStreamNotification() {
       "with_approval": []
     },
     "can_reply": {
+      "automatic_approval": [
+        "public",
+        "me"
+      ],
+      "manual_approval": [],
       "always": [
         "public",
         "me"
@@ -149,6 +159,11 @@ func (suite *StatusUpdateTestSuite) TestStreamNotification() {
       "with_approval": []
     },
     "can_reblog": {
+      "automatic_approval": [
+        "public",
+        "me"
+      ],
+      "manual_approval": [],
       "always": [
         "public",
         "me"

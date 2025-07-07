@@ -20,10 +20,10 @@ package ap_test
 import (
 	"testing"
 
+	"code.superseriousbusiness.org/activity/streams"
+	"code.superseriousbusiness.org/gotosocial/internal/ap"
+	"code.superseriousbusiness.org/gotosocial/testrig"
 	"github.com/stretchr/testify/suite"
-	"github.com/superseriousbusiness/activity/streams"
-	"github.com/superseriousbusiness/gotosocial/internal/ap"
-	"github.com/superseriousbusiness/gotosocial/testrig"
 )
 
 type ExtractMentionsTestSuite struct {

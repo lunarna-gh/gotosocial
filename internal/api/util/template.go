@@ -21,10 +21,10 @@ import (
 	"net/http"
 	"net/netip"
 
+	apimodel "code.superseriousbusiness.org/gotosocial/internal/api/model"
+	"code.superseriousbusiness.org/gotosocial/internal/config"
+	"code.superseriousbusiness.org/gotosocial/internal/log"
 	"github.com/gin-gonic/gin"
-	apimodel "github.com/superseriousbusiness/gotosocial/internal/api/model"
-	"github.com/superseriousbusiness/gotosocial/internal/config"
-	"github.com/superseriousbusiness/gotosocial/internal/log"
 )
 
 // WebPage encapsulates variables for
@@ -48,16 +48,31 @@ type WebPage struct {
 	// Can be nil.
 	Stylesheets []string
 
-	// Paths to JS files to add to
-	// the page as "script" entries.
+	// JS files to add to the
+	// page as "script" entries.
 	// Can be nil.
-	Javascript []string
+	Javascript []JavascriptEntry
 
 	// Extra parameters to pass to
 	// the template for rendering,
 	// eg., "account": *Account etc.
 	// Can be nil.
 	Extra map[string]any
+}
+
+type JavascriptEntry struct {
+	// Insert <script> tag at the end
+	// of <body> rather than in <head>.
+	Bottom bool
+
+	// Path to the js file.
+	Src string
+
+	// Use async="" attribute.
+	Async bool
+
+	// Use defer="" attribute.
+	Defer bool
 }
 
 // TemplateWebPage renders the given HTML template and
@@ -156,7 +171,7 @@ func injectTrustedProxiesRec(
 		return
 	}
 
-	except := config.GetAdvancedRateLimitExceptionsParsed()
+	except := config.GetAdvancedRateLimitExceptions()
 	for _, prefix := range except {
 		if prefix.Contains(ip) {
 			// This ip is exempt from
@@ -236,6 +251,16 @@ func templatePage(
 	obj map[string]any,
 ) {
 	const pageTmpl = "page.tmpl"
+
+	// Render given template inside the page.
 	obj["pageContent"] = template
+
+	// Inject specific page class by trimming
+	// ".tmpl" suffix. In the page template
+	// (see page.tmpl) this will be appended
+	// with "-page", so "index.tmpl" for example
+	// ends up with class "page index-page".
+	obj["pageClass"] = template[:len(template)-5]
+
 	c.HTML(code, pageTmpl, obj)
 }

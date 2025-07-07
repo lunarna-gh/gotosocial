@@ -20,16 +20,20 @@ package statuses_test
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
+	"code.superseriousbusiness.org/gotosocial/internal/api/client/statuses"
+	apimodel "code.superseriousbusiness.org/gotosocial/internal/api/model"
+	"code.superseriousbusiness.org/gotosocial/internal/id"
+	"code.superseriousbusiness.org/gotosocial/internal/oauth"
+	"code.superseriousbusiness.org/gotosocial/testrig"
 	"github.com/stretchr/testify/suite"
-	"github.com/superseriousbusiness/gotosocial/internal/api/client/statuses"
-	apimodel "github.com/superseriousbusiness/gotosocial/internal/api/model"
-	"github.com/superseriousbusiness/gotosocial/internal/oauth"
-	"github.com/superseriousbusiness/gotosocial/testrig"
 )
 
 type StatusCreateTestSuite struct {
@@ -41,10 +45,11 @@ const (
 	statusMarkdown         = "# Title\n\n## Smaller title\n\nThis is a post written in [markdown](https://www.markdownguide.org/)\n\n<img src=\"https://d33wubrfki0l68.cloudfront.net/f1f475a6fda1c2c4be4cac04033db5c3293032b4/513a4/assets/images/markdown-mark-white.svg\"/>"
 )
 
-func (suite *StatusCreateTestSuite) postStatus(
+// Post a status.
+func (suite *StatusCreateTestSuite) postStatusCore(
 	formData map[string][]string,
 	jsonData string,
-) (string, *httptest.ResponseRecorder) {
+) *httptest.ResponseRecorder {
 	recorder := httptest.NewRecorder()
 	ctx, _ := testrig.CreateGinTestContext(recorder, nil)
 	ctx.Set(oauth.SessionAuthorizedApplication, suite.testApplications["application_1"])
@@ -77,7 +82,40 @@ func (suite *StatusCreateTestSuite) postStatus(
 
 	// Trigger handler.
 	suite.statusModule.StatusCreatePOSTHandler(ctx)
+
+	return recorder
+}
+
+// Post a status and return the result as deterministic JSON.
+func (suite *StatusCreateTestSuite) postStatus(
+	formData map[string][]string,
+	jsonData string,
+) (string, *httptest.ResponseRecorder) {
+	recorder := suite.postStatusCore(formData, jsonData)
 	return suite.parseStatusResponse(recorder)
+}
+
+// Post a status and return the result as a non-deterministic API structure.
+func (suite *StatusCreateTestSuite) postStatusStruct(
+	formData map[string][]string,
+	jsonData string,
+) (*apimodel.Status, *httptest.ResponseRecorder) {
+	recorder := suite.postStatusCore(formData, jsonData)
+
+	result := recorder.Result()
+	defer result.Body.Close()
+
+	data, err := io.ReadAll(result.Body)
+	if err != nil {
+		suite.FailNow(err.Error())
+	}
+
+	apiStatus := apimodel.Status{}
+	if err := json.Unmarshal(data, &apiStatus); err != nil {
+		suite.FailNow(err.Error())
+	}
+
+	return &apiStatus, recorder
 }
 
 // Post a new status with some custom visibility settings
@@ -101,6 +139,7 @@ func (suite *StatusCreateTestSuite) TestPostNewStatus() {
   "bookmarked": false,
   "card": null,
   "content": "<p>this is a brand new status! <a href=\"http://localhost:8080/tags/helloworld\" class=\"mention hashtag\" rel=\"tag nofollow noreferrer noopener\" target=\"_blank\">#<span>helloworld</span></a></p>",
+  "content_type": "text/plain",
   "created_at": "right the hell just now babyee",
   "edited_at": null,
   "emojis": [],
@@ -117,6 +156,13 @@ func (suite *StatusCreateTestSuite) TestPostNewStatus() {
         "mentioned",
         "me"
       ],
+      "automatic_approval": [
+        "author",
+        "followers",
+        "mentioned",
+        "me"
+      ],
+      "manual_approval": [],
       "with_approval": []
     },
     "can_reblog": {
@@ -124,6 +170,11 @@ func (suite *StatusCreateTestSuite) TestPostNewStatus() {
         "author",
         "me"
       ],
+      "automatic_approval": [
+        "author",
+        "me"
+      ],
+      "manual_approval": [],
       "with_approval": []
     },
     "can_reply": {
@@ -133,6 +184,13 @@ func (suite *StatusCreateTestSuite) TestPostNewStatus() {
         "mentioned",
         "me"
       ],
+      "automatic_approval": [
+        "author",
+        "followers",
+        "mentioned",
+        "me"
+      ],
+      "manual_approval": [],
       "with_approval": []
     }
   },
@@ -187,6 +245,7 @@ func (suite *StatusCreateTestSuite) TestPostNewStatusIntPolicy() {
   "bookmarked": false,
   "card": null,
   "content": "<p>this is a brand new status! <a href=\"http://localhost:8080/tags/helloworld\" class=\"mention hashtag\" rel=\"tag nofollow noreferrer noopener\" target=\"_blank\">#<span>helloworld</span></a></p>",
+  "content_type": "text/plain",
   "created_at": "right the hell just now babyee",
   "edited_at": null,
   "emojis": [],
@@ -201,6 +260,11 @@ func (suite *StatusCreateTestSuite) TestPostNewStatusIntPolicy() {
         "author",
         "me"
       ],
+      "automatic_approval": [
+        "author",
+        "me"
+      ],
+      "manual_approval": [],
       "with_approval": []
     },
     "can_reblog": {
@@ -208,6 +272,11 @@ func (suite *StatusCreateTestSuite) TestPostNewStatusIntPolicy() {
         "author",
         "me"
       ],
+      "automatic_approval": [
+        "author",
+        "me"
+      ],
+      "manual_approval": [],
       "with_approval": []
     },
     "can_reply": {
@@ -217,6 +286,16 @@ func (suite *StatusCreateTestSuite) TestPostNewStatusIntPolicy() {
         "following",
         "mentioned",
         "me"
+      ],
+      "automatic_approval": [
+        "author",
+        "followers",
+        "following",
+        "mentioned",
+        "me"
+      ],
+      "manual_approval": [
+        "public"
       ],
       "with_approval": [
         "public"
@@ -283,6 +362,7 @@ func (suite *StatusCreateTestSuite) TestPostNewStatusIntPolicyJSON() {
   "bookmarked": false,
   "card": null,
   "content": "<p>this is a brand new status! <a href=\"http://localhost:8080/tags/helloworld\" class=\"mention hashtag\" rel=\"tag nofollow noreferrer noopener\" target=\"_blank\">#<span>helloworld</span></a></p>",
+  "content_type": "text/plain",
   "created_at": "right the hell just now babyee",
   "edited_at": null,
   "emojis": [],
@@ -297,6 +377,11 @@ func (suite *StatusCreateTestSuite) TestPostNewStatusIntPolicyJSON() {
         "author",
         "me"
       ],
+      "automatic_approval": [
+        "author",
+        "me"
+      ],
+      "manual_approval": [],
       "with_approval": []
     },
     "can_reblog": {
@@ -304,6 +389,11 @@ func (suite *StatusCreateTestSuite) TestPostNewStatusIntPolicyJSON() {
         "author",
         "me"
       ],
+      "automatic_approval": [
+        "author",
+        "me"
+      ],
+      "manual_approval": [],
       "with_approval": []
     },
     "can_reply": {
@@ -313,6 +403,16 @@ func (suite *StatusCreateTestSuite) TestPostNewStatusIntPolicyJSON() {
         "following",
         "mentioned",
         "me"
+      ],
+      "automatic_approval": [
+        "author",
+        "followers",
+        "following",
+        "mentioned",
+        "me"
+      ],
+      "manual_approval": [
+        "public"
       ],
       "with_approval": [
         "public"
@@ -383,8 +483,96 @@ func (suite *StatusCreateTestSuite) TestPostNewScheduledStatus() {
 
 	// We should have a helpful error message.
 	suite.Equal(`{
-  "error": "Not Implemented: scheduled_at is not yet implemented"
+  "error": "Not Implemented: scheduled statuses are not yet supported"
 }`, out)
+}
+
+func (suite *StatusCreateTestSuite) TestPostNewBackfilledStatus() {
+	// A time in the past.
+	scheduledAtStr := "2020-10-04T15:32:02.018Z"
+	scheduledAt, err := time.Parse(time.RFC3339Nano, scheduledAtStr)
+	if err != nil {
+		suite.FailNow(err.Error())
+	}
+
+	status, recorder := suite.postStatusStruct(map[string][]string{
+		"status":       {"this is a recycled status from the past!"},
+		"scheduled_at": {scheduledAtStr},
+	}, "")
+
+	// Creating a status in the past should succeed.
+	suite.Equal(http.StatusOK, recorder.Code)
+
+	// The status should be backdated.
+	createdAt, err := time.Parse(time.RFC3339Nano, status.CreatedAt)
+	if err != nil {
+		suite.FailNow(err.Error())
+		return
+	}
+	suite.Equal(scheduledAt, createdAt.UTC())
+
+	// The status's ULID should be backdated.
+	timeFromULID, err := id.TimeFromULID(status.ID)
+	if err != nil {
+		suite.FailNow(err.Error())
+		return
+	}
+	suite.Equal(scheduledAt, timeFromULID.UTC())
+}
+
+func (suite *StatusCreateTestSuite) TestPostNewBackfilledStatusWithSelfMention() {
+	_, recorder := suite.postStatus(map[string][]string{
+		"status":       {"@the_mighty_zork this is a recycled mention from the past!"},
+		"scheduled_at": {"2020-10-04T15:32:02.018Z"},
+	}, "")
+
+	// Mentioning yourself is allowed in backfilled statuses.
+	suite.Equal(http.StatusOK, recorder.Code)
+}
+
+func (suite *StatusCreateTestSuite) TestPostNewBackfilledStatusWithMention() {
+	_, recorder := suite.postStatus(map[string][]string{
+		"status":       {"@admin this is a recycled mention from the past!"},
+		"scheduled_at": {"2020-10-04T15:32:02.018Z"},
+	}, "")
+
+	// Mentioning others is forbidden in backfilled statuses.
+	suite.Equal(http.StatusForbidden, recorder.Code)
+}
+
+func (suite *StatusCreateTestSuite) TestPostNewBackfilledStatusWithSelfReply() {
+	_, recorder := suite.postStatus(map[string][]string{
+		"status":         {"this is a recycled reply from the past!"},
+		"scheduled_at":   {"2020-10-04T15:32:02.018Z"},
+		"in_reply_to_id": {suite.testStatuses["local_account_1_status_1"].ID},
+	}, "")
+
+	// Replying to yourself is allowed in backfilled statuses.
+	suite.Equal(http.StatusOK, recorder.Code)
+}
+
+func (suite *StatusCreateTestSuite) TestPostNewBackfilledStatusWithReply() {
+	_, recorder := suite.postStatus(map[string][]string{
+		"status":         {"this is a recycled reply from the past!"},
+		"scheduled_at":   {"2020-10-04T15:32:02.018Z"},
+		"in_reply_to_id": {suite.testStatuses["admin_account_status_1"].ID},
+	}, "")
+
+	// Replying to others is forbidden in backfilled statuses.
+	suite.Equal(http.StatusForbidden, recorder.Code)
+}
+
+func (suite *StatusCreateTestSuite) TestPostNewBackfilledStatusWithPoll() {
+	_, recorder := suite.postStatus(map[string][]string{
+		"status":           {"this is a recycled poll from the past!"},
+		"scheduled_at":     {"2020-10-04T15:32:02.018Z"},
+		"poll[options][]":  {"first option", "second option"},
+		"poll[expires_in]": {"3600"},
+		"poll[multiple]":   {"true"},
+	}, "")
+
+	// Polls are forbidden in backfilled statuses.
+	suite.Equal(http.StatusForbidden, recorder.Code)
 }
 
 func (suite *StatusCreateTestSuite) TestPostNewStatusMarkdown() {
@@ -409,6 +597,7 @@ func (suite *StatusCreateTestSuite) TestPostNewStatusMarkdown() {
   "bookmarked": false,
   "card": null,
   "content": "<h1>Title</h1><h2>Smaller title</h2><p>This is a post written in <a href=\"https://www.markdownguide.org/\" rel=\"nofollow noreferrer noopener\" target=\"_blank\">markdown</a></p>",
+  "content_type": "text/markdown",
   "created_at": "right the hell just now babyee",
   "edited_at": null,
   "emojis": [],
@@ -423,6 +612,11 @@ func (suite *StatusCreateTestSuite) TestPostNewStatusMarkdown() {
         "public",
         "me"
       ],
+      "automatic_approval": [
+        "public",
+        "me"
+      ],
+      "manual_approval": [],
       "with_approval": []
     },
     "can_reblog": {
@@ -430,6 +624,11 @@ func (suite *StatusCreateTestSuite) TestPostNewStatusMarkdown() {
         "public",
         "me"
       ],
+      "automatic_approval": [
+        "public",
+        "me"
+      ],
+      "manual_approval": [],
       "with_approval": []
     },
     "can_reply": {
@@ -437,6 +636,11 @@ func (suite *StatusCreateTestSuite) TestPostNewStatusMarkdown() {
         "public",
         "me"
       ],
+      "automatic_approval": [
+        "public",
+        "me"
+      ],
+      "manual_approval": [],
       "with_approval": []
     }
   },
@@ -493,6 +697,7 @@ func (suite *StatusCreateTestSuite) TestMentionUnknownAccount() {
   "bookmarked": false,
   "card": null,
   "content": "<p>hello <span class=\"h-card\"><a href=\"https://unknown-instance.com/@brand_new_person\" class=\"u-url mention\" rel=\"nofollow noreferrer noopener\" target=\"_blank\">@<span>brand_new_person</span></a></span></p>",
+  "content_type": "text/plain",
   "created_at": "right the hell just now babyee",
   "edited_at": null,
   "emojis": [],
@@ -507,6 +712,11 @@ func (suite *StatusCreateTestSuite) TestMentionUnknownAccount() {
         "public",
         "me"
       ],
+      "automatic_approval": [
+        "public",
+        "me"
+      ],
+      "manual_approval": [],
       "with_approval": []
     },
     "can_reblog": {
@@ -514,6 +724,11 @@ func (suite *StatusCreateTestSuite) TestMentionUnknownAccount() {
         "public",
         "me"
       ],
+      "automatic_approval": [
+        "public",
+        "me"
+      ],
+      "manual_approval": [],
       "with_approval": []
     },
     "can_reply": {
@@ -521,6 +736,11 @@ func (suite *StatusCreateTestSuite) TestMentionUnknownAccount() {
         "public",
         "me"
       ],
+      "automatic_approval": [
+        "public",
+        "me"
+      ],
+      "manual_approval": [],
       "with_approval": []
     }
   },
@@ -571,6 +791,7 @@ func (suite *StatusCreateTestSuite) TestPostStatusWithLinksAndTags() {
   "bookmarked": false,
   "card": null,
   "content": "<p><a href=\"http://localhost:8080/tags/test\" class=\"mention hashtag\" rel=\"tag nofollow noreferrer noopener\" target=\"_blank\">#<span>test</span></a> alright, should be able to post <a href=\"http://localhost:8080/tags/links\" class=\"mention hashtag\" rel=\"tag nofollow noreferrer noopener\" target=\"_blank\">#<span>links</span></a> with fragments in them now, let's see........<br><br><a href=\"https://docs.gotosocial.org/en/latest/user_guide/posts/#links\" rel=\"nofollow noreferrer noopener\" target=\"_blank\">https://docs.gotosocial.org/en/latest/user_guide/posts/#links</a><br><br><a href=\"http://localhost:8080/tags/gotosocial\" class=\"mention hashtag\" rel=\"tag nofollow noreferrer noopener\" target=\"_blank\">#<span>gotosocial</span></a><br><br>(tobi remember to pull the docker image challenge)</p>",
+  "content_type": "text/plain",
   "created_at": "right the hell just now babyee",
   "edited_at": null,
   "emojis": [],
@@ -585,6 +806,11 @@ func (suite *StatusCreateTestSuite) TestPostStatusWithLinksAndTags() {
         "public",
         "me"
       ],
+      "automatic_approval": [
+        "public",
+        "me"
+      ],
+      "manual_approval": [],
       "with_approval": []
     },
     "can_reblog": {
@@ -592,6 +818,11 @@ func (suite *StatusCreateTestSuite) TestPostStatusWithLinksAndTags() {
         "public",
         "me"
       ],
+      "automatic_approval": [
+        "public",
+        "me"
+      ],
+      "manual_approval": [],
       "with_approval": []
     },
     "can_reply": {
@@ -599,6 +830,11 @@ func (suite *StatusCreateTestSuite) TestPostStatusWithLinksAndTags() {
         "public",
         "me"
       ],
+      "automatic_approval": [
+        "public",
+        "me"
+      ],
+      "manual_approval": [],
       "with_approval": []
     }
   },
@@ -655,6 +891,7 @@ func (suite *StatusCreateTestSuite) TestPostNewStatusWithEmoji() {
   "bookmarked": false,
   "card": null,
   "content": "<p>here is a rainbow emoji a few times! :rainbow: :rainbow: :rainbow:<br>here's an emoji that isn't in the db: :test_emoji:</p>",
+  "content_type": "text/plain",
   "created_at": "right the hell just now babyee",
   "edited_at": null,
   "emojis": [
@@ -677,6 +914,11 @@ func (suite *StatusCreateTestSuite) TestPostNewStatusWithEmoji() {
         "public",
         "me"
       ],
+      "automatic_approval": [
+        "public",
+        "me"
+      ],
+      "manual_approval": [],
       "with_approval": []
     },
     "can_reblog": {
@@ -684,6 +926,11 @@ func (suite *StatusCreateTestSuite) TestPostNewStatusWithEmoji() {
         "public",
         "me"
       ],
+      "automatic_approval": [
+        "public",
+        "me"
+      ],
+      "manual_approval": [],
       "with_approval": []
     },
     "can_reply": {
@@ -691,6 +938,11 @@ func (suite *StatusCreateTestSuite) TestPostNewStatusWithEmoji() {
         "public",
         "me"
       ],
+      "automatic_approval": [
+        "public",
+        "me"
+      ],
+      "manual_approval": [],
       "with_approval": []
     }
   },
@@ -753,6 +1005,7 @@ func (suite *StatusCreateTestSuite) TestReplyToLocalStatus() {
   "bookmarked": false,
   "card": null,
   "content": "<p>hello <span class=\"h-card\"><a href=\"http://localhost:8080/@1happyturtle\" class=\"u-url mention\" rel=\"nofollow noreferrer noopener\" target=\"_blank\">@<span>1happyturtle</span></a></span> this reply should work!</p>",
+  "content_type": "text/plain",
   "created_at": "right the hell just now babyee",
   "edited_at": null,
   "emojis": [],
@@ -767,6 +1020,11 @@ func (suite *StatusCreateTestSuite) TestReplyToLocalStatus() {
         "public",
         "me"
       ],
+      "automatic_approval": [
+        "public",
+        "me"
+      ],
+      "manual_approval": [],
       "with_approval": []
     },
     "can_reblog": {
@@ -774,6 +1032,11 @@ func (suite *StatusCreateTestSuite) TestReplyToLocalStatus() {
         "public",
         "me"
       ],
+      "automatic_approval": [
+        "public",
+        "me"
+      ],
+      "manual_approval": [],
       "with_approval": []
     },
     "can_reply": {
@@ -781,6 +1044,11 @@ func (suite *StatusCreateTestSuite) TestReplyToLocalStatus() {
         "public",
         "me"
       ],
+      "automatic_approval": [
+        "public",
+        "me"
+      ],
+      "manual_approval": [],
       "with_approval": []
     }
   },
@@ -836,6 +1104,7 @@ func (suite *StatusCreateTestSuite) TestAttachNewMediaSuccess() {
   "bookmarked": false,
   "card": null,
   "content": "<p>here's an image attachment</p>",
+  "content_type": "text/plain",
   "created_at": "right the hell just now babyee",
   "edited_at": null,
   "emojis": [],
@@ -850,6 +1119,11 @@ func (suite *StatusCreateTestSuite) TestAttachNewMediaSuccess() {
         "public",
         "me"
       ],
+      "automatic_approval": [
+        "public",
+        "me"
+      ],
+      "manual_approval": [],
       "with_approval": []
     },
     "can_reblog": {
@@ -857,6 +1131,11 @@ func (suite *StatusCreateTestSuite) TestAttachNewMediaSuccess() {
         "public",
         "me"
       ],
+      "automatic_approval": [
+        "public",
+        "me"
+      ],
+      "manual_approval": [],
       "with_approval": []
     },
     "can_reply": {
@@ -864,6 +1143,11 @@ func (suite *StatusCreateTestSuite) TestAttachNewMediaSuccess() {
         "public",
         "me"
       ],
+      "automatic_approval": [
+        "public",
+        "me"
+      ],
+      "manual_approval": [],
       "with_approval": []
     }
   },
@@ -941,6 +1225,7 @@ func (suite *StatusCreateTestSuite) TestPostNewStatusWithNoncanonicalLanguageTag
   "bookmarked": false,
   "card": null,
   "content": "<p>English? what's English? i speak American</p>",
+  "content_type": "text/plain",
   "created_at": "right the hell just now babyee",
   "edited_at": null,
   "emojis": [],
@@ -955,6 +1240,11 @@ func (suite *StatusCreateTestSuite) TestPostNewStatusWithNoncanonicalLanguageTag
         "public",
         "me"
       ],
+      "automatic_approval": [
+        "public",
+        "me"
+      ],
+      "manual_approval": [],
       "with_approval": []
     },
     "can_reblog": {
@@ -962,6 +1252,11 @@ func (suite *StatusCreateTestSuite) TestPostNewStatusWithNoncanonicalLanguageTag
         "public",
         "me"
       ],
+      "automatic_approval": [
+        "public",
+        "me"
+      ],
+      "manual_approval": [],
       "with_approval": []
     },
     "can_reply": {
@@ -969,6 +1264,11 @@ func (suite *StatusCreateTestSuite) TestPostNewStatusWithNoncanonicalLanguageTag
         "public",
         "me"
       ],
+      "automatic_approval": [
+        "public",
+        "me"
+      ],
+      "manual_approval": [],
       "with_approval": []
     }
   },
@@ -1016,6 +1316,7 @@ func (suite *StatusCreateTestSuite) TestPostNewStatusWithPollForm() {
   "bookmarked": false,
   "card": null,
   "content": "<p>this is a status with a poll!</p>",
+  "content_type": "text/plain",
   "created_at": "right the hell just now babyee",
   "edited_at": null,
   "emojis": [],
@@ -1030,6 +1331,11 @@ func (suite *StatusCreateTestSuite) TestPostNewStatusWithPollForm() {
         "public",
         "me"
       ],
+      "automatic_approval": [
+        "public",
+        "me"
+      ],
+      "manual_approval": [],
       "with_approval": []
     },
     "can_reblog": {
@@ -1037,6 +1343,11 @@ func (suite *StatusCreateTestSuite) TestPostNewStatusWithPollForm() {
         "public",
         "me"
       ],
+      "automatic_approval": [
+        "public",
+        "me"
+      ],
+      "manual_approval": [],
       "with_approval": []
     },
     "can_reply": {
@@ -1044,6 +1355,11 @@ func (suite *StatusCreateTestSuite) TestPostNewStatusWithPollForm() {
         "public",
         "me"
       ],
+      "automatic_approval": [
+        "public",
+        "me"
+      ],
+      "manual_approval": [],
       "with_approval": []
     }
   },
@@ -1113,6 +1429,7 @@ func (suite *StatusCreateTestSuite) TestPostNewStatusWithPollJSON() {
   "bookmarked": false,
   "card": null,
   "content": "<p>this is a status with a poll!</p>",
+  "content_type": "text/plain",
   "created_at": "right the hell just now babyee",
   "edited_at": null,
   "emojis": [],
@@ -1127,6 +1444,11 @@ func (suite *StatusCreateTestSuite) TestPostNewStatusWithPollJSON() {
         "public",
         "me"
       ],
+      "automatic_approval": [
+        "public",
+        "me"
+      ],
+      "manual_approval": [],
       "with_approval": []
     },
     "can_reblog": {
@@ -1134,6 +1456,11 @@ func (suite *StatusCreateTestSuite) TestPostNewStatusWithPollJSON() {
         "public",
         "me"
       ],
+      "automatic_approval": [
+        "public",
+        "me"
+      ],
+      "manual_approval": [],
       "with_approval": []
     },
     "can_reply": {
@@ -1141,6 +1468,11 @@ func (suite *StatusCreateTestSuite) TestPostNewStatusWithPollJSON() {
         "public",
         "me"
       ],
+      "automatic_approval": [
+        "public",
+        "me"
+      ],
+      "manual_approval": [],
       "with_approval": []
     }
   },

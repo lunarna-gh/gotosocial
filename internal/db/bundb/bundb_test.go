@@ -18,13 +18,11 @@
 package bundb_test
 
 import (
+	"code.superseriousbusiness.org/gotosocial/internal/db"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/state"
+	"code.superseriousbusiness.org/gotosocial/testrig"
 	"github.com/stretchr/testify/suite"
-	"github.com/superseriousbusiness/gotosocial/internal/db"
-	"github.com/superseriousbusiness/gotosocial/internal/filter/visibility"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/state"
-	"github.com/superseriousbusiness/gotosocial/internal/typeutils"
-	"github.com/superseriousbusiness/gotosocial/testrig"
 )
 
 type BunDBStandardTestSuite struct {
@@ -35,7 +33,6 @@ type BunDBStandardTestSuite struct {
 
 	// standard suite models
 	testTokens              map[string]*gtsmodel.Token
-	testClients             map[string]*gtsmodel.Client
 	testApplications        map[string]*gtsmodel.Application
 	testUsers               map[string]*gtsmodel.User
 	testAccounts            map[string]*gtsmodel.Account
@@ -62,7 +59,6 @@ type BunDBStandardTestSuite struct {
 
 func (suite *BunDBStandardTestSuite) SetupSuite() {
 	suite.testTokens = testrig.NewTestTokens()
-	suite.testClients = testrig.NewTestClients()
 	suite.testApplications = testrig.NewTestApplications()
 	suite.testUsers = testrig.NewTestUsers()
 	suite.testAccounts = testrig.NewTestAccounts()
@@ -92,8 +88,6 @@ func (suite *BunDBStandardTestSuite) SetupTest() {
 	testrig.InitTestLog()
 	suite.state.Caches.Init()
 	suite.db = testrig.NewTestDB(&suite.state)
-	converter := typeutils.NewConverter(&suite.state)
-	testrig.StartTimelines(&suite.state, visibility.NewFilter(&suite.state), converter)
 	testrig.StandardDBSetup(suite.db, suite.testAccounts)
 }
 

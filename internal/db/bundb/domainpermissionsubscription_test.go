@@ -21,8 +21,8 @@ import (
 	"context"
 	"testing"
 
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
 	"github.com/stretchr/testify/suite"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
 )
 
 type DomainPermissionSubscriptionTestSuite struct {
@@ -80,7 +80,7 @@ func (suite *DomainPermissionSubscriptionTestSuite) TestCount() {
 
 	// Whack the perms in the db.
 	for _, perm := range perms {
-		if err := suite.state.DB.CreateDomainBlock(ctx, perm); err != nil {
+		if err := suite.state.DB.PutDomainBlock(ctx, perm); err != nil {
 			suite.FailNow(err.Error())
 		}
 	}

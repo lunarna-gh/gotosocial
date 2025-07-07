@@ -20,7 +20,7 @@ package ap
 import (
 	"net/url"
 
-	"github.com/superseriousbusiness/activity/streams/vocab"
+	"code.superseriousbusiness.org/activity/streams/vocab"
 )
 
 // IsActivityable returns whether AS vocab type name is acceptable as Activityable.
@@ -76,7 +76,8 @@ func IsStatusable(typeName string) bool {
 		ObjectEvent,
 		ObjectPlace,
 		ObjectProfile,
-		ActivityQuestion:
+		ActivityQuestion,
+		ObjectAlbum:
 		return true
 	default:
 		return false
@@ -128,21 +129,63 @@ func ToPollOptionable(t vocab.Type) (PollOptionable, bool) {
 }
 
 // IsAccept returns whether AS vocab type name
-// is something that can be cast to Accept.
+// is something that can be cast to Acceptable.
 func IsAcceptable(typeName string) bool {
 	return typeName == ActivityAccept
 }
 
-// ToAcceptable safely tries to cast vocab.Type as vocab.ActivityStreamsAccept.
-//
-// TODO: Add additional "Accept" types here, eg., "ApproveReply" from
-// https://codeberg.org/fediverse/fep/src/branch/main/fep/5624/fep-5624.md
-func ToAcceptable(t vocab.Type) (vocab.ActivityStreamsAccept, bool) {
+// ToAcceptable safely tries to cast vocab.Type as Acceptable.
+func ToAcceptable(t vocab.Type) (Acceptable, bool) {
 	acceptable, ok := t.(vocab.ActivityStreamsAccept)
 	if !ok || !IsAcceptable(t.GetTypeName()) {
 		return nil, false
 	}
 	return acceptable, true
+}
+
+// IsApprovable returns whether AS vocab type name
+// is something that can be cast to Approvable.
+func IsApprovable(typeName string) bool {
+	switch typeName {
+	case ObjectLikeApproval,
+		ObjectReplyApproval,
+		ObjectAnnounceApproval:
+		return true
+	default:
+		return false
+	}
+}
+
+// ToAcceptable safely tries to cast vocab.Type as Approvable.
+func ToApprovable(t vocab.Type) (Approvable, bool) {
+	approvable, ok := t.(Approvable)
+	if !ok || !IsApprovable(t.GetTypeName()) {
+		return nil, false
+	}
+	return approvable, true
+}
+
+// IsAttachmentable returns whether AS vocab type name
+// is something that can be cast to Attachmentable.
+func IsAttachmentable(typeName string) bool {
+	switch typeName {
+	case ObjectAudio,
+		ObjectDocument,
+		ObjectImage,
+		ObjectVideo:
+		return true
+	default:
+		return false
+	}
+}
+
+// ToAttachmentable safely tries to cast vocab.Type as Attachmentable.
+func ToAttachmentable(t vocab.Type) (Attachmentable, bool) {
+	attachmentable, ok := t.(Attachmentable)
+	if !ok || !IsAttachmentable(t.GetTypeName()) {
+		return nil, false
+	}
+	return attachmentable, true
 }
 
 // Activityable represents the minimum activitypub interface for representing an 'activity'.
@@ -207,11 +250,13 @@ type Statusable interface {
 	WithTo
 	WithCc
 	WithSensitive
-	WithConversation
 	WithContent
 	WithAttachment
 	WithTag
 	WithReplies
+}
+
+type InteractionPolicyAware interface {
 	WithInteractionPolicy
 	WithApprovedBy
 }
@@ -247,6 +292,19 @@ type PollOptionable interface {
 // interface for representing an Accept.
 type Acceptable interface {
 	Activityable
+
+	WithTarget
+	WithResult
+}
+
+// Approvable represents the minimum activitypub interface
+// for a LikeApproval, ReplyApproval, or AnnounceApproval.
+type Approvable interface {
+	vocab.Type
+
+	WithAttributedTo
+	WithObject
+	WithTarget
 }
 
 // Attachmentable represents the minimum activitypub interface for representing a 'mediaAttachment'. (see: IsAttachmentable).
@@ -557,10 +615,6 @@ type WithSensitive interface {
 	SetActivityStreamsSensitive(vocab.ActivityStreamsSensitiveProperty)
 }
 
-// WithConversation ...
-type WithConversation interface { // TODO
-}
-
 // WithContent represents an activity with ActivityStreamsContentProperty
 type WithContent interface {
 	GetActivityStreamsContent() vocab.ActivityStreamsContentProperty
@@ -597,9 +651,11 @@ type WithBlurhash interface {
 	SetTootBlurhash(vocab.TootBlurhashProperty)
 }
 
-// type withFocalPoint interface {
-// 	// TODO
-// }
+// WithFocalPoint represents an object with TootFocalPointProperty.
+type WithFocalPoint interface {
+	GetTootFocalPoint() vocab.TootFocalPointProperty
+	SetTootFocalPoint(vocab.TootFocalPointProperty)
+}
 
 // WithHref represents an activity with ActivityStreamsHrefProperty
 type WithHref interface {
@@ -699,12 +755,20 @@ type WithInteractionPolicy interface {
 
 // WithPolicyRules represents an activity with always and approvalRequired properties.
 type WithPolicyRules interface {
-	GetGoToSocialAlways() vocab.GoToSocialAlwaysProperty
-	GetGoToSocialApprovalRequired() vocab.GoToSocialApprovalRequiredProperty
+	GetGoToSocialAutomaticApproval() vocab.GoToSocialAutomaticApprovalProperty
+	GetGoToSocialManualApproval() vocab.GoToSocialManualApprovalProperty
+	GetGoToSocialAlways() vocab.GoToSocialAlwaysProperty                     // Deprecated
+	GetGoToSocialApprovalRequired() vocab.GoToSocialApprovalRequiredProperty // Deprecated
 }
 
 // WithApprovedBy represents a Statusable with the approvedBy property.
 type WithApprovedBy interface {
 	GetGoToSocialApprovedBy() vocab.GoToSocialApprovedByProperty
 	SetGoToSocialApprovedBy(vocab.GoToSocialApprovedByProperty)
+}
+
+// WithVotersCount represents an activity or object the result property.
+type WithResult interface {
+	GetActivityStreamsResult() vocab.ActivityStreamsResultProperty
+	SetActivityStreamsResult(vocab.ActivityStreamsResultProperty)
 }

@@ -67,22 +67,27 @@ image/webp
         <link rel="apple-touch-startup-image" href="{{- .instance.Thumbnail -}}" type="{{- template "thumbnailType" . -}}">
         {{- include "page_stylesheets.tmpl" . | indent 2 }}
         {{- range .javascript }}
-        <script type="text/javascript" src="{{- . -}}" async="" defer=""></script>
+        {{- if not .Bottom }}
+        <script type="text/javascript" src="{{- .Src -}}"{{- if .Async }} async=""{{- end -}}{{- if .Defer }} defer=""{{- end -}}></script>
+        {{- end }}
         {{- end }}
         <title>{{- template "instanceTitle" . -}}</title>
     </head>
-    <body>
+    <body class="page{{- if .pageClass }} {{ .pageClass }}-page{{- end -}}">
         {{- include "login_button.tmpl" . | indent 3 }}
-        <div class="page">
         <header class="page-header">
             {{- include "page_header.tmpl" . | indent 3 }}
         </header>
         <div class="page-content">
-            {{- include .pageContent . | indent 3 | outdentPre }}
+            {{- include .pageContent . | indent 3 | outdentPreformatted }}
         </div>
         <footer class="page-footer">
             {{- include "page_footer.tmpl" . | indent 3 }}
         </footer>
-        </div>
+        {{- range .javascript }}
+        {{- if .Bottom }}
+        <script type="text/javascript" src="{{- .Src -}}"></script>
+        {{- end }}
+        {{- end }}
     </body>
 </html>

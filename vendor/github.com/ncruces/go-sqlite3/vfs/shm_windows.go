@@ -7,14 +7,11 @@ import (
 	"io"
 	"os"
 	"sync"
-	"syscall"
-	"time"
 
 	"github.com/tetratelabs/wazero/api"
 	"golang.org/x/sys/windows"
 
 	"github.com/ncruces/go-sqlite3/internal/util"
-	"github.com/ncruces/go-sqlite3/util/osutil"
 )
 
 type vfsShm struct {
@@ -26,14 +23,12 @@ type vfsShm struct {
 	regions  []*util.MappedRegion
 	shared   [][]byte
 	shadow   [][_WALINDEX_PGSZ]byte
-	ptrs     []uint32
-	stack    [1]uint64
+	ptrs     []ptr_t
+	stack    [1]stk_t
 	fileLock bool
 	blocking bool
 	sync.Mutex
 }
-
-var _ blockingSharedMemory = &vfsShm{}
 
 func (s *vfsShm) Close() error {
 	// Unmap regions.
@@ -48,8 +43,7 @@ func (s *vfsShm) Close() error {
 
 func (s *vfsShm) shmOpen() _ErrorCode {
 	if s.File == nil {
-		f, err := osutil.OpenFile(s.path,
-			os.O_RDWR|os.O_CREATE|syscall.O_NONBLOCK, 0666)
+		f, err := os.OpenFile(s.path, os.O_RDWR|os.O_CREATE, 0666)
 		if err != nil {
 			return _CANTOPEN
 		}
@@ -67,12 +61,12 @@ func (s *vfsShm) shmOpen() _ErrorCode {
 			return _IOERR_SHMOPEN
 		}
 	}
-	rc := osReadLock(s.File, _SHM_DMS, 1, time.Millisecond)
+	rc := osReadLock(s.File, _SHM_DMS, 1, 0)
 	s.fileLock = rc == _OK
 	return rc
 }
 
-func (s *vfsShm) shmMap(ctx context.Context, mod api.Module, id, size int32, extend bool) (_ uint32, rc _ErrorCode) {
+func (s *vfsShm) shmMap(ctx context.Context, mod api.Module, id, size int32, extend bool) (_ ptr_t, rc _ErrorCode) {
 	// Ensure size is a multiple of the OS page size.
 	if size != _WALINDEX_PGSZ || (windows.Getpagesize()-1)&_WALINDEX_PGSZ != 0 {
 		return 0, _IOERR_SHMMAP
@@ -119,15 +113,15 @@ func (s *vfsShm) shmMap(ctx context.Context, mod api.Module, id, size int32, ext
 
 	// Allocate local memory.
 	for int(id) >= len(s.ptrs) {
-		s.stack[0] = uint64(size)
+		s.stack[0] = stk_t(size)
 		if err := s.alloc.CallWithStack(ctx, s.stack[:]); err != nil {
 			panic(err)
 		}
 		if s.stack[0] == 0 {
 			panic(util.OOMErr)
 		}
-		clear(util.View(s.mod, uint32(s.stack[0]), _WALINDEX_PGSZ))
-		s.ptrs = append(s.ptrs, uint32(s.stack[0]))
+		clear(util.View(s.mod, ptr_t(s.stack[0]), _WALINDEX_PGSZ))
+		s.ptrs = append(s.ptrs, ptr_t(s.stack[0]))
 	}
 
 	s.shadow[0][4] = 1
@@ -135,11 +129,6 @@ func (s *vfsShm) shmMap(ctx context.Context, mod api.Module, id, size int32, ext
 }
 
 func (s *vfsShm) shmLock(offset, n int32, flags _ShmFlag) (rc _ErrorCode) {
-	var timeout time.Duration
-	if s.blocking {
-		timeout = time.Millisecond
-	}
-
 	switch {
 	case flags&_SHM_LOCK != 0:
 		defer s.shmAcquire(&rc)
@@ -151,9 +140,9 @@ func (s *vfsShm) shmLock(offset, n int32, flags _ShmFlag) (rc _ErrorCode) {
 	case flags&_SHM_UNLOCK != 0:
 		return osUnlock(s.File, _SHM_BASE+uint32(offset), uint32(n))
 	case flags&_SHM_SHARED != 0:
-		return osReadLock(s.File, _SHM_BASE+uint32(offset), uint32(n), timeout)
+		return osReadLock(s.File, _SHM_BASE+uint32(offset), uint32(n), 0)
 	case flags&_SHM_EXCLUSIVE != 0:
-		return osWriteLock(s.File, _SHM_BASE+uint32(offset), uint32(n), timeout)
+		return osWriteLock(s.File, _SHM_BASE+uint32(offset), uint32(n), 0)
 	default:
 		panic(util.AssertErr())
 	}
@@ -168,7 +157,7 @@ func (s *vfsShm) shmUnmap(delete bool) {
 
 	// Free local memory.
 	for _, p := range s.ptrs {
-		s.stack[0] = uint64(p)
+		s.stack[0] = stk_t(p)
 		if err := s.free.CallWithStack(context.Background(), s.stack[:]); err != nil {
 			panic(err)
 		}
@@ -183,8 +172,4 @@ func (s *vfsShm) shmUnmap(delete bool) {
 	if delete {
 		os.Remove(s.path)
 	}
-}
-
-func (s *vfsShm) shmEnableBlocking(block bool) {
-	s.blocking = block
 }

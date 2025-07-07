@@ -22,14 +22,14 @@ import (
 	"errors"
 	"time"
 
-	"github.com/superseriousbusiness/gotosocial/internal/db"
-	"github.com/superseriousbusiness/gotosocial/internal/federation/dereferencing"
-	"github.com/superseriousbusiness/gotosocial/internal/gtscontext"
-	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/id"
-	"github.com/superseriousbusiness/gotosocial/internal/log"
-	"github.com/superseriousbusiness/gotosocial/internal/messages"
+	"code.superseriousbusiness.org/gotosocial/internal/db"
+	"code.superseriousbusiness.org/gotosocial/internal/federation/dereferencing"
+	"code.superseriousbusiness.org/gotosocial/internal/gtscontext"
+	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/id"
+	"code.superseriousbusiness.org/gotosocial/internal/log"
+	"code.superseriousbusiness.org/gotosocial/internal/messages"
 )
 
 // ShouldProcessMove checks whether we should attempt
@@ -269,9 +269,8 @@ func (p *fediAPI) MoveAccount(ctx context.Context, fMsg *messages.FromFediAPI) e
 	// try to send the same Move several times with
 	// different IDs (you never know), but we only
 	// want to process them based on origin + target.
-	unlock := p.state.FedLocks.Lock(
-		"move:" + originAcctURIStr + ":" + targetAcctURIStr,
-	)
+	key := "move:" + originAcctURIStr + ":" + targetAcctURIStr
+	unlock := p.state.FedLocks.Lock(key)
 	defer unlock()
 
 	// Check if Move is rate limited based
@@ -303,10 +302,13 @@ func (p *fediAPI) MoveAccount(ctx context.Context, fMsg *messages.FromFediAPI) e
 	}
 
 	// Account to which the Move is taking place.
+	//
+	// Match by uri only.
 	targetAcct, targetAcctable, err := p.federate.GetAccountByURI(
 		ctx,
 		fMsg.Receiving.Username,
 		targetAcctURI,
+		false,
 	)
 	if err != nil {
 		return gtserror.Newf(

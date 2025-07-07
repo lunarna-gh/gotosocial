@@ -21,43 +21,43 @@ import (
 	"context"
 	"net/netip"
 
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/paging"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/paging"
 )
 
 // Account contains functions related to account getting/setting/creation.
 type Account interface {
-	// GetAccountByID returns one account with the given ID, or an error if something goes wrong.
+	// GetAccountByID returns one account with the given ID.
 	GetAccountByID(ctx context.Context, id string) (*gtsmodel.Account, error)
 
 	// GetAccountsByIDs returns accounts corresponding to given IDs.
 	GetAccountsByIDs(ctx context.Context, ids []string) ([]*gtsmodel.Account, error)
 
-	// GetAccountByURI returns one account with the given URI, or an error if something goes wrong.
+	// GetAccountByURI returns one account with the given ActivityStreams URI.
 	GetAccountByURI(ctx context.Context, uri string) (*gtsmodel.Account, error)
 
-	// GetAccountByURL returns one account with the given URL, or an error if something goes wrong.
-	GetAccountByURL(ctx context.Context, uri string) (*gtsmodel.Account, error)
+	// GetOneAccountByURL returns *one* account with the given ActivityStreams URL.
+	// If more than one account has the given url, ErrMultipleEntries will be returned.
+	GetOneAccountByURL(ctx context.Context, url string) (*gtsmodel.Account, error)
 
-	// GetAccountByUsernameDomain returns one account with the given username and domain, or an error if something goes wrong.
+	// GetAccountsByURL returns accounts with the given ActivityStreams URL.
+	GetAccountsByURL(ctx context.Context, url string) ([]*gtsmodel.Account, error)
+
+	// GetAccountByUsernameDomain returns one account with the given username and domain.
 	GetAccountByUsernameDomain(ctx context.Context, username string, domain string) (*gtsmodel.Account, error)
 
-	// GetAccountByPubkeyID returns one account with the given public key URI (ID), or an error if something goes wrong.
+	// GetAccountByPubkeyID returns one account with the given public key URI (ID).
 	GetAccountByPubkeyID(ctx context.Context, id string) (*gtsmodel.Account, error)
 
-	// GetAccountByInboxURI returns one account with the given inbox_uri, or an error if something goes wrong.
-	GetAccountByInboxURI(ctx context.Context, uri string) (*gtsmodel.Account, error)
+	// GetOneAccountByInboxURI returns one account with the given inbox_uri.
+	// If more than one account has the given URL, ErrMultipleEntries will be returned.
+	GetOneAccountByInboxURI(ctx context.Context, uri string) (*gtsmodel.Account, error)
 
-	// GetAccountByOutboxURI returns one account with the given outbox_uri, or an error if something goes wrong.
-	GetAccountByOutboxURI(ctx context.Context, uri string) (*gtsmodel.Account, error)
+	// GetOneAccountByOutboxURI returns one account with the given outbox_uri.
+	// If more than one account has the given uri, ErrMultipleEntries will be returned.
+	GetOneAccountByOutboxURI(ctx context.Context, uri string) (*gtsmodel.Account, error)
 
-	// GetAccountByFollowingURI returns one account with the given following_uri, or an error if something goes wrong.
-	GetAccountByFollowingURI(ctx context.Context, uri string) (*gtsmodel.Account, error)
-
-	// GetAccountByFollowersURI returns one account with the given followers_uri, or an error if something goes wrong.
-	GetAccountByFollowersURI(ctx context.Context, uri string) (*gtsmodel.Account, error)
-
-	// GetAccountByMovedToURI returns any accounts with given moved_to_uri set.
+	// GetAccountsByMovedToURI returns any accounts with given moved_to_uri set.
 	GetAccountsByMovedToURI(ctx context.Context, uri string) ([]*gtsmodel.Account, error)
 
 	// GetAccounts returns accounts
@@ -121,7 +121,7 @@ type Account interface {
 	// returning statuses that should be visible via the web view of a *LOCAL* account.
 	//
 	// In the case of no statuses, this function will return db.ErrNoEntries.
-	GetAccountWebStatuses(ctx context.Context, account *gtsmodel.Account, limit int, maxID string) ([]*gtsmodel.Status, error)
+	GetAccountWebStatuses(ctx context.Context, account *gtsmodel.Account, mediaOnly bool, limit int, maxID string) ([]*gtsmodel.Status, error)
 
 	// GetInstanceAccount returns the instance account for the given domain.
 	// If domain is empty, this instance account will be returned.

@@ -21,10 +21,10 @@ import (
 	"context"
 	"testing"
 
+	"code.superseriousbusiness.org/gotosocial/internal/config"
+	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
+	"code.superseriousbusiness.org/gotosocial/internal/language"
 	"github.com/stretchr/testify/assert"
-	"github.com/superseriousbusiness/gotosocial/internal/config"
-	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
-	"github.com/superseriousbusiness/gotosocial/internal/language"
 )
 
 func TestMisskeyReportContentURLs1(t *testing.T) {
@@ -179,16 +179,16 @@ func TestFilterableText(t *testing.T) {
 		},
 		{
 			status: &gtsmodel.Status{
-				Content: `<p><span class="h-card"><a href="https://example.org/@zlatko" class="u-url mention" rel="nofollow noreferrer noopener" target="_blank">@<span>zlatko</span></a></span> currently we used modernc/sqlite3 for our sqlite driver, but we've been experimenting with wasm sqlite, and will likely move to that permanently in future; in the meantime, both options are available (the latter with a build tag)</p><p><a href="https://github.com/superseriousbusiness/gotosocial/pull/2863" rel="nofollow noreferrer noopener" target="_blank">https://github.com/superseriousbusiness/gotosocial/pull/2863</a></p>`,
+				Content: `<p><span class="h-card"><a href="https://example.org/@zlatko" class="u-url mention" rel="nofollow noreferrer noopener" target="_blank">@<span>zlatko</span></a></span> currently we used modernc/sqlite3 for our sqlite driver, but we've been experimenting with wasm sqlite, and will likely move to that permanently in future; in the meantime, both options are available (the latter with a build tag)</p><p><a href="https://codeberg.org/superseriousbusiness/gotosocial/pulls/2863" rel="nofollow noreferrer noopener" target="_blank">https://codeberg.org/superseriousbusiness/gotosocial/pulls/2863</a></p>`,
 			},
 			expectedFields: []string{
-				"@zlatko <https://example.org/@zlatko> currently we used modernc/sqlite3 for our sqlite driver, but we've been experimenting with wasm sqlite, and will likely move to that permanently in future; in the meantime, both options are available (the latter with a build tag)\n\nhttps://github.com/superseriousbusiness/gotosocial/pull/2863 <https://github.com/superseriousbusiness/gotosocial/pull/2863>",
+				"@zlatko <https://example.org/@zlatko> currently we used modernc/sqlite3 for our sqlite driver, but we've been experimenting with wasm sqlite, and will likely move to that permanently in future; in the meantime, both options are available (the latter with a build tag)\n\nhttps://codeberg.org/superseriousbusiness/gotosocial/pulls/2863 <https://codeberg.org/superseriousbusiness/gotosocial/pulls/2863>",
 			},
 		},
 		{
 			status: &gtsmodel.Status{
 				ContentWarning: "Nerd stuff",
-				Content:        `<p>Latest graphs for <a href="https://gts.superseriousbusiness.org/tags/gotosocial" class="mention hashtag" rel="tag nofollow noreferrer noopener" target="_blank">#<span>GoToSocial</span></a> on <a href="https://github.com/ncruces/go-sqlite3" rel="nofollow noreferrer noopener" target="_blank">Wasm sqlite3</a> with <a href="https://codeberg.org/gruf/go-ffmpreg" rel="nofollow noreferrer noopener" target="_blank">embedded Wasm ffmpeg</a>, both running on <a href="https://wazero.io/" rel="nofollow noreferrer noopener" target="_blank">Wazero</a>, and configured with a <a href="https://github.com/superseriousbusiness/gotosocial/blob/20fe430ef9ff3012a7a4dc2d01b68020c20e13bb/example/config.yaml#L259-L266" rel="nofollow noreferrer noopener" target="_blank">50MiB db cache target</a>. This is the version we'll be releasing soonish, now we're happy with how we've tamed everything.</p>`,
+				Content:        `<p>Latest graphs for <a href="https://gts.superseriousbusiness.org/tags/gotosocial" class="mention hashtag" rel="tag nofollow noreferrer noopener" target="_blank">#<span>GoToSocial</span></a> on <a href="https://github.com/ncruces/go-sqlite3" rel="nofollow noreferrer noopener" target="_blank">Wasm sqlite3</a> with <a href="https://codeberg.org/gruf/go-ffmpreg" rel="nofollow noreferrer noopener" target="_blank">embedded Wasm ffmpeg</a>, both running on <a href="https://wazero.io/" rel="nofollow noreferrer noopener" target="_blank">Wazero</a>, and configured with a <a href="https://codeberg.org/superseriousbusiness/gotosocial/src/commit/20fe430ef9ff3012a7a4dc2d01b68020c20e13bb/example/config.yaml#L259-L266" rel="nofollow noreferrer noopener" target="_blank">50MiB db cache target</a>. This is the version we'll be releasing soonish, now we're happy with how we've tamed everything.</p>`,
 				Attachments: []*gtsmodel.MediaAttachment{
 					{
 						Description: `Graph showing GtS using between 150-300 MiB of memory, steadily, over a few days.`,
@@ -206,7 +206,7 @@ func TestFilterableText(t *testing.T) {
 			},
 			expectedFields: []string{
 				"Nerd stuff",
-				"Latest graphs for #GoToSocial <https://gts.superseriousbusiness.org/tags/gotosocial> on Wasm sqlite3 <https://github.com/ncruces/go-sqlite3> with embedded Wasm ffmpeg <https://codeberg.org/gruf/go-ffmpreg>, both running on Wazero <https://wazero.io/>, and configured with a 50MiB db cache target <https://github.com/superseriousbusiness/gotosocial/blob/20fe430ef9ff3012a7a4dc2d01b68020c20e13bb/example/config.yaml#L259-L266>. This is the version we'll be releasing soonish, now we're happy with how we've tamed everything.",
+				"Latest graphs for #GoToSocial <https://gts.superseriousbusiness.org/tags/gotosocial> on Wasm sqlite3 <https://github.com/ncruces/go-sqlite3> with embedded Wasm ffmpeg <https://codeberg.org/gruf/go-ffmpreg>, both running on Wazero <https://wazero.io/>, and configured with a 50MiB db cache target <https://codeberg.org/superseriousbusiness/gotosocial/src/commit/20fe430ef9ff3012a7a4dc2d01b68020c20e13bb/example/config.yaml#L259-L266>. This is the version we'll be releasing soonish, now we're happy with how we've tamed everything.",
 				"Graph showing GtS using between 150-300 MiB of memory, steadily, over a few days.",
 				"Another media attachment",
 				"Poll option 1",
