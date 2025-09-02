@@ -19,11 +19,13 @@ package main
 
 import (
 	"code.superseriousbusiness.org/gotosocial/cmd/gotosocial/action/testrig"
+	"code.superseriousbusiness.org/gotosocial/internal/config"
+	"codeberg.org/gruf/go-debug"
 	"github.com/spf13/cobra"
 )
 
 func testrigCommands() *cobra.Command {
-	if testrig.Start != nil {
+	if debug.DEBUG {
 		testrigCmd := &cobra.Command{
 			Use:   "testrig",
 			Short: "gotosocial testrig-related tasks",
@@ -38,6 +40,7 @@ func testrigCommands() *cobra.Command {
 		}
 
 		testrigCmd.AddCommand(testrigStartCmd)
+		config.AddTestrig(testrigCmd)
 		return testrigCmd
 	}
 	return nil

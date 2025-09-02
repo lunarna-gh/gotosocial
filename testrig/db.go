@@ -25,7 +25,7 @@ import (
 	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
 	"code.superseriousbusiness.org/gotosocial/internal/log"
 	"code.superseriousbusiness.org/gotosocial/internal/state"
-	"codeberg.org/gruf/go-kv"
+	"codeberg.org/gruf/go-kv/v2"
 )
 
 var testModels = []interface{}{
@@ -353,6 +353,12 @@ func StandardDBSetup(db db.DB, accounts map[string]*gtsmodel.Account) {
 	}
 
 	for _, v := range NewTestStatusEdits() {
+		if err := db.Put(ctx, v); err != nil {
+			log.Panic(ctx, err)
+		}
+	}
+
+	for _, v := range NewTestScheduledStatuses() {
 		if err := db.Put(ctx, v); err != nil {
 			log.Panic(ctx, err)
 		}

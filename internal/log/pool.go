@@ -23,22 +23,22 @@ import (
 	"codeberg.org/gruf/go-byteutil"
 )
 
-// bufPool provides a memory pool of log buffers.
-var bufPool = sync.Pool{
-	New: func() any {
-		return &byteutil.Buffer{
-			B: make([]byte, 0, 512),
-		}
-	},
-}
+// bufPool provides memory
+// pool of log buffers.
+var bufPool sync.Pool
 
 // getBuf acquires a buffer from memory pool.
 func getBuf() *byteutil.Buffer {
 	buf, _ := bufPool.Get().(*byteutil.Buffer)
+	if buf == nil {
+		buf = new(byteutil.Buffer)
+		buf.B = make([]byte, 0, 512)
+	}
 	return buf
 }
 
-// putBuf places (after resetting) buffer back in memory pool, dropping if capacity too large.
+// putBuf places (after resetting) buffer back in
+// memory pool, dropping if capacity too large.
 func putBuf(buf *byteutil.Buffer) {
 	if buf.Cap() > int(^uint16(0)) {
 		return // drop large buffer

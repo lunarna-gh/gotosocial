@@ -29,7 +29,7 @@ import (
 	"code.superseriousbusiness.org/gotosocial/internal/gtscontext"
 	"code.superseriousbusiness.org/gotosocial/internal/id"
 	"code.superseriousbusiness.org/gotosocial/internal/uris"
-	"codeberg.org/gruf/go-kv"
+	"codeberg.org/gruf/go-kv/v2"
 
 	"code.superseriousbusiness.org/gotosocial/internal/gtserror"
 	"code.superseriousbusiness.org/gotosocial/internal/gtsmodel"
@@ -316,7 +316,7 @@ func (p *fediAPI) CreateStatus(ctx context.Context, fMsg *messages.FromFediAPI) 
 			InteractingAccountID: status.AccountID,
 			InteractingAccount:   status.Account,
 			InteractionURI:       status.URI,
-			InteractionType:      gtsmodel.InteractionLike,
+			InteractionType:      gtsmodel.InteractionReply,
 			Reply:                status,
 			URI:                  uris.GenerateURIForAccept(status.InReplyToAccount.Username, id),
 			AcceptedAt:           time.Now(),
@@ -657,7 +657,7 @@ func (p *fediAPI) CreateAnnounce(ctx context.Context, fMsg *messages.FromFediAPI
 			InteractingAccountID: boost.AccountID,
 			InteractingAccount:   boost.Account,
 			InteractionURI:       boost.URI,
-			InteractionType:      gtsmodel.InteractionLike,
+			InteractionType:      gtsmodel.InteractionAnnounce,
 			Announce:             boost,
 			URI:                  uris.GenerateURIForAccept(boost.BoostOfAccount.Username, id),
 			AcceptedAt:           time.Now(),

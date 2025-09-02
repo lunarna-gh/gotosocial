@@ -43,8 +43,8 @@ func (suite *DereferenceTestSuite) TestDerefLocalUser() {
 	defer resp.Body.Close()
 
 	suite.Equal(http.StatusOK, resp.StatusCode)
-	suite.EqualValues(2007, resp.ContentLength)
-	suite.Equal("2007", resp.Header.Get("Content-Length"))
+	suite.EqualValues(2109, resp.ContentLength)
+	suite.Equal("2109", resp.Header.Get("Content-Length"))
 	suite.Equal(apiutil.AppActivityLDJSON, resp.Header.Get("Content-Type"))
 
 	b, err := io.ReadAll(resp.Body)
@@ -59,6 +59,7 @@ func (suite *DereferenceTestSuite) TestDerefLocalUser() {
 
 	suite.Equal(`{
   "@context": [
+    "https://gotosocial.org/ns",
     "https://w3id.org/security/v1",
     "https://www.w3.org/ns/activitystreams",
     {
@@ -75,6 +76,8 @@ func (suite *DereferenceTestSuite) TestDerefLocalUser() {
   "featured": "http://localhost:8080/users/the_mighty_zork/collections/featured",
   "followers": "http://localhost:8080/users/the_mighty_zork/followers",
   "following": "http://localhost:8080/users/the_mighty_zork/following",
+  "hidesCcPublicFromUnauthedWeb": false,
+  "hidesToPublicFromUnauthedWeb": false,
   "icon": {
     "mediaType": "image/jpeg",
     "name": "a green goblin looking nasty",
@@ -182,7 +185,7 @@ func (suite *DereferenceTestSuite) TestDerefLocalStatus() {
   "replies": {
     "first": {
       "id": "http://localhost:8080/users/the_mighty_zork/statuses/01F8MHAMCHF6Y650WCRSCP4WMY/replies?page=true",
-      "next": "http://localhost:8080/users/the_mighty_zork/statuses/01F8MHAMCHF6Y650WCRSCP4WMY/replies?only_other_accounts=false\u0026page=true",
+      "next": "http://localhost:8080/users/the_mighty_zork/statuses/01F8MHAMCHF6Y650WCRSCP4WMY/replies?page=true\u0026only_other_accounts=false",
       "partOf": "http://localhost:8080/users/the_mighty_zork/statuses/01F8MHAMCHF6Y650WCRSCP4WMY/replies",
       "type": "CollectionPage"
     },

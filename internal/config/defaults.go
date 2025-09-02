@@ -29,6 +29,7 @@ import (
 // if you use this, you will still need to set Host, and, if desired, ConfigPath.
 var Defaults = Configuration{
 	LogLevel:           "info",
+	LogFormat:          "logfmt",
 	LogTimestampFormat: "02/01/2006 15:04:05.000",
 	LogDbQueries:       false,
 	ApplicationName:    "gotosocial",
@@ -103,6 +104,9 @@ var Defaults = Configuration{
 	StatusesPollMaxOptions:     6,
 	StatusesPollOptionMaxChars: 50,
 	StatusesMediaMaxFiles:      6,
+
+	ScheduledStatusesMaxTotal: 300,
+	ScheduledStatusesMaxDaily: 25,
 
 	LetsEncryptEnabled:      false,
 	LetsEncryptPort:         80,
@@ -216,6 +220,7 @@ var Defaults = Configuration{
 		PollVoteMemRatio:                      2,
 		PollVoteIDsMemRatio:                   2,
 		ReportMemRatio:                        1,
+		ScheduledStatusMemRatio:               4,
 		SinBinStatusMemRatio:                  0.5,
 		StatusMemRatio:                        5,
 		StatusBookmarkMemRatio:                0.5,

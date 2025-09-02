@@ -31,7 +31,7 @@ import (
 	"code.superseriousbusiness.org/gotosocial/internal/log"
 	"code.superseriousbusiness.org/gotosocial/internal/messages"
 	"code.superseriousbusiness.org/gotosocial/internal/util"
-	"codeberg.org/gruf/go-kv"
+	"codeberg.org/gruf/go-kv/v2"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -458,6 +458,11 @@ func (p *Processor) deleteAccountPeripheral(
 		// Delete stats model stored for given account, only for local.
 		if err := p.state.DB.DeleteAccountStats(ctx, account.ID); err != nil {
 			log.Errorf("error deleting stats for account: %v", err)
+		}
+
+		// Delete statuses scheduled by given account, only for local.
+		if err := p.state.DB.DeleteScheduledStatusesByAccountID(ctx, account.ID); err != nil {
+			log.Errorf("error deleting scheduled statuses for account: %v", err)
 		}
 	}
 

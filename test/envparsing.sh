@@ -68,6 +68,7 @@ EXPECT=$(cat << "EOF"
     "cache-poll-vote-ids-mem-ratio": 2,
     "cache-poll-vote-mem-ratio": 2,
     "cache-report-mem-ratio": 1,
+    "cache-scheduled-status-mem-ratio": 4,
     "cache-sin-bin-status-mem-ratio": 0.5,
     "cache-status-bookmark-ids-mem-ratio": 2,
     "cache-status-bookmark-mem-ratio": 0.5,
@@ -137,6 +138,7 @@ EXPECT=$(cat << "EOF"
     "local-only": false,
     "log-client-ip": false,
     "log-db-queries": true,
+    "log-format": "json",
     "log-level": "info",
     "log-timestamp-format": "banana",
     "media-cleanup-every": 86400000000000,
@@ -176,6 +178,10 @@ EXPECT=$(cat << "EOF"
     "protocol": "http",
     "remote-only": false,
     "request-id-header": "X-Trace-Id",
+    "scheduled-statuses-max-daily": 25,
+    "scheduled-statuses-max-total": 300,
+    "skip-db-setup": false,
+    "skip-db-teardown": false,
     "smtp-disclose-recipients": true,
     "smtp-from": "queen.rip.in.piss@terfisland.org",
     "smtp-host": "example.com",
@@ -221,6 +227,7 @@ OUTPUT=$(GTS_LOG_LEVEL='info' \
 GTS_LOG_TIMESTAMP_FORMAT="banana" \
 GTS_LOG_DB_QUERIES=true \
 GTS_LOG_CLIENT_IP=false \
+GTS_LOG_FORMAT=json \
 GTS_APPLICATION_NAME=gts \
 GTS_LANDING_PAGE_USER=admin \
 GTS_HOST=example.com \

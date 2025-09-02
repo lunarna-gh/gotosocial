@@ -50,9 +50,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// check function conformance.
+var _ action.GTSAction = Start
+
 // Start creates and starts a gotosocial testrig server.
 // This is only enabled in debug builds, else is nil.
-var Start action.GTSAction = func(ctx context.Context) error {
+func Start(ctx context.Context) error {
 	testrig.InitTestConfig()
 	testrig.InitTestLog()
 
@@ -92,9 +95,14 @@ var Start action.GTSAction = func(ctx context.Context) error {
 		}
 
 		if state.DB != nil {
+			// Clean up database by
+			// dropping tables if required.
+			if !config.GetTestrigSkipDBTeardown() {
+				testrig.StandardDBTeardown(state.DB)
+			}
+
 			// Lastly, if database service was started,
 			// ensure it gets closed now all else stopped.
-			testrig.StandardDBTeardown(state.DB)
 			if err := state.DB.Close(); err != nil {
 				log.Errorf(ctx, "error stopping database: %v", err)
 			}
@@ -125,7 +133,10 @@ var Start action.GTSAction = func(ctx context.Context) error {
 	// that twice, we can just start the initialized caches.
 	state.Caches.Start()
 
-	testrig.StandardDBSetup(state.DB, nil)
+	// Populate database tables + data if required.
+	if !config.GetTestrigSkipDBSetup() {
+		testrig.StandardDBSetup(state.DB, nil)
+	}
 
 	// Get the instance account (we'll need this later).
 	instanceAccount, err := state.DB.GetInstanceAccount(ctx, "")
@@ -161,7 +172,7 @@ var Start action.GTSAction = func(ctx context.Context) error {
 	defer testrig.StopWorkers(state)
 
 	// Initialize metrics.
-	if err := observability.InitializeMetrics(ctx, state.DB); err != nil {
+	if err := observability.InitializeMetrics(ctx, state); err != nil {
 		return fmt.Errorf("error initializing metrics: %w", err)
 	}
 

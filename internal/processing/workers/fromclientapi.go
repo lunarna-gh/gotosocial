@@ -36,7 +36,7 @@ import (
 	"code.superseriousbusiness.org/gotosocial/internal/typeutils"
 	"code.superseriousbusiness.org/gotosocial/internal/uris"
 	"code.superseriousbusiness.org/gotosocial/internal/util"
-	"codeberg.org/gruf/go-kv"
+	"codeberg.org/gruf/go-kv/v2"
 )
 
 // clientAPI wraps processing functions
@@ -319,7 +319,7 @@ func (p *clientAPI) CreateStatus(ctx context.Context, cMsg *messages.FromClientA
 			InteractingAccountID: status.AccountID,
 			InteractingAccount:   status.Account,
 			InteractionURI:       status.URI,
-			InteractionType:      gtsmodel.InteractionLike,
+			InteractionType:      gtsmodel.InteractionReply,
 			Reply:                status,
 			URI:                  uris.GenerateURIForAccept(status.InReplyToAccount.Username, id),
 			AcceptedAt:           time.Now(),
@@ -621,7 +621,7 @@ func (p *clientAPI) CreateAnnounce(ctx context.Context, cMsg *messages.FromClien
 			InteractingAccountID: boost.AccountID,
 			InteractingAccount:   boost.Account,
 			InteractionURI:       boost.URI,
-			InteractionType:      gtsmodel.InteractionLike,
+			InteractionType:      gtsmodel.InteractionAnnounce,
 			Announce:             boost,
 			URI:                  uris.GenerateURIForAccept(boost.BoostOfAccount.Username, id),
 			AcceptedAt:           time.Now(),

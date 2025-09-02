@@ -102,9 +102,9 @@ func (c *Converter) UserToAPIUser(ctx context.Context, u *gtsmodel.User) *apimod
 	return user
 }
 
-// AccountToAPIAccountSensitive takes a db model application as a param, and returns a populated apitype application, or an error
-// if something goes wrong. The returned application should be ready to serialize on an API level, and may have sensitive fields
-// (such as client id and client secret), so serve it only to an authorized user who should have permission to see it.
+// AccountToAPIAccountSensitive takes a db model account as a param, and returns a populated apitype account, or an error
+// if something goes wrong. The returned account should be ready to serialize on an API level, and may have sensitive fields
+// (such as user settings and follow requests count), so serve it only to an authorized user who should have permission to see it.
 func (c *Converter) AccountToAPIAccountSensitive(ctx context.Context, a *gtsmodel.Account) (*apimodel.Account, error) {
 	// We can build this sensitive account model
 	// by first getting the public account, and
@@ -134,9 +134,26 @@ func (c *Converter) AccountToAPIAccountSensitive(ctx context.Context, a *gtsmode
 		statusContentType = a.Settings.StatusContentType
 	}
 
+	// Derive web visibility for
+	// this local account's statuses.
+	var webVisibility apimodel.Visibility
+	switch {
+	case *a.HidesToPublicFromUnauthedWeb:
+		// Hides all.
+		webVisibility = apimodel.VisibilityNone
+
+	case !*a.HidesCcPublicFromUnauthedWeb:
+		// Shows unlisted + public (Masto default).
+		webVisibility = apimodel.VisibilityUnlisted
+
+	default:
+		// Shows public only (GtS default).
+		webVisibility = apimodel.VisibilityPublic
+	}
+
 	apiAccount.Source = &apimodel.Source{
 		Privacy:             VisToAPIVis(a.Settings.Privacy),
-		WebVisibility:       VisToAPIVis(a.Settings.WebVisibility),
+		WebVisibility:       webVisibility,
 		WebLayout:           a.Settings.WebLayout.String(),
 		Sensitive:           *a.Settings.Sensitive,
 		Language:            a.Settings.Language,
@@ -2483,6 +2500,8 @@ func filterActionToAPIFilterAction(m gtsmodel.FilterAction) apimodel.FilterActio
 		return apimodel.FilterActionWarn
 	case gtsmodel.FilterActionHide:
 		return apimodel.FilterActionHide
+	case gtsmodel.FilterActionBlur:
+		return apimodel.FilterActionBlur
 	}
 	return apimodel.FilterActionNone
 }
@@ -2996,4 +3015,58 @@ func (c *Converter) TokenToAPITokenInfo(
 		Scope:       token.Scope,
 		Application: apiApplication,
 	}, nil
+}
+
+func (c *Converter) ScheduledStatusToAPIScheduledStatus(
+	ctx context.Context,
+	scheduledStatus *gtsmodel.ScheduledStatus,
+) (*apimodel.ScheduledStatus, error) {
+	apiAttachments, err := c.convertAttachmentsToAPIAttachments(
+		ctx,
+		scheduledStatus.MediaAttachments,
+		scheduledStatus.MediaIDs,
+	)
+	if err != nil {
+		log.Errorf(ctx, "error converting status attachments: %v", err)
+	}
+
+	scheduledAt := util.FormatISO8601(scheduledStatus.ScheduledAt)
+
+	apiScheduledStatus := &apimodel.ScheduledStatus{
+		ID:          scheduledStatus.ID,
+		ScheduledAt: scheduledAt,
+		Params: &apimodel.ScheduledStatusParams{
+			Text:          scheduledStatus.Text,
+			MediaIDs:      scheduledStatus.MediaIDs,
+			Sensitive:     *scheduledStatus.Sensitive,
+			SpoilerText:   scheduledStatus.SpoilerText,
+			Visibility:    VisToAPIVis(scheduledStatus.Visibility),
+			InReplyToID:   scheduledStatus.InReplyToID,
+			Language:      scheduledStatus.Language,
+			ApplicationID: scheduledStatus.ApplicationID,
+			LocalOnly:     *scheduledStatus.LocalOnly,
+			ContentType:   apimodel.StatusContentType(scheduledStatus.ContentType),
+			ScheduledAt:   nil,
+		},
+		MediaAttachments: apiAttachments,
+	}
+
+	if len(scheduledStatus.Poll.Options) > 1 {
+		apiScheduledStatus.Params.Poll = &apimodel.ScheduledStatusParamsPoll{
+			Options:    scheduledStatus.Poll.Options,
+			ExpiresIn:  scheduledStatus.Poll.ExpiresIn,
+			Multiple:   *scheduledStatus.Poll.Multiple,
+			HideTotals: *scheduledStatus.Poll.HideTotals,
+		}
+	}
+
+	if scheduledStatus.InteractionPolicy != nil {
+		apiInteractionPolicy, err := c.InteractionPolicyToAPIInteractionPolicy(ctx, scheduledStatus.InteractionPolicy, nil, nil)
+		if err != nil {
+			return nil, gtserror.Newf("error converting interaction policy: %w", err)
+		}
+		apiScheduledStatus.Params.InteractionPolicy = apiInteractionPolicy
+	}
+
+	return apiScheduledStatus, nil
 }

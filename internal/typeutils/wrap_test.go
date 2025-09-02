@@ -130,7 +130,7 @@ func (suite *WrapTestSuite) TestWrapNoteInCreate() {
     "replies": {
       "first": {
         "id": "http://localhost:8080/users/the_mighty_zork/statuses/01F8MHAMCHF6Y650WCRSCP4WMY/replies?page=true",
-        "next": "http://localhost:8080/users/the_mighty_zork/statuses/01F8MHAMCHF6Y650WCRSCP4WMY/replies?only_other_accounts=false\u0026page=true",
+        "next": "http://localhost:8080/users/the_mighty_zork/statuses/01F8MHAMCHF6Y650WCRSCP4WMY/replies?page=true\u0026only_other_accounts=false",
         "partOf": "http://localhost:8080/users/the_mighty_zork/statuses/01F8MHAMCHF6Y650WCRSCP4WMY/replies",
         "type": "CollectionPage"
       },
@@ -178,6 +178,7 @@ func (suite *WrapTestSuite) TestWrapAccountableInUpdate() {
 
 	suite.Equal(`{
   "@context": [
+    "https://gotosocial.org/ns",
     "https://w3id.org/security/v1",
     "https://www.w3.org/ns/activitystreams",
     {
@@ -198,6 +199,8 @@ func (suite *WrapTestSuite) TestWrapAccountableInUpdate() {
     "featured": "http://localhost:8080/users/the_mighty_zork/collections/featured",
     "followers": "http://localhost:8080/users/the_mighty_zork/followers",
     "following": "http://localhost:8080/users/the_mighty_zork/following",
+    "hidesCcPublicFromUnauthedWeb": false,
+    "hidesToPublicFromUnauthedWeb": false,
     "icon": {
       "mediaType": "image/jpeg",
       "name": "a green goblin looking nasty",

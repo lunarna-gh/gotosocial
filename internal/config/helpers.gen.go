@@ -30,6 +30,7 @@ import (
 
 const (
 	LogLevelFlag                                   = "log-level"
+	LogFormatFlag                                  = "log-format"
 	LogTimestampFormatFlag                         = "log-timestamp-format"
 	LogDbQueriesFlag                               = "log-db-queries"
 	LogClientIPFlag                                = "log-client-ip"
@@ -98,6 +99,8 @@ const (
 	StatusesPollMaxOptionsFlag                     = "statuses-poll-max-options"
 	StatusesPollOptionMaxCharsFlag                 = "statuses-poll-option-max-chars"
 	StatusesMediaMaxFilesFlag                      = "statuses-media-max-files"
+	ScheduledStatusesMaxTotalFlag                  = "scheduled-statuses-max-total"
+	ScheduledStatusesMaxDailyFlag                  = "scheduled-statuses-max-daily"
 	LetsEncryptEnabledFlag                         = "letsencrypt-enabled"
 	LetsEncryptPortFlag                            = "letsencrypt-port"
 	LetsEncryptCertDirFlag                         = "letsencrypt-cert-dir"
@@ -193,6 +196,7 @@ const (
 	CachePollVoteMemRatioFlag                      = "cache-poll-vote-mem-ratio"
 	CachePollVoteIDsMemRatioFlag                   = "cache-poll-vote-ids-mem-ratio"
 	CacheReportMemRatioFlag                        = "cache-report-mem-ratio"
+	CacheScheduledStatusMemRatioFlag               = "cache-scheduled-status-mem-ratio"
 	CacheSinBinStatusMemRatioFlag                  = "cache-sin-bin-status-mem-ratio"
 	CacheStatusMemRatioFlag                        = "cache-status-mem-ratio"
 	CacheStatusBookmarkMemRatioFlag                = "cache-status-bookmark-mem-ratio"
@@ -220,10 +224,13 @@ const (
 	AdminMediaPruneDryRunFlag                      = "dry-run"
 	AdminMediaListLocalOnlyFlag                    = "local-only"
 	AdminMediaListRemoteOnlyFlag                   = "remote-only"
+	TestrigSkipDBSetupFlag                         = "skip-db-setup"
+	TestrigSkipDBTeardownFlag                      = "skip-db-teardown"
 )
 
 func (cfg *Configuration) RegisterFlags(flags *pflag.FlagSet) {
 	flags.String("log-level", cfg.LogLevel, "Log level to run at: [trace, debug, info, warn, fatal]")
+	flags.String("log-format", cfg.LogFormat, "Log output format: [logfmt, json]")
 	flags.String("log-timestamp-format", cfg.LogTimestampFormat, "Format to use for the log timestamp, as supported by Go's time.Layout")
 	flags.Bool("log-db-queries", cfg.LogDbQueries, "Log database queries verbosely when log-level is trace or debug")
 	flags.Bool("log-client-ip", cfg.LogClientIP, "Include the client IP in logs")
@@ -292,6 +299,8 @@ func (cfg *Configuration) RegisterFlags(flags *pflag.FlagSet) {
 	flags.Int("statuses-poll-max-options", cfg.StatusesPollMaxOptions, "Max amount of options permitted on a poll")
 	flags.Int("statuses-poll-option-max-chars", cfg.StatusesPollOptionMaxChars, "Max amount of characters for a poll option")
 	flags.Int("statuses-media-max-files", cfg.StatusesMediaMaxFiles, "Maximum number of media files/attachments per status")
+	flags.Int("scheduled-statuses-max-total", cfg.ScheduledStatusesMaxTotal, "Maximum number of scheduled statuses per user")
+	flags.Int("scheduled-statuses-max-daily", cfg.ScheduledStatusesMaxDaily, "Maximum number of scheduled statuses per user for a single day")
 	flags.Bool("letsencrypt-enabled", cfg.LetsEncryptEnabled, "Enable letsencrypt TLS certs for this server. If set to true, then cert dir also needs to be set (or take the default).")
 	flags.Int("letsencrypt-port", cfg.LetsEncryptPort, "Port to listen on for letsencrypt certificate challenges. Must not be the same as the GtS webserver/API port.")
 	flags.String("letsencrypt-cert-dir", cfg.LetsEncryptCertDir, "Directory to store acquired letsencrypt certificates.")
@@ -387,6 +396,7 @@ func (cfg *Configuration) RegisterFlags(flags *pflag.FlagSet) {
 	flags.Float64("cache-poll-vote-mem-ratio", cfg.Cache.PollVoteMemRatio, "")
 	flags.Float64("cache-poll-vote-ids-mem-ratio", cfg.Cache.PollVoteIDsMemRatio, "")
 	flags.Float64("cache-report-mem-ratio", cfg.Cache.ReportMemRatio, "")
+	flags.Float64("cache-scheduled-status-mem-ratio", cfg.Cache.ScheduledStatusMemRatio, "")
 	flags.Float64("cache-sin-bin-status-mem-ratio", cfg.Cache.SinBinStatusMemRatio, "")
 	flags.Float64("cache-status-mem-ratio", cfg.Cache.StatusMemRatio, "")
 	flags.Float64("cache-status-bookmark-mem-ratio", cfg.Cache.StatusBookmarkMemRatio, "")
@@ -410,8 +420,9 @@ func (cfg *Configuration) RegisterFlags(flags *pflag.FlagSet) {
 }
 
 func (cfg *Configuration) MarshalMap() map[string]any {
-	cfgmap := make(map[string]any, 191)
+	cfgmap := make(map[string]any, 197)
 	cfgmap["log-level"] = cfg.LogLevel
+	cfgmap["log-format"] = cfg.LogFormat
 	cfgmap["log-timestamp-format"] = cfg.LogTimestampFormat
 	cfgmap["log-db-queries"] = cfg.LogDbQueries
 	cfgmap["log-client-ip"] = cfg.LogClientIP
@@ -480,6 +491,8 @@ func (cfg *Configuration) MarshalMap() map[string]any {
 	cfgmap["statuses-poll-max-options"] = cfg.StatusesPollMaxOptions
 	cfgmap["statuses-poll-option-max-chars"] = cfg.StatusesPollOptionMaxChars
 	cfgmap["statuses-media-max-files"] = cfg.StatusesMediaMaxFiles
+	cfgmap["scheduled-statuses-max-total"] = cfg.ScheduledStatusesMaxTotal
+	cfgmap["scheduled-statuses-max-daily"] = cfg.ScheduledStatusesMaxDaily
 	cfgmap["letsencrypt-enabled"] = cfg.LetsEncryptEnabled
 	cfgmap["letsencrypt-port"] = cfg.LetsEncryptPort
 	cfgmap["letsencrypt-cert-dir"] = cfg.LetsEncryptCertDir
@@ -575,6 +588,7 @@ func (cfg *Configuration) MarshalMap() map[string]any {
 	cfgmap["cache-poll-vote-mem-ratio"] = cfg.Cache.PollVoteMemRatio
 	cfgmap["cache-poll-vote-ids-mem-ratio"] = cfg.Cache.PollVoteIDsMemRatio
 	cfgmap["cache-report-mem-ratio"] = cfg.Cache.ReportMemRatio
+	cfgmap["cache-scheduled-status-mem-ratio"] = cfg.Cache.ScheduledStatusMemRatio
 	cfgmap["cache-sin-bin-status-mem-ratio"] = cfg.Cache.SinBinStatusMemRatio
 	cfgmap["cache-status-mem-ratio"] = cfg.Cache.StatusMemRatio
 	cfgmap["cache-status-bookmark-mem-ratio"] = cfg.Cache.StatusBookmarkMemRatio
@@ -602,6 +616,8 @@ func (cfg *Configuration) MarshalMap() map[string]any {
 	cfgmap["dry-run"] = cfg.AdminMediaPruneDryRun
 	cfgmap["local-only"] = cfg.AdminMediaListLocalOnly
 	cfgmap["remote-only"] = cfg.AdminMediaListRemoteOnly
+	cfgmap["skip-db-setup"] = cfg.TestrigSkipDBSetup
+	cfgmap["skip-db-teardown"] = cfg.TestrigSkipDBTeardown
 	return cfgmap
 }
 
@@ -616,6 +632,14 @@ func (cfg *Configuration) UnmarshalMap(cfgmap map[string]any) error {
 		cfg.LogLevel, err = cast.ToStringE(ival)
 		if err != nil {
 			return fmt.Errorf("error casting %#v -> string for 'log-level': %w", ival, err)
+		}
+	}
+
+	if ival, ok := cfgmap["log-format"]; ok {
+		var err error
+		cfg.LogFormat, err = cast.ToStringE(ival)
+		if err != nil {
+			return fmt.Errorf("error casting %#v -> string for 'log-format': %w", ival, err)
 		}
 	}
 
@@ -1168,6 +1192,22 @@ func (cfg *Configuration) UnmarshalMap(cfgmap map[string]any) error {
 		cfg.StatusesMediaMaxFiles, err = cast.ToIntE(ival)
 		if err != nil {
 			return fmt.Errorf("error casting %#v -> int for 'statuses-media-max-files': %w", ival, err)
+		}
+	}
+
+	if ival, ok := cfgmap["scheduled-statuses-max-total"]; ok {
+		var err error
+		cfg.ScheduledStatusesMaxTotal, err = cast.ToIntE(ival)
+		if err != nil {
+			return fmt.Errorf("error casting %#v -> int for 'scheduled-statuses-max-total': %w", ival, err)
+		}
+	}
+
+	if ival, ok := cfgmap["scheduled-statuses-max-daily"]; ok {
+		var err error
+		cfg.ScheduledStatusesMaxDaily, err = cast.ToIntE(ival)
+		if err != nil {
+			return fmt.Errorf("error casting %#v -> int for 'scheduled-statuses-max-daily': %w", ival, err)
 		}
 	}
 
@@ -1957,6 +1997,14 @@ func (cfg *Configuration) UnmarshalMap(cfgmap map[string]any) error {
 		}
 	}
 
+	if ival, ok := cfgmap["cache-scheduled-status-mem-ratio"]; ok {
+		var err error
+		cfg.Cache.ScheduledStatusMemRatio, err = cast.ToFloat64E(ival)
+		if err != nil {
+			return fmt.Errorf("error casting %#v -> float64 for 'cache-scheduled-status-mem-ratio': %w", ival, err)
+		}
+	}
+
 	if ival, ok := cfgmap["cache-sin-bin-status-mem-ratio"]; ok {
 		var err error
 		cfg.Cache.SinBinStatusMemRatio, err = cast.ToFloat64E(ival)
@@ -2173,6 +2221,22 @@ func (cfg *Configuration) UnmarshalMap(cfgmap map[string]any) error {
 		}
 	}
 
+	if ival, ok := cfgmap["skip-db-setup"]; ok {
+		var err error
+		cfg.TestrigSkipDBSetup, err = cast.ToBoolE(ival)
+		if err != nil {
+			return fmt.Errorf("error casting %#v -> bool for 'skip-db-setup': %w", ival, err)
+		}
+	}
+
+	if ival, ok := cfgmap["skip-db-teardown"]; ok {
+		var err error
+		cfg.TestrigSkipDBTeardown, err = cast.ToBoolE(ival)
+		if err != nil {
+			return fmt.Errorf("error casting %#v -> bool for 'skip-db-teardown': %w", ival, err)
+		}
+	}
+
 	return nil
 }
 
@@ -2197,6 +2261,28 @@ func GetLogLevel() string { return global.GetLogLevel() }
 
 // SetLogLevel safely sets the value for global configuration 'LogLevel' field
 func SetLogLevel(v string) { global.SetLogLevel(v) }
+
+// GetLogFormat safely fetches the Configuration value for state's 'LogFormat' field
+func (st *ConfigState) GetLogFormat() (v string) {
+	st.mutex.RLock()
+	v = st.config.LogFormat
+	st.mutex.RUnlock()
+	return
+}
+
+// SetLogFormat safely sets the Configuration value for state's 'LogFormat' field
+func (st *ConfigState) SetLogFormat(v string) {
+	st.mutex.Lock()
+	defer st.mutex.Unlock()
+	st.config.LogFormat = v
+	st.reloadToViper()
+}
+
+// GetLogFormat safely fetches the value for global configuration 'LogFormat' field
+func GetLogFormat() string { return global.GetLogFormat() }
+
+// SetLogFormat safely sets the value for global configuration 'LogFormat' field
+func SetLogFormat(v string) { global.SetLogFormat(v) }
 
 // GetLogTimestampFormat safely fetches the Configuration value for state's 'LogTimestampFormat' field
 func (st *ConfigState) GetLogTimestampFormat() (v string) {
@@ -3699,6 +3785,50 @@ func GetStatusesMediaMaxFiles() int { return global.GetStatusesMediaMaxFiles() }
 
 // SetStatusesMediaMaxFiles safely sets the value for global configuration 'StatusesMediaMaxFiles' field
 func SetStatusesMediaMaxFiles(v int) { global.SetStatusesMediaMaxFiles(v) }
+
+// GetScheduledStatusesMaxTotal safely fetches the Configuration value for state's 'ScheduledStatusesMaxTotal' field
+func (st *ConfigState) GetScheduledStatusesMaxTotal() (v int) {
+	st.mutex.RLock()
+	v = st.config.ScheduledStatusesMaxTotal
+	st.mutex.RUnlock()
+	return
+}
+
+// SetScheduledStatusesMaxTotal safely sets the Configuration value for state's 'ScheduledStatusesMaxTotal' field
+func (st *ConfigState) SetScheduledStatusesMaxTotal(v int) {
+	st.mutex.Lock()
+	defer st.mutex.Unlock()
+	st.config.ScheduledStatusesMaxTotal = v
+	st.reloadToViper()
+}
+
+// GetScheduledStatusesMaxTotal safely fetches the value for global configuration 'ScheduledStatusesMaxTotal' field
+func GetScheduledStatusesMaxTotal() int { return global.GetScheduledStatusesMaxTotal() }
+
+// SetScheduledStatusesMaxTotal safely sets the value for global configuration 'ScheduledStatusesMaxTotal' field
+func SetScheduledStatusesMaxTotal(v int) { global.SetScheduledStatusesMaxTotal(v) }
+
+// GetScheduledStatusesMaxDaily safely fetches the Configuration value for state's 'ScheduledStatusesMaxDaily' field
+func (st *ConfigState) GetScheduledStatusesMaxDaily() (v int) {
+	st.mutex.RLock()
+	v = st.config.ScheduledStatusesMaxDaily
+	st.mutex.RUnlock()
+	return
+}
+
+// SetScheduledStatusesMaxDaily safely sets the Configuration value for state's 'ScheduledStatusesMaxDaily' field
+func (st *ConfigState) SetScheduledStatusesMaxDaily(v int) {
+	st.mutex.Lock()
+	defer st.mutex.Unlock()
+	st.config.ScheduledStatusesMaxDaily = v
+	st.reloadToViper()
+}
+
+// GetScheduledStatusesMaxDaily safely fetches the value for global configuration 'ScheduledStatusesMaxDaily' field
+func GetScheduledStatusesMaxDaily() int { return global.GetScheduledStatusesMaxDaily() }
+
+// SetScheduledStatusesMaxDaily safely sets the value for global configuration 'ScheduledStatusesMaxDaily' field
+func SetScheduledStatusesMaxDaily(v int) { global.SetScheduledStatusesMaxDaily(v) }
 
 // GetLetsEncryptEnabled safely fetches the Configuration value for state's 'LetsEncryptEnabled' field
 func (st *ConfigState) GetLetsEncryptEnabled() (v bool) {
@@ -5806,6 +5936,28 @@ func GetCacheReportMemRatio() float64 { return global.GetCacheReportMemRatio() }
 // SetCacheReportMemRatio safely sets the value for global configuration 'Cache.ReportMemRatio' field
 func SetCacheReportMemRatio(v float64) { global.SetCacheReportMemRatio(v) }
 
+// GetCacheScheduledStatusMemRatio safely fetches the Configuration value for state's 'Cache.ScheduledStatusMemRatio' field
+func (st *ConfigState) GetCacheScheduledStatusMemRatio() (v float64) {
+	st.mutex.RLock()
+	v = st.config.Cache.ScheduledStatusMemRatio
+	st.mutex.RUnlock()
+	return
+}
+
+// SetCacheScheduledStatusMemRatio safely sets the Configuration value for state's 'Cache.ScheduledStatusMemRatio' field
+func (st *ConfigState) SetCacheScheduledStatusMemRatio(v float64) {
+	st.mutex.Lock()
+	defer st.mutex.Unlock()
+	st.config.Cache.ScheduledStatusMemRatio = v
+	st.reloadToViper()
+}
+
+// GetCacheScheduledStatusMemRatio safely fetches the value for global configuration 'Cache.ScheduledStatusMemRatio' field
+func GetCacheScheduledStatusMemRatio() float64 { return global.GetCacheScheduledStatusMemRatio() }
+
+// SetCacheScheduledStatusMemRatio safely sets the value for global configuration 'Cache.ScheduledStatusMemRatio' field
+func SetCacheScheduledStatusMemRatio(v float64) { global.SetCacheScheduledStatusMemRatio(v) }
+
 // GetCacheSinBinStatusMemRatio safely fetches the Configuration value for state's 'Cache.SinBinStatusMemRatio' field
 func (st *ConfigState) GetCacheSinBinStatusMemRatio() (v float64) {
 	st.mutex.RLock()
@@ -6406,6 +6558,50 @@ func GetAdminMediaListRemoteOnly() bool { return global.GetAdminMediaListRemoteO
 // SetAdminMediaListRemoteOnly safely sets the value for global configuration 'AdminMediaListRemoteOnly' field
 func SetAdminMediaListRemoteOnly(v bool) { global.SetAdminMediaListRemoteOnly(v) }
 
+// GetTestrigSkipDBSetup safely fetches the Configuration value for state's 'TestrigSkipDBSetup' field
+func (st *ConfigState) GetTestrigSkipDBSetup() (v bool) {
+	st.mutex.RLock()
+	v = st.config.TestrigSkipDBSetup
+	st.mutex.RUnlock()
+	return
+}
+
+// SetTestrigSkipDBSetup safely sets the Configuration value for state's 'TestrigSkipDBSetup' field
+func (st *ConfigState) SetTestrigSkipDBSetup(v bool) {
+	st.mutex.Lock()
+	defer st.mutex.Unlock()
+	st.config.TestrigSkipDBSetup = v
+	st.reloadToViper()
+}
+
+// GetTestrigSkipDBSetup safely fetches the value for global configuration 'TestrigSkipDBSetup' field
+func GetTestrigSkipDBSetup() bool { return global.GetTestrigSkipDBSetup() }
+
+// SetTestrigSkipDBSetup safely sets the value for global configuration 'TestrigSkipDBSetup' field
+func SetTestrigSkipDBSetup(v bool) { global.SetTestrigSkipDBSetup(v) }
+
+// GetTestrigSkipDBTeardown safely fetches the Configuration value for state's 'TestrigSkipDBTeardown' field
+func (st *ConfigState) GetTestrigSkipDBTeardown() (v bool) {
+	st.mutex.RLock()
+	v = st.config.TestrigSkipDBTeardown
+	st.mutex.RUnlock()
+	return
+}
+
+// SetTestrigSkipDBTeardown safely sets the Configuration value for state's 'TestrigSkipDBTeardown' field
+func (st *ConfigState) SetTestrigSkipDBTeardown(v bool) {
+	st.mutex.Lock()
+	defer st.mutex.Unlock()
+	st.config.TestrigSkipDBTeardown = v
+	st.reloadToViper()
+}
+
+// GetTestrigSkipDBTeardown safely fetches the value for global configuration 'TestrigSkipDBTeardown' field
+func GetTestrigSkipDBTeardown() bool { return global.GetTestrigSkipDBTeardown() }
+
+// SetTestrigSkipDBTeardown safely sets the value for global configuration 'TestrigSkipDBTeardown' field
+func SetTestrigSkipDBTeardown(v bool) { global.SetTestrigSkipDBTeardown(v) }
+
 // GetTotalOfMemRatios safely fetches the combined value for all the state's mem ratio fields
 func (st *ConfigState) GetTotalOfMemRatios() (total float64) {
 	st.mutex.RLock()
@@ -6448,6 +6644,7 @@ func (st *ConfigState) GetTotalOfMemRatios() (total float64) {
 	total += st.config.Cache.PollVoteMemRatio
 	total += st.config.Cache.PollVoteIDsMemRatio
 	total += st.config.Cache.ReportMemRatio
+	total += st.config.Cache.ScheduledStatusMemRatio
 	total += st.config.Cache.SinBinStatusMemRatio
 	total += st.config.Cache.StatusMemRatio
 	total += st.config.Cache.StatusBookmarkMemRatio
@@ -7226,6 +7423,17 @@ func flattenConfigMap(cfgmap map[string]any) {
 		ival, ok := mapGet(cfgmap, key...)
 		if ok {
 			cfgmap["cache-report-mem-ratio"] = ival
+			nestedKeys[key[0]] = struct{}{}
+			break
+		}
+	}
+
+	for _, key := range [][]string{
+		{"cache", "scheduled-status-mem-ratio"},
+	} {
+		ival, ok := mapGet(cfgmap, key...)
+		if ok {
+			cfgmap["cache-scheduled-status-mem-ratio"] = ival
 			nestedKeys[key[0]] = struct{}{}
 			break
 		}

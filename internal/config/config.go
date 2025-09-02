@@ -55,6 +55,7 @@ func fieldtag(field, tag string) string {
 // https://github.com/mvdan/gofumpt.
 type Configuration struct {
 	LogLevel           string `name:"log-level" usage:"Log level to run at: [trace, debug, info, warn, fatal]"`
+	LogFormat          string `name:"log-format" usage:"Log output format: [logfmt, json]"`
 	LogTimestampFormat string `name:"log-timestamp-format" usage:"Format to use for the log timestamp, as supported by Go's time.Layout"`
 	LogDbQueries       bool   `name:"log-db-queries" usage:"Log database queries verbosely when log-level is trace or debug"`
 	LogClientIP        bool   `name:"log-client-ip" usage:"Include the client IP in logs"`
@@ -130,6 +131,9 @@ type Configuration struct {
 	StatusesPollOptionMaxChars int `name:"statuses-poll-option-max-chars" usage:"Max amount of characters for a poll option"`
 	StatusesMediaMaxFiles      int `name:"statuses-media-max-files" usage:"Maximum number of media files/attachments per status"`
 
+	ScheduledStatusesMaxTotal int `name:"scheduled-statuses-max-total" usage:"Maximum number of scheduled statuses per user"`
+	ScheduledStatusesMaxDaily int `name:"scheduled-statuses-max-daily" usage:"Maximum number of scheduled statuses per user for a single day"`
+
 	LetsEncryptEnabled      bool   `name:"letsencrypt-enabled" usage:"Enable letsencrypt TLS certs for this server. If set to true, then cert dir also needs to be set (or take the default)."`
 	LetsEncryptPort         int    `name:"letsencrypt-port" usage:"Port to listen on for letsencrypt certificate challenges. Must not be the same as the GtS webserver/API port."`
 	LetsEncryptCertDir      string `name:"letsencrypt-cert-dir" usage:"Directory to store acquired letsencrypt certificates."`
@@ -182,6 +186,8 @@ type Configuration struct {
 	AdminMediaPruneDryRun    bool   `name:"dry-run" usage:"perform a dry run and only log number of items eligible for pruning" ephemeral:"yes"`
 	AdminMediaListLocalOnly  bool   `name:"local-only" usage:"list only local attachments/emojis; if specified then remote-only cannot also be true" ephemeral:"yes"`
 	AdminMediaListRemoteOnly bool   `name:"remote-only" usage:"list only remote attachments/emojis; if specified then local-only cannot also be true" ephemeral:"yes"`
+	TestrigSkipDBSetup       bool   `name:"skip-db-setup" usage:"skip testrig database setup with population of test models" ephemeral:"yes"`
+	TestrigSkipDBTeardown    bool   `name:"skip-db-teardown" usage:"skip testrig database teardown (i.e. data deletion and tables dropped)" ephemeral:"yes"`
 }
 
 type HTTPClientConfiguration struct {
@@ -249,6 +255,7 @@ type CacheConfiguration struct {
 	PollVoteMemRatio                      float64       `name:"poll-vote-mem-ratio"`
 	PollVoteIDsMemRatio                   float64       `name:"poll-vote-ids-mem-ratio"`
 	ReportMemRatio                        float64       `name:"report-mem-ratio"`
+	ScheduledStatusMemRatio               float64       `name:"scheduled-status-mem-ratio"`
 	SinBinStatusMemRatio                  float64       `name:"sin-bin-status-mem-ratio"`
 	StatusMemRatio                        float64       `name:"status-mem-ratio"`
 	StatusBookmarkMemRatio                float64       `name:"status-bookmark-mem-ratio"`

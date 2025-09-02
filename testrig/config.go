@@ -57,7 +57,8 @@ func InitTestConfig() {
 func testDefaults() config.Configuration {
 	return config.Configuration{
 		LogLevel:                   envStr("GTS_LOG_LEVEL", "error"),
-		LogTimestampFormat:         "02/01/2006 15:04:05.000",
+		LogFormat:                  envStr("GTS_LOG_FORMAT", "logfmt"),
+		LogTimestampFormat:         envStr("GTS_LOG_TIMESTAMP_FORMAT", "02/01/2006 15:04:05.000"),
 		LogDbQueries:               true,
 		ApplicationName:            "gotosocial",
 		LandingPageUser:            "",
@@ -128,7 +129,7 @@ func testDefaults() config.Configuration {
 			ThumbMaxPixels:      512,
 		},
 
-		// the testrig only uses in-memory storage, so we can
+		// the testrig uses in-memory storage by default, so we can
 		// safely set this value to 'test' to avoid running storage
 		// migrations, and other silly things like that
 		StorageBackend:       "test",
@@ -138,6 +139,9 @@ func testDefaults() config.Configuration {
 		StatusesPollMaxOptions:     6,
 		StatusesPollOptionMaxChars: 50,
 		StatusesMediaMaxFiles:      6,
+
+		ScheduledStatusesMaxTotal: 300,
+		ScheduledStatusesMaxDaily: 25,
 
 		LetsEncryptEnabled:      false,
 		LetsEncryptPort:         0,
@@ -191,6 +195,10 @@ func testDefaults() config.Configuration {
 
 		// simply use cache defaults.
 		Cache: config.Defaults.Cache,
+
+		// Testrig-specific flags.
+		TestrigSkipDBSetup:    envBool("GTS_TESTRIG_SKIP_DB_SETUP", false),
+		TestrigSkipDBTeardown: envBool("GTS_TESTRIG_SKIP_DB_TEARDOWN", false),
 	}
 }
 
