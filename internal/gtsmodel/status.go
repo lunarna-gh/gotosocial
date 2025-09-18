@@ -58,8 +58,8 @@ type Status struct {
 	BoostOf                  *Status            `bun:"-"`                                                                 // status that corresponds to boostOfID
 	BoostOfAccount           *Account           `bun:"rel:belongs-to"`                                                    // account that corresponds to boostOfAccountID
 	ThreadID                 string             `bun:"type:CHAR(26),nullzero,notnull,default:00000000000000000000000000"` // id of the thread to which this status belongs
-	EditIDs                  []string           `bun:"edits,array"`                                                       //
-	Edits                    []*StatusEdit      `bun:"-"`                                                                 //
+	EditIDs                  []string           `bun:"edits,array"`                                                       // IDs of status edits for this status, ordered from smallest (oldest) -> largest (newest) ID.
+	Edits                    []*StatusEdit      `bun:"-"`                                                                 // Edits of this status, ordered from oldest -> newest edit.
 	PollID                   string             `bun:"type:CHAR(26),nullzero"`                                            //
 	Poll                     *Poll              `bun:"-"`                                                                 //
 	ContentWarning           string             `bun:",nullzero"`                                                         // Content warning HTML for this status.
@@ -76,7 +76,7 @@ type Status struct {
 	InteractionPolicy        *InteractionPolicy `bun:""`                                                                  // InteractionPolicy for this status. If null then the default InteractionPolicy should be assumed for this status's Visibility. Always null for boost wrappers.
 	PendingApproval          *bool              `bun:",nullzero,notnull,default:false"`                                   // If true then status is a reply or boost wrapper that must be Approved by the reply-ee or boost-ee before being fully distributed.
 	PreApproved              bool               `bun:"-"`                                                                 // If true, then status is a reply to or boost wrapper of a status on our instance, has permission to do the interaction, and an Accept should be sent out for it immediately. Field not stored in the DB.
-	ApprovedByURI            string             `bun:",nullzero"`                                                         // URI of an Accept Activity that approves the Announce or Create Activity that this status was/will be attached to.
+	ApprovedByURI            string             `bun:",nullzero"`                                                         // URI of *either* an Accept Activity, or a ReplyAuthorization or AnnounceAuthorization, which approves the Announce, Create or interaction request Activity that this status was/will be attached to.
 }
 
 // GetID implements timeline.Timelineable{}.
